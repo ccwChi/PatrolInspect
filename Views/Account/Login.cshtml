@@ -1,0 +1,254 @@
+﻿@model PatrolInspect.Models.LoginViewModel
+
+@{
+    ViewData["Title"] = "登入 - MES 巡檢系統";
+    Layout = "_Layout";
+}
+
+@section css {
+    <style>
+        .login-card {
+            max-width: 400px;
+            margin: 50px auto;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .login-header {
+            background-color: #0071b2;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+            .login-header h1 {
+                font-size: 20px;
+                margin-bottom: 5px;
+            }
+
+            .login-header p {
+                font-size: 14px;
+                color: #ccc;
+            }
+
+        .login-body {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+            .form-group label {
+                display: block;
+                font-weight: 600;
+                color: #333;
+                margin-bottom: 8px;
+            }
+
+            .form-group input {
+                width: 100%;
+                padding: 12px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 16px;
+                background-color: white;
+            }
+
+                .form-group input:focus {
+                    outline: none;
+                    border-color: #0071b2;
+                }
+
+        .btn-login {
+            width: 100%;
+            background-color: #0071b2;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+            .btn-login:hover {
+                background-color: #005a8f;
+            }
+
+            .btn-login:disabled {
+                background-color: #ccc;
+                cursor: not-allowed;
+            }
+
+        .alert {
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-right: 5px;
+        }
+
+        @@keyframes spin {
+            to
+
+        {
+            transform: rotate(360deg);
+        }
+
+        }
+
+        .login-footer {
+            background-color: #f8f9fa;
+            padding: 15px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #ddd;
+        }
+    </style>
+}
+
+<div class="login-card">
+    <div class="login-header">
+        <h1>MES 巡檢系統</h1>
+        <p>Manufacturing Execution System</p>
+    </div>
+
+    <div class="login-body">
+        <div id="alertMessage" class="alert" style="display: none;"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="userNo">工號 *</label>
+                <input type="text"
+                       id="userNo"
+                       name="userNo"
+                       placeholder="請輸入工號"
+                       required
+                       maxlength="20"
+                       autocomplete="username">
+            </div>
+
+            <button type="submit" class="btn-login" id="loginBtn">
+                <span id="btnText">登入系統</span>
+            </button>
+        </form>
+    </div>
+
+    <div class="login-footer">
+        <p>MES 巡檢系統 | Version 1.0</p>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const userNoInput = document.getElementById('userNo');
+        const loginBtn = document.getElementById('loginBtn');
+        const btnText = document.getElementById('btnText');
+        const alertMessage = document.getElementById('alertMessage');
+
+        // 表單提交
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const userNo = userNoInput.value.trim();
+
+            if (!userNo) {
+                showAlert('error', '請輸入工號');
+                return;
+            }
+
+            setLoading(true);
+            hideAlert();
+
+            try {
+                const response = await fetch('@Url.Action("Login", "Account")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    body: JSON.stringify({
+                        UserNo: userNo
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('success', result.message);
+                    setTimeout(() => {
+                        window.location.href = result.redirectUrl;
+                    }, 1500);
+                } else {
+                    showAlert('error', result.message);
+                    setLoading(false);
+                }
+            } catch (error) {
+                showAlert('error', '系統連線異常，請稍後再試');
+                setLoading(false);
+            }
+        });
+
+        function setLoading(loading) {
+            if (loading) {
+                loginBtn.disabled = true;
+                btnText.innerHTML = '<span class="loading"></span>登入中...';
+            } else {
+                loginBtn.disabled = false;
+                btnText.textContent = '登入系統';
+            }
+        }
+
+        function showAlert(type, message) {
+            alertMessage.className = `alert alert-${type}`;
+            alertMessage.textContent = message;
+            alertMessage.style.display = 'block';
+        }
+
+        function hideAlert() {
+            alertMessage.style.display = 'none';
+        }
+
+        // 頁面載入時聚焦工號輸入框
+        $(document).ready(function() {
+            userNoInput.focus();
+        });
+
+        // Enter 鍵提交表單
+        userNoInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loginForm.dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+
+    @Html.AntiForgeryToken()
+}

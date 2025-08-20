@@ -1,0 +1,116 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"] - 家登精密</title>
+
+    <!-- Bootstrap CSS (Local) -->
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Font Awesome (Local) -->
+    <link href="~/lib/fontawesome/css/all.min.css" rel="stylesheet" />
+
+    @await RenderSectionAsync("css", required: false)
+
+    <style>
+        /* 基本樣式設定 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: "Microsoft JhengHei", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .navbar * {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            background-color: #f8f9fa;
+        }
+
+        .content-wrapper {
+            flex: 1;
+            padding: 20px;
+        }
+
+        footer {
+            text-align: center;
+            font-size: small;
+            padding: 10px;
+            background: #eee;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg px-2" style="background-color:#0071b2 !important; height:52px">
+        <div class="container-fluid">
+            <a class="" href="@Url.Action("Dashboard", "Inspection")">
+                <img src="~/images/logo.png" style="width:140px;" alt="Logo" />
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarbtn"
+                    aria-controls="navbarbtn" aria-expanded="false" aria-label="切換導航">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse px-3" id="navbarbtn">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white" href="#" id="navbarDropdown" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            項目
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="@Url.Action("Dashboard", "Inspection")">巡檢系統</a></li>
+                            <li><a class="dropdown-item" href="#">射出段首末件</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="@Url.Action("CheckLoginStatus", "Account")">
+                            <i class="fa-solid fa-user"></i>
+                            @if (!string.IsNullOrEmpty(ViewContext.HttpContext.Session.GetString("UserName")))
+                            {
+                                <span>@ViewContext.HttpContext.Session.GetString("UserName")</span>
+                            }
+                            else
+                            {
+                                <span>未登入</span>
+                            }
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="@Url.Action("Logout", "Account")">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="content-wrapper container">
+        @RenderBody()
+    </main>
+
+    <footer>
+        Copyright © 2025 Gudeng Industrial Corp. All Rights Reserved.
+    </footer>
+
+    <!-- JavaScript 放在這裡 -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    @await RenderSectionAsync("scripts", required: false)
+</body>
+</html>
