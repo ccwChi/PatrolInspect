@@ -18,6 +18,8 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromMinutes(appSettings?.SessionTimeout ?? 480); // 8 hours default
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
 // Register Repository (DI)
@@ -29,6 +31,20 @@ builder.Services.AddLogging(config =>
     config.AddConsole();
     config.AddDebug();
 });
+
+// Add CORS (如果需要)
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy("AllowAll",
+//        builder =>
+//        {
+//            builder
+//                .AllowAnyOrigin()
+//                .AllowAnyMethod()
+//                .AllowAnyHeader();
+//        });
+//});
+
 
 var app = builder.Build();
 
@@ -49,18 +65,33 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+else
+{
+    app.UseDeveloperExceptionPage();
+}
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
 
+//app.UseCors("AllowAll");
+
 app.UseSession();
 app.UseAuthorization();
 
+// 新增 API 路由 (如果需要)
+//app.MapControllerRoute(
+//    name: "api",
+//    pattern: "api/{controller}/{action=Index}/{id?}");
+
+// 預設路由
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}");
+
+// 根路徑重導向
+app.MapGet("/", () => Results.Redirect("/Account/Login"));
 
 logger.LogInformation("=== InspectionSystem Started Successfully ===");
 

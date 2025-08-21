@@ -50,21 +50,10 @@ namespace PatrolInspect.Repository
             {
                 var user = await connection.QueryFirstOrDefaultAsync<MesUser>(sql, new { UserNo = userNo });
 
-                if (user != null)
-                {
-                    _logger.LogDebug("User found: {UserNo} - {UserName}, Active: {IsActive}",
-                        user.UserNo, user.UserName, user.IsActive);
-                }
-                else
-                {
-                    _logger.LogDebug("User not found: {UserNo}", userNo);
-                }
-
                 return user;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting MES user by UserNo: {UserNo}", userNo);
                 throw;
             }
         }
@@ -77,25 +66,18 @@ namespace PatrolInspect.Repository
 
                 if (user == null)
                 {
-                    _logger.LogWarning("Login attempt with non-existent UserNo: {UserNo}", userNo);
                     return (false, "工號不存在，請確認輸入正確", null);
                 }
 
                 if (!user.IsActive)
                 {
-                    _logger.LogWarning("Login attempt by inactive user: {UserNo}, ExpirationDate: {ExpirationDate}",
-                        userNo, user.ExpirationDate);
                     return (false, "此帳號已離職，無法登入系統", null);
                 }
-
-                _logger.LogInformation("User login validated successfully: {UserNo} - {UserName}",
-                    user.UserNo, user.UserName);
 
                 return (true, "登入成功", user);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error validating user login: {UserNo}", userNo);
                 return (false, "系統連線異常，請稍後再試或聯繫IT部門", null);
             }
         }
