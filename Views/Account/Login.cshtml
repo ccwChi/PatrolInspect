@@ -199,7 +199,7 @@
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({ UserNo: userNo }),
-                    timeout: 10000, // 10秒超時
+                    timeout: 60000, // 10秒超時
                     success: function(response) {
                         console.log('Login response:', response);
 

@@ -13,8 +13,8 @@ namespace PatrolInspect.Models
 
         // 計算屬性
         public bool IsActive => ExpirationDate == null;
-        public string DisplayDepartment => string.IsNullOrEmpty(FatherDepartmentName)
-            ? DepartmentName
-            : $"{FatherDepartmentName} - {DepartmentName}";
+        //public string DisplayDepartment => string.IsNullOrEmpty(FatherDepartmentName)
+        //    ? DepartmentName
+        //    : $"{FatherDepartmentName} - {DepartmentName}";
     }
 }

@@ -4,6 +4,14 @@ using PatrolInspect.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 設定 IIS 集成模式，停用父程式的驗證影響
+builder.WebHost.UseIIS();
+builder.Services.Configure<IISServerOptions>(options =>
+{
+    options.AutomaticAuthentication = false;  // 關鍵：停用 IIS 驗證
+    options.AllowSynchronousIO = true;        // 允許同步 IO
+});
+
 // Add services to the container
 builder.Services.AddControllersWithViews();
 
@@ -24,6 +32,8 @@ builder.Services.AddSession(options =>
 
 // Register Repository (DI)
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
+builder.Services.AddScoped<IInspectionRepository, InspectionRepository>();
 
 // Add Logging
 builder.Services.AddLogging(config =>
@@ -59,18 +69,25 @@ if (appSettings != null)
     logger.LogInformation("Session Timeout: {SessionTimeout} minutes", appSettings.SessionTimeout);
 }
 
+
+app.UsePathBase("/GudengMesPortal/PatrolInspect");
+
 // Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
+    // 移除 HSTS，因為父程式已經處理
+    // app.UseHsts();
+    // 暫時保留詳細錯誤以便除錯，完成後可移除
+    app.UseDeveloperExceptionPage();
 }
 else
 {
     app.UseDeveloperExceptionPage();
 }
 
-app.UseHttpsRedirection();
+// 重要：移除 HTTPS 重定向，因為父程式已經處理 HTTPS
+// app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -78,7 +95,9 @@ app.UseRouting();
 //app.UseCors("AllowAll");
 
 app.UseSession();
-app.UseAuthorization();
+
+// 移除 UseAuthorization，不使用驗證
+// app.UseAuthorization();
 
 // 新增 API 路由 (如果需要)
 //app.MapControllerRoute(
@@ -91,7 +110,7 @@ app.MapControllerRoute(
     pattern: "{controller=Account}/{action=Login}/{id?}");
 
 // 根路徑重導向
-app.MapGet("/", () => Results.Redirect("/Account/Login"));
+//app.MapGet("/", () => Results.Redirect("/Account/Login"));
 
 logger.LogInformation("=== InspectionSystem Started Successfully ===");
 

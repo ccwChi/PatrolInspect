@@ -1,233 +1,228 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PatrolInspect.Models;
+using PatrolInspect.Models.Entities;
+using PatrolInspect.Repositories.Interfaces;
 
 namespace PatrolInspect.Controllers
 {
     public class InspectionController : Controller
     {
+        private readonly IInspectionRepository _inspectionRepository;
         private readonly ILogger<InspectionController> _logger;
 
-        public InspectionController(ILogger<InspectionController> logger)
+        public InspectionController(IInspectionRepository inspectionRepository, ILogger<InspectionController> logger)
         {
+            _inspectionRepository = inspectionRepository;
             _logger = logger;
         }
 
-        // 主要量測頁面
         [HttpGet]
         public IActionResult Index()
         {
+            // 檢查登入狀態
+            var userNo = HttpContext.Session.GetString("UserNo");
+            var userName = HttpContext.Session.GetString("UserName");
+
+            if (string.IsNullOrEmpty(userNo))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
             try
             {
-                // 檢查登入狀態
-                if (!IsUserLoggedIn())
-                {
-                    _logger.LogWarning("Unauthorized access attempt to inspection page");
-                    return RedirectToAction("Login", "Account");
-                }
+                // 取得使用者今天的巡檢任務
+                //var userInspection = await _inspectionRepository.GetUserTodayInspectionAsync(userNo);
+                //userInspection.UserName = userName ?? "";
 
-                // 準備使用者資訊
-                var userInfo = GetCurrentUserInfo();
-
-                ViewBag.UserNo = userInfo.UserNo;
-                ViewBag.UserName = userInfo.UserName;
-                ViewBag.DepartmentName = userInfo.DepartmentName;
-                ViewBag.TitleName = userInfo.TitleName;
-                ViewBag.LoginTime = userInfo.LoginTime;
+                ViewBag.UserNo = userNo;
+                ViewBag.UserName = userName;
+                ViewBag.DepartmentName = HttpContext.Session.GetString("DepartmentName");
+                ViewBag.TitleName = HttpContext.Session.GetString("TitleName");
                 ViewBag.CurrentTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
-                _logger.LogInformation("User {UserNo} accessed inspection page", userInfo.UserNo);
-
                 return View();
+                //return View(userInspection);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in Inspection Index");
-                return RedirectToAction("Error", "Home");
+                _logger.LogError(ex, "Error loading dashboard for user: {UserNo}", userNo);
+                ViewBag.ErrorMessage = "載入巡檢資料時發生錯誤，請稍後再試";
+                return View(new UserTodayInspection { UserNo = userNo, UserName = userName ?? "" });
             }
         }
 
-        // Dashboard（保留原有功能）
+        // API: 取得使用者今天的巡檢任務
         [HttpGet]
-        public IActionResult Dashboard()
+        public async Task<IActionResult> GetTodayInspection()
         {
+            var userNo = HttpContext.Session.GetString("UserNo");
+            if (string.IsNullOrEmpty(userNo))
+            {
+                return Json(new { success = false, message = "未登入" });
+            }
+
             try
             {
-                // 檢查登入狀態
-                if (!IsUserLoggedIn())
-                {
-                    return RedirectToAction("Login", "Account");
-                }
-
-                var userInfo = GetCurrentUserInfo();
-
-                ViewBag.UserNo = userInfo.UserNo;
-                ViewBag.UserName = userInfo.UserName;
-                ViewBag.DepartmentName = userInfo.DepartmentName;
-                ViewBag.TitleName = userInfo.TitleName;
-                ViewBag.LoginTime = userInfo.LoginTime;
-                ViewBag.CurrentTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-                return View();
+                var result = await _inspectionRepository.GetUserTodayInspectionAsync(userNo);
+                return Json(new { success = true, data = result });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in Dashboard");
-                return RedirectToAction("Error", "Home");
+                _logger.LogError(ex, "Error getting today inspection for user: {UserNo}", userNo);
+                return Json(new { success = false, message = "載入巡檢資料失敗" });
             }
         }
 
-        // NFC 掃描記錄
+        // API: 刷新機台狀態
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RecordNfcScan([FromBody] NfcScanRequest request)
+        public async Task<IActionResult> RefreshDeviceStatus()
         {
+            var userNo = HttpContext.Session.GetString("UserNo");
+            if (string.IsNullOrEmpty(userNo))
+            {
+                return Json(new { success = false, message = "未登入" });
+            }
+
             try
             {
-                if (!IsUserLoggedIn())
+                var result = await _inspectionRepository.GetUserTodayInspectionAsync(userNo);
+                return Json(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error refreshing device status for user: {UserNo}", userNo);
+                return Json(new { success = false, message = "刷新失敗" });
+            }
+        }
+
+        // API: 記錄巡檢到達
+        [HttpPost]
+        public async Task<IActionResult> RecordInspection([FromBody] InspectionRecordRequest request)
+        {
+            var userNo = HttpContext.Session.GetString("UserNo");
+            var userName = HttpContext.Session.GetString("UserName");
+            if (string.IsNullOrEmpty(userNo))
+            {
+                return Json(new { success = false, message = "未登入" });
+            }
+
+            try
+            {
+                // 檢查是否有該使用者未完成的巡檢記錄
+                var pendingRecord = await _inspectionRepository.GetPendingInspectionByUserAsync(userNo);
+
+                if (pendingRecord != null)
                 {
-                    return Json(new { success = false, message = "請重新登入" });
+                    // 如果是同一台機台，提示已經在檢驗中
+                    if (pendingRecord.DeviceId == request.DeviceId)
+                    {
+                        return Json(new
+                        {
+                            success = true,
+                            message = $"目前已在 {request.DeviceId} 機台開始檢驗",
+                            recordId = pendingRecord.RecordId,
+                            arriveTime = pendingRecord.ArriveAt.ToString("HH:mm:ss"),
+                            isExisting = true, // 標記這是現有記錄
+                            deviceId = request.DeviceId
+                        });
+                    }
+
+                    // 如果是不同機台，詢問是否要建立新記錄並刪除舊記錄
+                    return Json(new
+                    {
+                        success = false,
+                        needConfirmation = true,
+                        message = $"您在 {pendingRecord.DeviceId} 機台還有未完成的巡檢記錄，確定要在 {request.DeviceId} 機台開始新的巡檢嗎？",
+                        pendingDeviceId = pendingRecord.DeviceId,
+                        newDeviceId = request.DeviceId,
+                        pendingRecordId = pendingRecord.RecordId
+                    });
                 }
 
-                if (request == null || string.IsNullOrWhiteSpace(request.CardId))
+                // 建立新的巡檢記錄
+                var record = new InspectionQcRecord
                 {
-                    return Json(new { success = false, message = "無效的掃描資料" });
-                }
+                    CardId = request.CardId,
+                    DeviceId = request.DeviceId,
+                    UserNo = userNo,
+                    UserName = userName ?? "",
+                    InspectType = request.InspectType ?? "INSPECT",
+                    ArriveAt = DateTime.Now,
+                    Source = request.Source ?? "NFC"
+                };
 
-                var userInfo = GetCurrentUserInfo();
-
-                // TODO: 實作 NFC 掃描記錄邏輯
-                // 1. 驗證 CardId 是否有效
-                // 2. 檢查是否重複掃描
-                // 3. 記錄到資料庫
-
-                _logger.LogInformation("NFC scan recorded: User {UserNo}, CardId {CardId}, DeviceId {DeviceId}",
-                    userInfo.UserNo, request.CardId, request.DeviceId);
-
-                // 模擬處理
-                await Task.Delay(500); // 模擬資料庫操作
+                var recordId = await _inspectionRepository.CreateInspectionRecordAsync(record);
 
                 return Json(new
                 {
                     success = true,
-                    message = "掃描記錄成功",
-                    timestamp = DateTime.Now,
-                    cardId = request.CardId,
+                    message = $"目前已在 {request.DeviceId} 機台開始檢驗",
+                    recordId = recordId,
+                    arriveTime = record.ArriveAt.ToString("HH:mm:ss"),
+                    isExisting = false, // 標記這是新記錄
                     deviceId = request.DeviceId
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error recording NFC scan");
-                return Json(new { success = false, message = "記錄失敗，請稍後再試" });
+                _logger.LogError(ex, "Error recording inspection for device: {DeviceId} by user: {UserNo}",
+                    request.DeviceId, userNo);
+                return Json(new { success = false, message = "記錄巡檢失敗" });
             }
         }
 
-        // API: 取得使用者負責的設備
-        [HttpGet]
-        public async Task<IActionResult> GetUserDevices(string userNo)
-        {
-            try
-            {
-                if (!IsUserLoggedIn())
-                {
-                    return Json(new { success = false, message = "請重新登入" });
-                }
-
-                // TODO: 實作從資料庫取得使用者負責設備的邏輯
-                // 這裡先回傳模擬資料
-
-                var mockDevices = new[]
-                {
-                    new
-                    {
-                        deviceId = 1,
-                        deviceCode = "T100",
-                        deviceName = "100T射出機",
-                        areaName = "射出成型區A1",
-                        cardId = "NFC001",
-                        lastInspection = DateTime.Now.AddHours(-2),
-                        lastInspector = "王小明",
-                        inspectionInterval = 240,
-                        inspectionStatus = "normal"
-                    },
-                    new
-                    {
-                        deviceId = 2,
-                        deviceCode = "T200",
-                        deviceName = "200T射出機",
-                        areaName = "射出成型區A1",
-                        cardId = "NFC002",
-                        lastInspection = DateTime.Now.AddHours(-3.5),
-                        lastInspector = "李美華",
-                        inspectionInterval = 240,
-                        inspectionStatus = "warning"
-                    },
-                    new
-                    {
-                        deviceId = 3,
-                        deviceCode = "T150",
-                        deviceName = "150T射出機",
-                        areaName = "射出成型區A2",
-                        cardId = "NFC003",
-                        lastInspection = DateTime.Now.AddHours(-5),
-                        lastInspector = "張三豐",
-                        inspectionInterval = 240,
-                        inspectionStatus = "danger"
-                    }
-                };
-
-                await Task.Delay(100); // 模擬資料庫查詢延遲
-
-                return Json(new { success = true, data = mockDevices });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting user devices for {UserNo}", userNo);
-                return Json(new { success = false, message = "載入設備資訊失敗" });
-            }
-        }
-
-        // 登出
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public IActionResult Logout()
         {
-            var userNo = HttpContext.Session.GetString("UserNo");
-            if (!string.IsNullOrEmpty(userNo))
-            {
-                _logger.LogInformation("User logged out from inspection page: {UserNo}", userNo);
-            }
-
             HttpContext.Session.Clear();
             return RedirectToAction("Login", "Account");
         }
 
-        // 私有方法：檢查使用者是否已登入
-        private bool IsUserLoggedIn()
+
+        [HttpPost]
+        public async Task<IActionResult> ConfirmReplaceInspection([FromBody] ConfirmReplaceRequest request)
         {
             var userNo = HttpContext.Session.GetString("UserNo");
-            return !string.IsNullOrEmpty(userNo);
-        }
+            var userName = HttpContext.Session.GetString("UserName");
+            if (string.IsNullOrEmpty(userNo))
+            {
+                return Json(new { success = false, message = "未登入" });
+            }
 
-        // 私有方法：取得目前使用者資訊
-        private (string UserNo, string UserName, string DepartmentName, string TitleName, string LoginTime) GetCurrentUserInfo()
-        {
-            return (
-                UserNo: HttpContext.Session.GetString("UserNo") ?? "",
-                UserName: HttpContext.Session.GetString("UserName") ?? "",
-                DepartmentName: HttpContext.Session.GetString("DisplayDepartment") ?? HttpContext.Session.GetString("DepartmentName") ?? "",
-                TitleName: HttpContext.Session.GetString("TitleName") ?? "",
-                LoginTime: HttpContext.Session.GetString("LoginTime") ?? ""
-            );
-        }
-    }
+            try
+            {
+                // 更新舊的未完成記錄
+                await _inspectionRepository.UpdateInspectionRecordAsync(request.OldRecordId, userNo);
 
-    // NFC 掃描請求模型
-    public class NfcScanRequest
-    {
-        public string CardId { get; set; } = string.Empty;
-        public string? DeviceId { get; set; }
-        public DateTime? ScanTime { get; set; }
-        public string Source { get; set; } = "NFC";
+                // 建立新記錄
+                var record = new InspectionQcRecord
+                {
+                    CardId = request.CardId,
+                    DeviceId = request.NewDeviceId,
+                    UserNo = userNo,
+                    UserName = userName ?? "",
+                    InspectType = request.InspectType ?? "INJECT_INSPECT",
+                    ArriveAt = DateTime.Now,
+                    Source = request.Source ?? "NFC"
+                };
+
+                var recordId = await _inspectionRepository.CreateInspectionRecordAsync(record);
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"目前已在 {request.NewDeviceId} 機台開始檢驗",
+                    recordId = recordId,
+                    arriveTime = record.ArriveAt.ToString("HH:mm:ss"),
+                    isExisting = false,
+                    deviceId = request.NewDeviceId
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error replacing inspection record for user: {UserNo}", userNo);
+                return Json(new { success = false, message = "替換巡檢記錄失敗" });
+            }
+        }
     }
 }

@@ -82,20 +82,5 @@ namespace PatrolInspect.Repository
             }
         }
 
-        public async Task<bool> TestConnectionAsync()
-        {
-            try
-            {
-                using var connection = CreateConnection();
-                await connection.QueryFirstOrDefaultAsync<int>("SELECT 1");
-                _logger.LogInformation("Database connection test successful");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Database connection test failed");
-                return false;
-            }
-        }
     }
 }

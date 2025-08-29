@@ -61,7 +61,8 @@ namespace PatrolInspect.Controllers
                 {
                     success = true,
                     message = "登入成功",
-                    redirectUrl = Url.Action("Index", "Inspection")
+                    //redirectUrl = Url.Action("Editor", "Schedule")
+                    redirectUrl = Url.Action("index", "Inspection")
                 });
             }
             catch (Exception ex)
@@ -72,7 +73,7 @@ namespace PatrolInspect.Controllers
         }
 
         // 簡化版登出
-        [HttpPost]
+        [HttpGet]
         public IActionResult Logout()
         {
             var userNo = HttpContext.Session.GetString("UserNo");
@@ -93,6 +94,7 @@ namespace PatrolInspect.Controllers
             HttpContext.Session.SetString("DepartmentName", user.DepartmentName);
             HttpContext.Session.SetString("TitleName", user.TitleName);
             HttpContext.Session.SetString("LoginTime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            HttpContext.Session.SetString("LoginType", "InspectLogin");
         }
     }
 }

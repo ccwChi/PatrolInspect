@@ -1,0 +1,242 @@
+﻿@model PatrolInspect.Models.LoginViewModel
+
+@{
+    ViewData["Title"] = "登入 - MES 巡檢系統";
+    Layout = "_Layout";
+}
+
+<div>
+    <button onclick="addRow()">新增</button>
+    <button onclick="deleteSelected()">刪除選取</button>
+    <button onclick="saveAll()">儲存</button>
+    <button onclick="clearAll()">清空</button>
+
+    預設區域: <select id="defaultArea">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+    </select>
+
+    日期: <input type="date" id="defaultDate" />
+    開始: <input type="time" id="startTime" value="08:00" />
+    結束: <input type="time" id="endTime" value="17:00" />
+</div>
+
+
+<table id="table">
+    <tr style="">
+        <th>選</th>
+        <th>工號</th>
+        <th>姓名</th>
+        <th>類型</th>
+        <th>詳細</th>
+        <th>開始日期</th>
+        <th>開始時間</th>
+        <th>結束日期</th>
+        <th>結束時間</th>
+        <th>區域</th>
+        <th>狀態</th>
+        <th>刪</th>
+    </tr>
+</table>
+
+<script>
+    let data = [];
+    let rowIndex = 0;
+
+    document.getElementById('defaultDate').value = new Date().toISOString().split('T')[0];
+
+    // 初始範例資料
+    data = [];
+    render();
+
+    function render() {
+        let table = document.getElementById('table');
+        // 清除除了標題行外的所有行
+        while(table.rows.length > 1) {
+            table.deleteRow(1);
+        }
+
+        data.forEach((item, i) => {
+            let row = table.insertRow();
+            row.innerHTML = `
+                <td><input type="checkbox" /></td>
+                <td><input type="text" value="${item.userNo}" onchange="update(${i},'userNo',this.value)" data-row="${i}" data-col="1" /></td>
+                <td><input type="text" value="${item.userName}" onchange="update(${i},'userName',this.value)" data-row="${i}" data-col="2" /></td>
+                <td><select onchange="update(${i},'eventType',this.value)" data-row="${i}" data-col="3">
+                    <option ${item.eventType=='巡檢'?'selected':''}>巡檢</option>
+                    <option ${item.eventType=='點檢'?'selected':''}>點檢</option>
+                    <option ${item.eventType=='保養'?'selected':''}>保養</option>
+                    <option ${item.eventType=='維修'?'selected':''}>維修</option>
+                </select></td>
+                <td><input type="text" value="${item.eventDetail}" onchange="update(${i},'eventDetail',this.value)" data-row="${i}" data-col="4" /></td>
+                <td><input type="date" value="${item.startDate}" onchange="update(${i},'startDate',this.value)" data-row="${i}" data-col="5" /></td>
+                <td><input type="time" value="${item.startTime}" onchange="update(${i},'startTime',this.value)" data-row="${i}" data-col="6" /></td>
+                <td><input type="date" value="${item.endDate}" onchange="update(${i},'endDate',this.value)" data-row="${i}" data-col="7" /></td>
+                <td><input type="time" value="${item.endTime}" onchange="update(${i},'endTime',this.value)" data-row="${i}" data-col="8" /></td>
+                <td><select onchange="update(${i},'areaId',this.value)" data-row="${i}" data-col="9">
+                    <option value="1" ${item.areaId==1?'selected':''}>1</option>
+                    <option value="2" ${item.areaId==2?'selected':''}>2</option>
+                    <option value="3" ${item.areaId==3?'selected':''}>3</option>
+                    <option value="4" ${item.areaId==4?'selected':''}>4</option>
+                    <option value="5" ${item.areaId==5?'selected':''}>5</option>
+                </select></td>
+                <td><select onchange="update(${i},'isActive',this.value=='true')" data-row="${i}" data-col="10">
+                    <option value="true" ${item.isActive?'selected':''}>啟用</option>
+                    <option value="false" ${!item.isActive?'selected':''}>停用</option>
+                </select></td>
+                <td><button onclick="deleteRow(${i})">×</button></td>
+            `;
+        });
+    }
+
+    function update(i, field, value) {
+        data[i][field] = value;
+    }
+
+    function addRow() {
+        let defaultDate = document.getElementById('defaultDate').value || new Date().toISOString().split('T')[0];
+        let defaultArea = document.getElementById('defaultArea').value;
+        let startTime = document.getElementById('startTime').value;
+        let endTime = document.getElementById('endTime').value;
+
+        data.push({
+            userNo: '', userName: '', eventType: '巡檢', eventDetail: '',
+            startDate: defaultDate, startTime: startTime, endDate: defaultDate, endTime: endTime,
+            areaId: parseInt(defaultArea), isActive: true
+        });
+        render();
+
+        // 聚焦到新行第一個輸入框
+        setTimeout(() => {
+            let newRow = data.length - 1;
+            let input = document.querySelector(`[data-row="${newRow}"][data-col="1"]`);
+            if(input) input.focus();
+        }, 50);
+    }
+
+    function deleteRow(i) {
+        data.splice(i, 1);
+        render();
+    }
+
+    function deleteSelected() {
+        let checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+        let indices = [];
+        checkboxes.forEach(cb => {
+            let row = cb.closest('tr').rowIndex - 1;
+            indices.push(row);
+        });
+        indices.sort((a,b) => b-a).forEach(i => data.splice(i, 1));
+        render();
+    }
+
+    function batchAdd() {
+        let userNo = document.getElementById('batchUser').value;
+        let userName = document.getElementById('batchName').value;
+        let eventType = document.getElementById('batchType').value;
+        let eventDetail = document.getElementById('batchDetail').value;
+        let days = parseInt(document.getElementById('batchDays').value);
+        let baseDate = new Date(document.getElementById('defaultDate').value);
+        let areaId = parseInt(document.getElementById('defaultArea').value);
+        let startTime = document.getElementById('startTime').value;
+        let endTime = document.getElementById('endTime').value;
+
+        if(!userNo || !userName || !eventDetail || !days) {
+            alert('請填寫必要欄位');
+            return;
+        }
+
+        for(let i = 0; i < days; i++) {
+            let date = new Date(baseDate);
+            date.setDate(baseDate.getDate() + i);
+            let dateStr = date.toISOString().split('T')[0];
+
+            data.push({
+                userNo: userNo, userName: userName, eventType: eventType,
+                eventDetail: eventDetail + '(第' + (i+1) + '天)',
+                startDate: dateStr, startTime: startTime, endDate: dateStr, endTime: endTime,
+                areaId: areaId, isActive: true
+            });
+        }
+        render();
+
+        // 清空批量輸入
+        document.getElementById('batchUser').value = '';
+        document.getElementById('batchName').value = '';
+        document.getElementById('batchDetail').value = '';
+    }
+
+    function saveAll() {
+        let saveData = data.map(item => ({
+            ...item,
+            startDateTime: item.startDate + ' ' + item.startTime + ':00',
+            endDateTime: item.endDate + ' ' + item.endTime + ':00',
+            createBy: 'SYSTEM'
+        }));
+
+        fetch('/Schedule/SaveSchedules', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(saveData)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if(result.success) {
+                alert(result.message);
+            } else {
+                alert('儲存失敗: ' + result.message);
+            }
+        })
+        .catch(error => {
+            alert('系統錯誤: ' + error);
+        });
+    }
+
+    function clearAll() {
+        if(confirm('確定清空?')) {
+            data = [];
+            render();
+        }
+    }
+
+    // 鍵盤導航
+    document.addEventListener('keydown', function(e) {
+        let el = e.target;
+        if(!el.dataset.row) return;
+
+        let row = parseInt(el.dataset.row);
+        let col = parseInt(el.dataset.col);
+
+        if(e.key === 'Enter') {
+            e.preventDefault();
+            let nextCol = col + 1;
+            let nextRow = row;
+            if(nextCol > 10) {
+                nextCol = 1;
+                nextRow = row + 1;
+                if(nextRow >= data.length) {
+                    addRow();
+                    return;
+                }
+            }
+
+            let next = document.querySelector(`[data-row="${nextRow}"][data-col="${nextCol}"]`);
+            if(next) next.focus();
+        }
+
+        if(e.key === 'ArrowDown') {
+            e.preventDefault();
+            let next = document.querySelector(`[data-row="${row+1}"][data-col="${col}"]`);
+            if(next) next.focus();
+        }
+
+        if(e.key === 'ArrowUp') {
+            e.preventDefault();
+            let next = document.querySelector(`[data-row="${row-1}"][data-col="${col}"]`);
+            if(next) next.focus();
+        }
+    });
+</script>

@@ -1,0 +1,79 @@
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace PatrolInspect.Models.Entities
+{
+    /// <summary>
+    /// QC巡檢記錄實體
+    /// </summary>
+    public class InspectionQcRecord
+    {
+        public int RecordId { get; set; }
+        public string CardId { get; set; } = string.Empty;
+        public string? DeviceId { get; set; }
+        public string InspectType { get; set; } = string.Empty;
+        public string UserNo { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public DateTime ArriveAt { get; set; }
+        public DateTime? SubmitDataAt { get; set; }
+        public string Source { get; set; } = "NFC";
+        public DateTime CreateDate { get; set; } = DateTime.Now;
+    }
+
+    /// <summary>
+    /// 巡檢排程事件實體 INSPECTION_SCHEDULE_EVENT
+    /// </summary>
+    public class InspectionScheduleEvent
+    {
+        public int EventId { get; set; }
+        public string UserNo { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string EventType { get; set; } = string.Empty;
+        public string EventDetail { get; set; } = string.Empty;
+        public DateTime StartDateTime { get; set; }
+        public DateTime EndDateTime { get; set; }
+        public string Area { get; set; }
+        public bool IsActive { get; set; } = true;
+        public DateTime CreateDate { get; set; } = DateTime.Now;
+        public string? CreateBy { get; set; }
+
+        public DateTime? UpdateDate { get; set; }
+        public string? UpdateBy { get; set; }
+    }
+
+    /// <summary>
+    /// 機台區域對應實體 INSPECTION_DEVICE_AREA_MAPPING
+    /// </summary>
+    public class InspectionDeviceAreaMapping
+    {
+        public int DeviceLocateId { get; set; }
+        public int AreaId { get; set; }
+        public string Area { get; set; } = string.Empty;
+        public string DeviceId { get; set; } = string.Empty;
+        public string? DeviceName { get; set; }
+        public string? NfcCardId { get; set; }
+        public bool IsActive { get; set; } = true;
+        public DateTime CreateDate { get; set; } = DateTime.Now;
+        public string? CreateBy { get; set; }
+        public DateTime? UpdateDate { get; set; }
+        public string? UpdateBy { get; set; }
+    }
+
+    /// <summary>
+    /// FN_EQPSTATUS
+    /// </summary>
+    public class FnDeviceStatus
+    {
+        public string DeviceID { get; set; } = string.Empty;
+        public string DeviceStatus { get; set; } = string.Empty;
+        public DateTime? StartTime { get; set; }
+        public string? Duration { get; set; }
+        public string? AlarmMessage { get; set; }
+        public DateTime CreateTime { get; set; }
+        public string? WO_ID { get; set; }
+        public string? EternetStatus { get; set; }
+        public string? BPM_NO { get; set; }
+        public string? DeviceSchedulingStatus { get; set; }
+    }
+
+}

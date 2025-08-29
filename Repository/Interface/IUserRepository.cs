@@ -6,6 +6,5 @@ namespace PatrolInspect.Repositories.Interfaces
     {
         Task<MesUser?> GetUserByUserNoAsync(string userNo);
         Task<(bool Success, string Message, MesUser? User)> ValidateUserLoginAsync(string userNo);
-        Task<bool> TestConnectionAsync();
     }
 }
