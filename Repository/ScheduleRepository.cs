@@ -49,6 +49,73 @@ namespace PatrolInspect.Repository
             }
         }
 
+        public async Task<List<string>> GetAreasAsync()
+        {
+            using var connection = CreateConnection();
+            var sql = @"
+                SELECT distinct Area FROM INSPECTION_DEVICE_AREA_MAPPING";
+
+            try
+            {
+                var schedules = await connection.QueryAsync<string>(sql);
+                return schedules.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting Areas");
+                throw;
+            }
+        }
+
+        public async Task<List<InspectEventTypeMaster>> GetInspectTypesAsync()
+        {
+            using var connection = CreateConnection();
+            var sql = @"
+                SELECT EventType, EventTypeName, AllowDepartments
+                FROM INSPECTION_EVENT_TYPE_MASTER
+                WHERE IsActive = 1
+                ORDER BY EventType";
+
+            try
+            {
+                var inspectTypes = await connection.QueryAsync<InspectEventTypeMaster>(sql);
+                return inspectTypes.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting inspect types");
+                throw;
+            }
+        }
+
+        public async Task<List<MesUser>> GetUsersAsync()
+        {
+            using var connection = CreateConnection();
+            var sql = @"
+                SELECT 
+                    mu.UserNo, 
+                    mu.UserName, 
+                    mu.DepartmentName, 
+                    md.FatherDepartmentName, 
+                    mu.TitleName, 
+                    mu.ExpirationDate 
+                FROM MES_USERS mu
+                LEFT JOIN MES_DEPARTMENT md ON mu.DepartmentNo = md.DepartmentNo
+                WHERE (mu.ExpirationDate IS NULL OR mu.ExpirationDate > GETDATE())
+                ORDER BY mu.UserNo";
+
+            try
+            {
+                var users = await connection.QueryAsync<MesUser>(sql);
+                return users.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting users");
+                throw;
+            }
+        }
+
         public async Task<List<InspectionScheduleEvent>> GetSchedulesByUserAsync(string userNo)
         {
             using var connection = CreateConnection();
@@ -101,10 +168,10 @@ namespace PatrolInspect.Repository
             using var connection = CreateConnection();
             var sql = @"
                 INSERT INTO INSPECTION_SCHEDULE_EVENT 
-                (UserNo, UserName, EventType, EventDetail, StartDateTime, EndDateTime, 
+                (UserNo, UserName, Department, EventType, EventTypeName, EventDetail, StartDateTime, EndDateTime, 
                  Area, IsActive, CreateDate, CreateBy)
                 VALUES 
-                (@UserNo, @UserName, @EventType, @EventDetail, @StartDateTime, @EndDateTime, 
+                (@UserNo, @UserName, @Department,  @EventType, @EventDetail, @StartDateTime, @EndDateTime, 
                  @Area, @IsActive, @CreateDate, @CreateBy);
                 SELECT CAST(SCOPE_IDENTITY() as int)";
 
@@ -124,46 +191,55 @@ namespace PatrolInspect.Repository
 
         public async Task<List<int>> CreateSchedulesBatchAsync(List<InspectionScheduleEvent> schedules)
         {
-            using var connection = CreateConnection();
-            using var transaction = connection.BeginTransaction();
+            await using var connection = (SqlConnection)CreateConnection();
+            await connection.OpenAsync(); // ← 先打開
 
+            await using var transaction = await connection.BeginTransactionAsync();
             try
             {
-                var sql = @"
+                const string sql = @"
                     INSERT INTO INSPECTION_SCHEDULE_EVENT 
-                    (UserNo, UserName, EventType, EventDetail, StartDateTime, EndDateTime, 
+                    (UserNo, UserName, Department, EventType, EventTypeName, EventDetail, StartDateTime, EndDateTime, 
                      Area, IsActive, CreateDate, CreateBy)
                     VALUES 
-                    (@UserNo, @UserName, @EventType, @EventDetail, @StartDateTime, @EndDateTime, 
+                    (@UserNo, @UserName,@Department, @EventType,@EventTypeName, @EventDetail, @StartDateTime, @EndDateTime, 
                      @Area, @IsActive, @CreateDate, @CreateBy);
-                    SELECT CAST(SCOPE_IDENTITY() as int)";
+                    SELECT CAST(SCOPE_IDENTITY() as int);";
 
-                var eventIds = new List<int>();
+                var now = DateTime.Now;
+                var eventIds = new List<int>(schedules.Count);
+
                 foreach (var schedule in schedules)
                 {
-                    schedule.CreateDate = DateTime.Now;
-                    var eventId = await connection.QuerySingleAsync<int>(sql, schedule, transaction);
+                    schedule.CreateDate = now;
+                    var eventId = await connection.QuerySingleAsync<int>(
+                        sql,
+                        schedule,
+                        transaction  
+                    );
                     eventIds.Add(eventId);
                 }
 
-                transaction.Commit();
+                await transaction.CommitAsync();
                 _logger.LogInformation("Batch created {Count} schedule events", schedules.Count);
                 return eventIds;
             }
             catch (Exception ex)
             {
-                transaction.Rollback();
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error batch creating {Count} schedules", schedules.Count);
                 throw;
             }
         }
+
+
 
         public async Task<bool> UpdateScheduleAsync(InspectionScheduleEvent schedule)
         {
             using var connection = CreateConnection();
             var sql = @"
                 UPDATE INSPECTION_SCHEDULE_EVENT 
-                SET UserNo = @UserNo, UserName = @UserName, EventType = @EventType, 
+                SET UserNo = @UserNo, UserName = @UserName, Department = @Department, EventType = @EventType, EventTypeName = @EventTypeName, 
                     EventDetail = @EventDetail, StartDateTime = @StartDateTime, 
                     EndDateTime = @EndDateTime, Area = @Area, IsActive = @IsActive,
                     UpdateDate = @UpdateDate, UpdateBy = @UpdateBy

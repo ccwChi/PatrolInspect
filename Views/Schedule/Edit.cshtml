@@ -1,0 +1,989 @@
+﻿@{
+    ViewData["Title"] = "排班建立 - MES 巡檢系統";
+    Layout = "_Layout";
+}
+
+@section css {
+    <style>
+
+        .control-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .batch-controls {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .table-container {
+            background: white;
+            border: 1px solid #000;
+            margin-top: 20px;
+        }
+
+        .btn-action {
+            margin-right: 10px;
+            margin-bottom: 5px;
+        }
+
+        /* Excel 風格表格 */
+        #scheduleTable {
+            border-collapse: collapse;
+            margin: 0;
+            font-size: 13px;
+            width: 100%;
+        }
+
+            #scheduleTable th {
+                background-color: #f2f2f2;
+                color: #000;
+                border: 1px solid #000;
+                font-weight: 600;
+                text-align: center;
+                vertical-align: middle;
+                padding: 8px 6px;
+                height: 32px;
+            }
+
+            #scheduleTable td {
+                border: 1px solid #ccc;
+                padding: 2px;
+                vertical-align: middle;
+                height: 28px;
+            }
+
+            #scheduleTable tbody tr:hover {
+                background-color: #f8f9fa;
+            }
+
+            #scheduleTable td input, #scheduleTable td select {
+                border: none;
+                background: transparent;
+                padding: 4px 6px;
+                font-size: 14px;
+ 
+                margin: 0;
+                outline: none;
+            }
+
+                #scheduleTable td input:focus, #scheduleTable td select:focus {
+                    background-color: #fff;
+                    border: 2px solid #0071b2;
+                    border-radius: 2px;
+                }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: 1px solid #dc3545;
+            padding: 2px 6px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+            height: 24px;
+        }
+
+            .delete-btn:hover {
+                background: #c82333;
+            }
+
+        .row-checkbox {
+            width: 16px;
+            height: 16px;
+        }
+
+        #selectAll {
+            width: 16px;
+            height: 16px;
+        }
+
+        .user-autocomplete {
+            position: relative;
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            width:max-content;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid #ced4da;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .autocomplete-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+            .autocomplete-item:hover {
+                background-color: #f8f9fa;
+            }
+
+            .autocomplete-item.selected {
+                background-color: #0071b2;
+                color: white;
+            }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #0071b2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 5px;
+        }
+
+        @@keyframes spin {
+            0%
+
+        {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+
+        }
+
+        .alert-custom {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @@keyframes slideIn {
+            from
+
+        {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        }
+    </style>
+}
+
+<div class="page-header">
+    <div class="container">
+        <h3>排班建立管理</h3>
+    </div>
+</div>
+
+<div class="control-panel">
+    <div class="row align-items-end">
+        <div class="col-md-2">
+            <label class="form-label">預設區域</label>
+            <select id="defaultArea" class="form-select">
+                <option value="">請選擇區域</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">日期</label>
+            <input type="date" id="defaultDate" class="form-control" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">開始時間</label>
+            <input type="time" id="startTime" value="08:00" class="form-control" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">結束時間</label>
+            <input type="time" id="endTime" value="17:00" class="form-control" />
+        </div>
+        <div class="col-md-4">
+            <button onclick="addRow()" class="btn btn-outline-secondary btn-action">
+                <i class="fas fa-plus"></i> 新增
+            </button>
+            <button onclick="deleteSelected()" class="btn btn-outline-secondary btn-action">
+                <i class="fas fa-trash"></i> 刪除
+            </button>
+            <button onclick="saveAll()" class="btn btn-outline-secondary btn-action">
+                <i class="fas fa-save"></i> 儲存
+            </button>
+            <button onclick="clearAll()" class="btn btn-outline-secondary btn-action">
+                <i class="fas fa-broom"></i> 清空
+            </button>
+        </div>
+    </div>
+
+    <!-- 批量新增區塊 -->
+    <div class="batch-controls">
+        <h6><i class="fas fa-copy me-2"></i>批量新增工具</h6>
+        <div class="row">
+            <div class="col-md-2">
+                <input type="text" id="batchUser" placeholder="工號" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-2">
+                <input type="text" id="batchName" placeholder="姓名" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-2">
+                <select id="batchType" class="form-select form-select-sm">
+                    <option value="PATROL">巡檢</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="text" id="batchDetail" placeholder="詳細內容" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-2">
+                <input type="number" id="batchDays" placeholder="天數" value="1" min="1" max="30" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-2">
+                <button onclick="batchAdd()" class="btn btn-outline-secondary btn-sm">
+                     批量新增
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 排班表格 -->
+<div class="table-container">
+    <table class="table-excel" id="scheduleTable">
+        <thead>
+            <tr>
+                <th width="40">
+                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" />
+                </th>
+                <th width="160">人員</th>
+                @* <th width="80">姓名</th> *@
+                <th width="80">區域</th>
+                <th width="80">類型</th>
+                <th width="120">詳細內容</th>
+                <th width="80">開始日期</th>
+                <th width="80">開始時間</th>
+                <th width="80">結束日期</th>
+                <th width="80">結束時間</th>
+            </tr>
+        </thead>
+        <tbody id="scheduleTableBody">
+            <!-- 動態生成的排班資料 -->
+        </tbody>
+    </table>
+
+    <div style="padding: 10px; border-top: 1px solid #ccc; background: #f8f9fa; font-size: 12px; color: #666;">
+        <i class="fas fa-info-circle"></i>
+        使用 Enter 鍵移動到下一欄位，↑↓ 方向鍵上下移動
+    </div>
+</div>
+
+<!-- 載入中遮罩 -->
+<div id="loadingOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-none" style="background: rgba(0,0,0,0.5); z-index: 9999;">
+    <div class="d-flex justify-content-center align-items-center h-100">
+        <div class="text-center text-white">
+            <div class="loading mb-3" style="width: 40px; height: 40px; border-width: 4px;"></div>
+            <h5>處理中...</h5>
+        </div>
+    </div>
+</div>
+@section scripts {
+    <script>
+        // 全域變數
+        let scheduleData = [];
+        let rowIndex = 0;
+        let users = [];
+        let areas = [];
+        let inspectTypes = [];
+        let selectedAutocompleteIndex = -1;
+
+        // 頁面載入時初始化
+        $(document).ready(function() {
+            // 設定預設日期為今天
+            document.getElementById('defaultDate').value = new Date().toISOString().split('T')[0];
+            loadInitialData();
+        });
+
+
+
+
+        // 載入基礎資料 (區域、人員、檢測類型)
+        function loadInitialData() {
+            showLoading(true);
+
+            $.ajax({
+                url: '@Url.Action("GetAreasUsersInspectType", "Schedule")',
+                type: 'GET',
+                contentType: 'application/json',
+                dataType: 'json',
+                success: function (response) {
+                    if (response.success) {
+                        areas = response.data.areas || [];
+                        users = response.data.users || [];
+                        inspectTypes = response.data.inspectType || [];
+
+                        // 填入區域下拉選項
+                        populateAreaDropdown();
+                        populateInspectTypes();
+
+                        showAlert('success', '基礎資料載入成功');
+                        console.log({users});
+                        console.log({areas});
+                        console.log({inspectTypes});
+                    } else {
+                        showAlert('error', '載入基礎資料失敗: ' + response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('載入基礎資料錯誤:', error);
+                    showAlert('error', '載入基礎資料時發生錯誤');
+                },
+                complete: function() {
+                    showLoading(false);
+                }
+            });
+        }
+
+        // 填入區域下拉選項
+        function populateAreaDropdown() {
+            const areaSelect = document.getElementById('defaultArea');
+
+            // 清空現有選項
+            areaSelect.innerHTML = '<option value="">請選擇區域</option>';
+
+            areas.forEach(area => {
+                const option = document.createElement('option');
+                option.value = area;
+                option.textContent = `${area}`;
+                areaSelect.appendChild(option);
+            });
+        }
+
+        // 填入檢測類型
+        function populateInspectTypes() {
+            const batchTypeSelect = document.getElementById('batchType');
+            batchTypeSelect.innerHTML = '';
+
+            inspectTypes.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type.eventType;
+                option.textContent = type.eventTypeName;
+                batchTypeSelect.appendChild(option);
+            });
+        }
+
+        // 渲染表格
+        function renderTable() {
+            const tbody = document.getElementById('scheduleTableBody');
+            tbody.innerHTML = '';
+
+            scheduleData.forEach((item, index) => {
+                const row = tbody.insertRow();
+                console.log({item})
+                row.innerHTML = `
+                    <td class="text-center">
+                        <input type="checkbox" class="row-checkbox" />
+                    </td>
+                    <td>
+                      <div class="user-autocomplete">
+                        <input type="text"
+                          value="${formatUserCell(item)}"
+                          onchange="onUserFieldChange(${index}, this.value)"
+                          oninput="handleUserInput(this, ${index})"
+                          onfocus="showUserDropdown(this, ${index})"
+                          onblur="hideUserDropdown(this, ${index})"
+                          onkeydown="handleAutocompleteKeydown(event, this, ${index})"
+                          data-row="${index}"
+                         data-col="1"
+                          class="form-control form-control-sm"
+                          placeholder="工號" />
+                        <div class="autocomplete-dropdown" id="userDropdown_${index}"></div>
+                      </div>
+                    </td>
+
+                    <td>
+                      <select onchange="updateSchedule(${index}, 'area', this.value)"
+                              data-row="${index}"
+                              data-col="2"
+                              class="form-select form-select-sm">
+                        <option value="">選擇</option>
+                        ${areas.map(area =>
+                          `<option value="${area}" ${item.area == area ? 'selected' : ''}>${area}</option>`
+                        ).join('')}
+                      </select>
+                    </td>
+
+                    <td>
+                      <select onchange="updateSchedule(${index}, 'eventType', this.value)"
+                              data-row="${index}"
+                              data-col="3"
+                              class="form-select form-select-sm">
+                        ${inspectTypes.map(type =>
+                          `<option value="${type.eventType}" ${item.eventType === type.eventType ? 'selected' : ''}>${type.eventTypeName}</option>`
+                        ).join('')}
+                      </select>
+                    </td>
+
+                    <td>
+                      <input type="text"
+                             value="${item.eventDetail}"
+                             onchange="updateSchedule(${index}, 'eventDetail', this.value)"
+                             data-row="${index}" 
+                             data-col="4"
+                             class="form-control form-control-sm"
+                             placeholder="詳細內容" />
+                    </td>
+
+                    <td>
+                      <input type="date"
+                             value="${item.startDate}"
+                             onchange="updateSchedule(${index}, 'startDate', this.value)"
+                             data-row="${index}" 
+                             data-col="5"
+                             class="form-control form-control-sm" />
+                    </td>
+
+                    <td>
+                      <input type="time"
+                             value="${item.startTime}"
+                             onchange="updateSchedule(${index}, 'startTime', this.value)"
+                             data-row="${index}" 
+                             data-col="6"
+                             class="form-control form-control-sm" />
+                    </td>
+
+                    <td>
+                      <input type="date"
+                             value="${item.endDate}"
+                             onchange="updateSchedule(${index}, 'endDate', this.value)"
+                             data-row="${index}" 
+                             data-col="7"
+                             class="form-control form-control-sm" />
+                    </td>
+
+                    <td>
+                      <input type="time"
+                             value="${item.endTime}"
+                             onchange="updateSchedule(${index}, 'endTime', this.value)"
+                             data-row="${index}" 
+                             data-col="8"
+                             class="form-control form-control-sm" />
+                    </td>
+                `;
+            });
+        }
+
+        // 更新排班資料
+        function updateSchedule(index, field, value) {
+            console.log("updateSchedule",{field}, {value})
+            if (scheduleData[index]) {
+                scheduleData[index][field] = value;
+
+                if (field === 'eventType') {
+                  const selectType = inspectTypes.find(t => t.eventType === value);
+                  scheduleData[index].eventTypeName = selectType ? (selectType.eventTypeName || '') : '';
+                }
+
+                // 當結束日期空白時，自動同步開始日期
+                if (field === 'startDate' && !scheduleData[index].endDate) {
+                    scheduleData[index].endDate = value;
+                    renderTable();
+                }
+            }
+        }
+
+        // 使用者輸入處理 (自動完成)
+        function handleUserInput(input, rowIndex) {
+          const value = input.value.trim();
+          if (value.length >= 1) {
+            showUserSuggestions(input, rowIndex, value);
+          } else {
+            hideUserDropdown(input, rowIndex);
+          }
+        }
+
+        function formatUserCell(item) {
+          if (!item?.userNo) return '';
+          const name = item.userName ?? '';
+          const dept = item.departmentName ?? '';
+          return [item.userNo, name, dept].filter(Boolean).join('-');
+        }
+
+        // 
+        function parseUserInput(str) {
+          if (!str) return { userNo: '', userName: '' };
+          const parts = str.split('-').map(s => s.trim()).filter(Boolean);
+          const userNo = parts[0] ?? '';
+          const userName = parts[1] ?? '';
+          return { userNo, userName };
+        }
+
+
+        function onUserFieldChange(rowIndex, raw) {
+          const { userNo, userName } = parseUserInput(raw);
+
+          if (!userNo) {
+            updateSchedule(rowIndex, 'userNo', '');
+            updateSchedule(rowIndex, 'userName', '');
+            updateSchedule(rowIndex, 'departmentName', '');
+            updateSchedule(rowIndex, 'fatherDepartmentName', '');
+            renderTable();
+            return;
+          }
+
+          // 以 userNo 優先查系統使用者
+          const u = users.find(x => x.userNo.toLowerCase() === userNo.toLowerCase());
+
+          if (u) {
+            // 系統有 → 用系統資料覆蓋
+            updateSchedule(rowIndex, 'userNo', u.userNo);
+            updateSchedule(rowIndex, 'userName', u.userName);
+            updateSchedule(rowIndex, 'departmentName', u.departmentName);
+            updateSchedule(rowIndex, 'fatherDepartmentName', u.fatherDepartmentName);
+          } else {
+            // 系統沒有 → 只記住手動輸入的 userNo/userName，其它清空
+            updateSchedule(rowIndex, 'userNo', userNo);
+            updateSchedule(rowIndex, 'userName', userName || '');
+            updateSchedule(rowIndex, 'departmentName', '');
+            updateSchedule(rowIndex, 'fatherDepartmentName', '');
+          }
+
+          renderTable();
+        }
+
+        // 顯示使用者建議清單
+        function showUserSuggestions(input, rowIndex, searchValue) {
+          const dropdown = document.getElementById(`userDropdown_${rowIndex}`);
+          if (!dropdown) return;
+
+          const kw = searchValue.toLowerCase();
+          const filteredUsers = users.filter(user =>
+            String(user.userNo || '').toLowerCase().includes(kw) ||
+            String(user.userName || '').toLowerCase().includes(kw) ||
+            String(user.departmentName || '').toLowerCase().includes(kw)
+          ).slice(0, 10);
+
+          if (filteredUsers.length > 0) {
+            dropdown.innerHTML = filteredUsers.map((user, i) =>
+              `<div class="autocomplete-item"
+                    onclick="selectUser(${rowIndex}, '${user.userNo}')"
+                    data-index="${i}">
+                  ${user.userNo}-${user.userName}-${user.departmentName ?? ''}
+               </div>`
+            ).join('');
+            dropdown.style.display = 'block';
+            selectedAutocompleteIndex = -1;
+          } else {
+            dropdown.style.display = 'none';
+          }
+        }
+
+        // 選擇使用者
+        function selectUser(rowIndex, userNo) {
+          const u = users.find(user => user.userNo === userNo);
+          if (!u) return;
+
+          updateSchedule(rowIndex, 'userNo', u.userNo);
+          updateSchedule(rowIndex, 'userName', u.userName);
+          updateSchedule(rowIndex, 'departmentName', u.departmentName);
+          updateSchedule(rowIndex, 'fatherDepartmentName', u.fatherDepartmentName);
+
+          renderTable();
+        }
+
+        // 處理自動完成鍵盤事件
+        function handleAutocompleteKeydown(event, input, rowIndex) {
+            const dropdown = document.getElementById(`userDropdown_${rowIndex}`);
+            if (!dropdown || dropdown.style.display === 'none') return;
+
+            const items = dropdown.querySelectorAll('.autocomplete-item');
+
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                selectedAutocompleteIndex = Math.min(selectedAutocompleteIndex + 1, items.length - 1);
+                updateAutocompleteSelection(items);
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                selectedAutocompleteIndex = Math.max(selectedAutocompleteIndex - 1, -1);
+                updateAutocompleteSelection(items);
+            } else if ((event.key === 'Enter' || event.key === "Tab") && selectedAutocompleteIndex >= 0) {
+                event.preventDefault();
+                items[selectedAutocompleteIndex].click();
+            } else if (event.key === 'Escape') {
+                dropdown.style.display = 'none';
+                selectedAutocompleteIndex = -1;
+            }
+        }
+
+        // 更新自動完成選擇樣式
+        function updateAutocompleteSelection(items) {
+            items.forEach((item, index) => {
+                item.classList.toggle('selected', index === selectedAutocompleteIndex);
+            });
+        }
+
+        // 顯示使用者下拉選單
+        function showUserDropdown(input, rowIndex) {
+            setTimeout(() => showUserSuggestions(input, rowIndex, input.value), 100);
+        }
+
+        // 隱藏使用者下拉選單
+        function hideUserDropdown(input, rowIndex) {
+            setTimeout(() => {
+                const dropdown = document.getElementById(`userDropdown_${rowIndex}`);
+                if (dropdown) {
+                    dropdown.style.display = 'none';
+                    selectedAutocompleteIndex = -1;
+                }
+            }, 200);
+        }
+
+        // 新增排班列
+        function addRow() {
+            const defaultDate = document.getElementById('defaultDate').value || new Date().toISOString().split('T')[0];
+            const defaultArea = document.getElementById('defaultArea').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const eventType = inspectTypes.length > 0 ? inspectTypes[0].eventType : '';
+            let eventTypeName = "";
+            console.log({eventType},{inspectTypes})
+            if (!!eventType){
+                const selectType = inspectTypes.find(t => t.eventType === eventType);
+                console.log({selectType})
+                eventTypeName = selectType ? (selectType.eventTypeName || '') : '';
+            }
+
+            const newSchedule = {
+                userNo: '',
+                userName: '',
+                departmentName: '',
+                fatherDepartmentName: '',
+                eventType: eventType,
+                eventTypeName : eventTypeName,
+                eventDetail: '',
+                startDate: defaultDate,
+                startTime: startTime,
+                endDate: defaultDate,
+                endTime: endTime,
+                area: defaultArea,
+                isActive: true
+            };
+
+            scheduleData.push(newSchedule);
+            renderTable();
+
+            // 聚焦到新行第一個輸入框
+            setTimeout(() => {
+                const newRowIndex = scheduleData.length - 1;
+                const input = document.querySelector(`[data-row="${newRowIndex}"][data-col="1"]`);
+                if (input) input.focus();
+            }, 100);
+        }
+
+        // 刪除選取的排班
+        function deleteSelected() {
+            const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showAlert('warning', '請先選取要刪除的項目');
+                return;
+            }
+
+            if (!confirm(`確定要刪除選取的 ${checkboxes.length} 項排班嗎？`)) {
+                return;
+            }
+
+            const indices = [];
+            checkboxes.forEach(checkbox => {
+                const row = checkbox.closest('tr').rowIndex - 1;
+                indices.push(row);
+            });
+
+            // 從後往前刪除，避免索引錯亂
+            indices.sort((a, b) => b - a).forEach(index => {
+                scheduleData.splice(index, 1);
+            });
+
+            renderTable();
+            document.getElementById('selectAll').checked = false;
+            showAlert('success', `成功刪除 ${indices.length} 項排班`);
+        }
+
+        // 刪除單一排班列
+        function deleteRow(index) {
+            if (confirm('確定要刪除這筆排班嗎？')) {
+                scheduleData.splice(index, 1);
+                renderTable();
+                showAlert('success', '已刪除排班');
+            }
+        }
+
+        // 批量新增排班
+        function batchAdd() {
+            const userNo = document.getElementById('batchUser').value.trim();
+            const userName = document.getElementById('batchName').value.trim();
+            const eventType = document.getElementById('batchType').value;
+            let eventTypeName = "";
+            if (!!eventType){
+                const selectType = inspectTypes.find(t => t.eventType === value);
+                console.log({selectType})
+                eventTypeName = selectType ? (selectType.eventTypeName || '') : '';
+            }
+            const eventDetail = document.getElementById('batchDetail').value.trim();
+            const days = parseInt(document.getElementById('batchDays').value);
+            const baseDate = new Date(document.getElementById('defaultDate').value);
+            const area = document.getElementById('defaultArea').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+
+            if (!userNo || !userName || !eventDetail || !days || !area) {
+                showAlert('error', '請填寫所有必要欄位（工號、姓名、詳細內容、天數、區域）');
+                return;
+            }
+
+            if (days > 30) {
+                showAlert('error', '批量新增天數不能超過30天');
+                return;
+            }
+
+            // 檢查使用者是否存在
+            const userExists = users.some(user => user.userNo === userNo);
+            if (!userExists) {
+                showAlert('warning', `工號 ${userNo} 不存在於系統中，請確認後再試`);
+            }
+
+            for (let i = 0; i < days; i++) {
+                const date = new Date(baseDate);
+                date.setDate(baseDate.getDate() + i);
+                const dateStr = date.toISOString().split('T')[0];
+
+                const u = users.find(x => x.userNo.toLowerCase() === userNo.toLowerCase());
+
+                scheduleData.push({
+                    userNo: u ? u.userNo : userNo,
+                    userName: u ? u.userName : userName,
+                    departmentName: u ? (u.departmentName || '') : '',
+                    fatherDepartmentName: u ? (u.fatherDepartmentName || '') : '',
+                    eventType: eventType,
+                    eventTypeName: eventTypeName,
+                    eventDetail: eventDetail + (days > 1 ? ` (第${i+1}天)` : ''),
+                    startDate: dateStr,
+                    startTime: startTime,
+                    endDate: dateStr,
+                    endTime: endTime,
+                    area: area,
+                    isActive: true
+                });
+            }
+
+            renderTable();
+
+            // 清空批量輸入欄位
+            document.getElementById('batchUser').value = '';
+            document.getElementById('batchName').value = '';
+            document.getElementById('batchDetail').value = '';
+            document.getElementById('batchDays').value = '1';
+
+            showAlert('success', `成功批量新增 ${days} 筆排班`);
+        }
+
+        function saveAll() {
+            if (scheduleData.length === 0) {
+                showAlert('warning', '沒有資料可以儲存');
+                return;
+            }
+    
+            // 驗證資料完整性
+            const invalidRows = [];
+            scheduleData.forEach((item, index) => {
+                if (!item.userNo || !item.userName || !item.startDate || !item.area) {
+                    invalidRows.push(index + 1);
+                }
+            });
+    
+            if (invalidRows.length > 0) {
+                showAlert('error', `第 ${invalidRows.join(', ')} 列資料不完整，請檢查`);
+                return;
+            }
+    
+            showLoading(true);
+    
+            // 轉換資料格式
+            const saveData = scheduleData.map(item => ({
+                UserNo: item.userNo,
+                UserName: item.userName,
+                DepartmentName: item.departmentName,
+                FatherDepartmentName: item.fatherDepartmentName,
+                EventType: item.eventType,
+                EventTypeName : item.eventTypeName,
+                EventDetail: item.eventDetail,
+                StartDateTime: `${item.startDate}T${item.startTime}:00`, // ← 用 T
+                EndDateTime:   `${item.endDate}T${item.endTime}:00`,     // ← 用 T
+                Area: item.area,
+                IsActive: item.isActive
+            }));
+    
+            console.log('發送資料:', saveData);
+    
+            $.ajax({
+                url: '@Url.Action("SaveSchedules", "Schedule")',
+                type: 'POST',
+                contentType: 'application/json; charset=utf-8',
+                data: JSON.stringify(saveData),
+                dataType: 'json',
+                success: function (response) {
+                    console.log('後端回應:', response);
+                    if (response.success) {
+                        showAlert('success', response.message);
+                    } else {
+                        showAlert('error', '儲存失敗: ' + response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('AJAX 錯誤:', {xhr, status, error});
+                    console.error('回應內容:', xhr.responseText);
+                    showAlert('error', '儲存時發生系統錯誤');
+                },
+                complete: function() {
+                    showLoading(false);
+                }
+            });
+        }
+
+        // 清空所有排班
+        function clearAll() {
+            if (scheduleData.length === 0) {
+                showAlert('info', '目前沒有資料');
+                return;
+            }
+
+            if (confirm(`確定要清空所有 ${scheduleData.length} 筆排班資料嗎？`)) {
+                scheduleData = [];
+                renderTable();
+                document.getElementById('selectAll').checked = false;
+                showAlert('success', '已清空所有排班資料');
+            }
+        }
+
+        // 全選/取消全選
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+        }
+
+        // 載入中狀態
+        function showLoading(show) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (show) {
+                overlay.classList.remove('d-none');
+            } else {
+                overlay.classList.add('d-none');
+            }
+        }
+
+        // 顯示提示訊息
+        function showAlert(type, message) {
+            // 移除現有的提示
+            const existingAlert = document.querySelector('.alert-custom');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+
+            // 建立新的提示
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show alert-custom`;
+            alertDiv.innerHTML = `
+                <i class="fas fa-${getAlertIcon(type)} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+            `;
+
+            document.body.appendChild(alertDiv);
+
+            // 3秒後自動移除
+            setTimeout(() => {
+                if (alertDiv.parentElement) {
+                    alertDiv.remove();
+                }
+            }, 3000);
+        }
+
+        // 取得提示圖示
+        function getAlertIcon(type) {
+            const icons = {
+                'success': 'check-circle',
+                'error': 'exclamation-triangle',
+                'warning': 'exclamation-circle',
+                'info': 'info-circle'
+            };
+            return icons[type] || 'info-circle';
+        }
+
+        // 鍵盤導航
+        document.addEventListener('keydown', function(e) {
+            const el = e.target;
+            if (!el.dataset.row || !el.dataset.col) return;
+
+            const row = parseInt(el.dataset.row);
+            const col = parseInt(el.dataset.col);
+
+            if (e.key === 'Enter' && !el.classList.contains('autocomplete-active')) {
+                e.preventDefault();
+                let nextCol = col + 1;
+                let nextRow = row;
+
+                // 跳到下一個欄位
+                if (nextCol > 8) {
+                    nextCol = 1;
+                    nextRow = row + 1;
+                    if (nextRow >= scheduleData.length) {
+                        addRow();
+                        return;
+                    }
+                }
+
+                const nextElement = document.querySelector(`[data-row="${nextRow}"][data-col="${nextCol}"]`);
+                if (nextElement) {
+                    nextElement.focus();
+                }
+            } else if (e.key === 'ArrowDown' && !el.classList.contains('autocomplete-active')) {
+                e.preventDefault();
+                const nextElement = document.querySelector(`[data-row="${row + 1}"][data-col="${col}"]`);
+                if (nextElement) {
+                    nextElement.focus();
+                }
+            } else if (e.key === 'ArrowUp' && !el.classList.contains('autocomplete-active')) {
+                e.preventDefault();
+                const nextElement = document.querySelector(`[data-row="${row - 1}"][data-col="${col}"]`);
+                if (nextElement) {
+                    nextElement.focus();
+                }
+            }
+        });
+
+        // 點擊其他地方時隱藏所有下拉選單
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.user-autocomplete')) {
+                document.querySelectorAll('.autocomplete-dropdown').forEach(dropdown => {
+                    dropdown.style.display = 'none';
+                });
+                selectedAutocompleteIndex = -1;
+            }
+        });
+    </script>
+}

@@ -16,11 +16,17 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-size: 16px;
         }
 
         html, body {
             height: 100%;
             font-family: "Microsoft JhengHei", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        }
+
+        p{
+            margin : 0;
+            padding: 2px 0 ;
         }
 
         .navbar * {
@@ -49,56 +55,130 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg px-2" style="background-color:#0071b2 !important; height:46px">
-        <div class="" style="height:100%; width:100%; display:flex; align-items:center; justify-content:space-between">
-            <div style="display:flex; height:100%; width:fit-content; padding:0 10px; ">
-                <img src="~/images/logo.png" style="height:100%;" alt="Logo" onclick={} />
+    <nav class="navbar navbar-expand-lg px-2" style="background-color:#0071b2 !important; height:46px; flex-wrap:initial">
+        <div class="container-fluid" style="height:100%;">
+            <!-- Logo 區域 -->
+            <div class="d-flex align-items-center" style="height:100%;">
+                <img src="~/images/logo.png" style="height:100%; padding:0 10px;" alt="Logo" onclick={} />
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarbtn"
                         aria-controls="navbarbtn" aria-expanded="false" aria-label="切換導航">
                     <span class="navbar-toggler-icon"></span>
                 </button>
             </div>
 
-            <!-- 手機版登出按鈕 - 始終顯示 -->
-            <div class="d-flex align-items-center">
-                <!-- 登出按鈕 - 始終顯示 -->
-                <a class="text-white" href="@Url.Action("Logout", "Account")" style="padding: 0;">
-                    <span style="color:white; text-decoration:none">登出</span>
-                </a>
+            <!-- 手機版右側登入狀態 - 只在小螢幕顯示 -->
+            <div class="d-lg-none">
+                @if (!string.IsNullOrEmpty(ViewContext.HttpContext.Session.GetString("UserName")))
+                {
+                    <!-- 手機版登入狀態下拉選單 -->
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle text-white d-flex align-items-center" href="#"
+                           id="mobileUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-user me-1"></i>
+                            <span>@ViewContext.HttpContext.Session.GetString("UserName")</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="mobileUserDropdown">
+                            @* <li>
+                                <a class="dropdown-item" href="@Url.Action("CheckLoginStatus", "Account")">
+                                    <i class="fa-solid fa-user me-2"></i>個人資料
+                                </a>
+                            </li> *@
+                            @* <li><hr class="dropdown-divider"></li> *@
+                            <li>
+                                <a class="dropdown-item" href="@Url.Action("Logout", "Account")">
+                                    <i class="fa-solid fa-right-from-bracket me-2"></i>登出
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                }
+                else
+                {
+                    <!-- 手機版未登入狀態 -->
+                    <a class="nav-link text-white" href="@Url.Action("CheckLoginStatus", "Account")">
+                        <i class="fa-solid fa-user"></i>
+                        <span>未登入</span>
+                    </a>
+                }
             </div>
 
-            <!-- 原本的摺疊選單 - 桌面版使用 -->
-            <div class="collapse navbar-collapse d-none d-lg-block" id="navbarbtn">
-                <ul class="navbar-nav">
+            <!-- 摺疊選單內容 -->
+            <div class="collapse navbar-collapse" id="navbarbtn">
+                <!-- 左側選單項目 -->
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle text-white" href="#" id="navbarDropdown" role="button"
                            data-bs-toggle="dropdown" aria-expanded="false">
                             項目
                         </a>
-                        <ul class="dropdown-menu dropdown-menu" aria-labelledby="navbarDropdown">
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="@Url.Action("Index", "Inspection")">巡檢系統</a></li>
+                            <li><a class="dropdown-item" href="@Url.Action("Edit", "Schedule")">班表建立</a></li>
                         </ul>
                     </li>
                 </ul>
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link text-white" href="@Url.Action("CheckLoginStatus", "Account")">
-                            <i class="fa-solid fa-user"></i>
-                            @if (!string.IsNullOrEmpty(ViewContext.HttpContext.Session.GetString("UserName")))
-                            {
+
+                <!-- 右側使用者資訊 - 只在大螢幕顯示 -->
+                <ul class="navbar-nav d-none d-lg-flex">
+                    @if (!string.IsNullOrEmpty(ViewContext.HttpContext.Session.GetString("UserName")))
+                    {
+                        <!-- 桌面版登入狀態下拉選單 -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-white" href="#" id="desktopUserDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-user me-1"></i>
                                 <span>@ViewContext.HttpContext.Session.GetString("UserName")</span>
-                            }
-                            else
-                            {
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="desktopUserDropdown">
+                                @* <li>
+                                    <a class="dropdown-item" href="@Url.Action("CheckLoginStatus", "Account")">
+                                        <i class="fa-solid fa-user me-2"></i>個人資料
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li> *@
+                                <li>
+                                    <a class="dropdown-item" href="@Url.Action("Logout", "Account")">
+                                        <i class="fa-solid fa-right-from-bracket me-2"></i>登出
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    }
+                    else
+                    {
+                        <!-- 桌面版未登入狀態 -->
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="@Url.Action("CheckLoginStatus", "Account")">
+                                <i class="fa-solid fa-user me-1"></i>
                                 <span>未登入</span>
-                            }
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-white" href="@Url.Action("Logout", "Account")">
-                            <i class="fa-solid fa-right-from-bracket"></i>
-                        </a>
-                    </li>
+                            </a>
+                        </li>
+                    }
+                </ul>
+
+                <!-- 手機版摺疊選單內的使用者資訊 -->
+                <ul class="navbar-nav d-lg-none mt-2">
+                    @if (!string.IsNullOrEmpty(ViewContext.HttpContext.Session.GetString("UserName")))
+                    {
+                        @* <li class="nav-item">
+                            <a class="nav-link text-white" href="@Url.Action("CheckLoginStatus", "Account")">
+                                <i class="fa-solid fa-user me-2"></i>個人資料
+                            </a>
+                        </li> *@
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="@Url.Action("Logout", "Account")">
+                                <i class="fa-solid fa-right-from-bracket me-2"></i>登出
+                            </a>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="@Url.Action("CheckLoginStatus", "Account")">
+                                <i class="fa-solid fa-user me-2"></i>登入
+                            </a>
+                        </li>
+                    }
                 </ul>
             </div>
         </div>

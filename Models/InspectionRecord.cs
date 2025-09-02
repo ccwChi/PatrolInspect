@@ -24,12 +24,15 @@ namespace PatrolInspect.Models
     {
         public string UserNo { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;
-        public List<string> AssignedAreas { get; set; } = new();
-        public List<InspectionDeviceInfo> DevicesToInspect { get; set; } = new();
+        public string Department { get; set; } = string.Empty;
+        public List<TimePeriod> TimePeriods { get; set; } = new List<TimePeriod>(); // 新增
         public int TotalDevices { get; set; }
         public int RunningDevices { get; set; }
         public int CompletedInspections { get; set; }
-        public List<string> Areas { get; set; } = new();
+
+        // 為了向後相容，保留這些屬性
+        public List<string> AssignedAreas { get; set; } = new List<string>();
+        public List<InspectionDeviceInfo> DevicesToInspect { get; set; } = new List<InspectionDeviceInfo>();
     }
 
     /// <summary>
@@ -49,13 +52,12 @@ namespace PatrolInspect.Models
     /// </summary>
     public class ScheduleEventDto
     {
-        [Required]
+
         public string UserNo { get; set; } = string.Empty;
-        [Required]
         public string UserName { get; set; } = string.Empty;
-        [Required]
+        public string DepartmentName { get; set; } = string.Empty;
         public string EventType { get; set; } = string.Empty;
-        [Required]
+        public string EventTypeName { get; set; } = string.Empty;
         public string EventDetail { get; set; } = string.Empty;
         public string StartDate { get; set; } = string.Empty;
         public string StartTime { get; set; } = string.Empty;
@@ -63,7 +65,7 @@ namespace PatrolInspect.Models
         public string EndTime { get; set; } = string.Empty;
         public DateTime StartDateTime { get; set; }
         public DateTime EndDateTime { get; set; }
-        public string Area { get; set; }
+        public string Area { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
         public string? CreateBy { get; set; }
     }
@@ -75,5 +77,20 @@ namespace PatrolInspect.Models
         public int OldRecordId { get; set; }
         public string? InspectType { get; set; }
         public string? Source { get; set; }
+    }
+
+    public class TimePeriod
+    {
+        public string StartTime { get; set; } = string.Empty;
+        public string EndTime { get; set; } = string.Empty;
+        public DateTime StartDateTime { get; set; }
+        public DateTime EndDateTime { get; set; }
+        public List<string> Areas { get; set; } = new List<string>();
+        public string? EventType { get; set; }
+        public string? EventTypeName { get; set; }
+        public string? EventDetail { get; set; }
+        public bool IsCurrent { get; set; }
+        public bool IsPast { get; set; }
+        public List<InspectionDeviceInfo> DevicesToInspect { get; set; } = new List<InspectionDeviceInfo>();
     }
 }

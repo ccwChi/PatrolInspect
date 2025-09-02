@@ -7,49 +7,312 @@
 
 @section css {
     <style>
-        .section {
-            border: 1px solid #ccc;
+        .header {
             padding: 10px;
+            border: 1px solid #ccc;
             margin-bottom: 10px;
+            background: #f5f5f5;
         }
 
-        .stats {
-            display: flex;
-            gap: 10px;
+        .current-time {
+            font-size:12px;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .section {
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+            background: #fff;
+        }
+
+        .section-title {
+            background: #e0e0e0;
+            padding: 8px 10px;
+            margin: 0;
+            font-weight: bold;
+            border-bottom: 1px solid #ccc;
+            font-size:16px;
+        }
+
+        .section-content {
+            padding: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 8px;
             margin-bottom: 10px;
         }
 
         .stat-box {
-            flex: 1;
             text-align: center;
-            padding: 10px;
-            border: 1px solid #ccc;
+            padding: 8px;
+            border: 1px solid #ddd;
+            background: #f9f9f9;
         }
 
-        .device-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(auto, 1fr));
-            gap: 10px;
+        .stat-number {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .stat-label {
+            color: #666;
+        }
+
+        /* .control-buttons {
+            margin-bottom: 10px;
+        } */
+
+            .control-buttons button {
+                padding: 6px 10px;
+                margin-right: 5px;
+                margin-bottom: 5px;
+                border: 1px solid #ccc;
+                background: #f0f0f0;
+                cursor: pointer;
+            }
+
+                .control-buttons button:hover {
+                    background: #e0e0e0;
+                }
+
+        .nfc-status {
+            padding: 8px;
+            margin: 8px 0;
+            border: 1px solid #ccc;
+            display: none;
+        }
+
+        .nfc-success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .nfc-error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .nfc-warning {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+        }
+
+        .nfc-info {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+        }
+
+        .nfc-log {
+            background: #f8f8f8;
+            border: 1px solid #ccc;
+            padding: 8px;
+            height: 120px;
+            overflow-y: auto;
+            font-family: monospace;
+        }
+
+        .log-entry {
+            margin-bottom: 2px;
+            word-break: break-all;
+        }
+
+        /* 時段 Accordion 樣式 */
+        .time-periods {
+            margin-bottom: 10px;
+        }
+
+        .time-period {
+            border: 1px solid #ddd;
+            margin-bottom: 3px;
+            background: #fff;
+        }
+
+            .time-period.inactive {
+                background: #f8f8f8;
+                opacity: 0.7;
+            }
+
+            .time-period.current {
+                border: 2px solid #0071b2;
+                background: #f8fff8;
+            }
+
+        .period-header {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+        }
+
+            .period-header:hover {
+                background: #f0f0f0;
+            }
+
+        .period-time {
+            font-weight: bold;
+        }
+
+        .period-areas {
+            color: #666;
+        }
+
+        .period-status {
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .status-current {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-upcoming {
+            background: #ffc107;
+            color: black;
+        }
+
+        .status-completed {
+            background: #6c757d;
+            color: white;
+        }
+
+        .accordion-icon {
+            transition: transform 0.3s ease;
+        }
+
+            .accordion-icon.expanded {
+                transform: rotate(180deg);
+            }
+
+        .period-content {
+            display: none;
+            padding: 10px;
+            background: #fff;
+        }
+
+            .period-content.expanded {
+                display: block;
+            }
+
+        .period-info {
+            background: #f0f8ff;
+            border: 1px solid #ccc;
+            padding: 8px;
+            margin-bottom: 10px;
         }
 
         .device-card {
-            border: 1px solid #ccc;
-            padding: 10px;
-            background: white;
+            border: 1px solid #ddd;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: #fff;
         }
 
+            .device-card.needs-inspection {
+                border-left: 3px solid #dc3545;
+                background: #ffeeee;
+            }
+
+            .device-card.completed {
+                border-left: 3px solid #28a745;
+                background: #eeffee;
+            }
+
+            .device-card.not-running {
+                border-left: 3px solid #6c757d;
+                background: #f5f5f5;
+                color: #666;
+            }
+
         .device-header {
-            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 5px;
         }
 
+        .device-id {
+            font-weight: bold;
+        }
+
+        .device-status {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .status-run {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-idle {
+            background: #ffc107;
+            color: black;
+        }
+
+        .status-stop {
+            background: #dc3545;
+            color: white;
+        }
+
+        .status-unknown {
+            background: #6c757d;
+            color: white;
+        }
+
+        .device-name {
+            color: #777;
+            margin-bottom: 4px;
+        }
+
         .device-info {
-            margin-bottom: 3px;
+            color: #666;
+            margin-bottom: 2px;
+        }
+
+        .inspection-badge {
+            display: inline-block;
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .needs-inspection-badge {
+            background: #dc3545;
+            color: white;
+        }
+
+        .completed-badge {
+            background: #28a745;
+            color: white;
+        }
+
+        .not-required-badge {
+            background: #e9ecef;
+            color: #6c757d;
+        }
+
+        .no-devices {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+
         }
 
         .loading {
             text-align: center;
             padding: 20px;
+            display: none;
+
         }
 
         .error {
@@ -57,124 +320,132 @@
             padding: 10px;
             background: #ffe8e8;
             border: 1px solid red;
+            display: none;
         }
 
-        .raw-data {
-            border: 1px solid #ccc;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 300px;
-            overflow-y: auto;
+        /* Modal 樣式 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
         }
 
-        button {
-            padding: 5px 10px;
-            margin: 5px 0;
-            border: 1px solid #ccc;
+        .modal-content {
             background: white;
-            cursor: pointer;
+            padding: 20px;
+            border: 2px solid #333;
+            max-width: 300px;
+            text-align: center;
+            margin: 10px;
         }
 
-            button:hover {
-                background: #f0f0f0;
+            .modal-content h3 {
+                margin-bottom: 10px;
+                color: #333;
+
             }
 
-            button:disabled {
-                background: #f8f8f8;
-                color: #999;
-                cursor: not-allowed;
+            .modal-content p {
+                margin-bottom: 8px;
+
             }
 
-        /* NFC相關樣式 */
-        .nfc-status {
-            padding: 10px;
-            margin: 5px 0;
-            border: 1px solid #ccc;
-        }
-
-        .nfc-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .nfc-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .nfc-warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
-
-        .nfc-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-
-        .nfc-log {
-            background: #f8f9fa;
-            border: 1px solid #ccc;
-            padding: 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 12px;
-        }
-
-        .log-entry {
-            margin-bottom: 3px;
-            padding: 2px 5px;
-        }
-
-        .log-info { color: #0c5460; }
-        .log-success { color: #155724; }
-        .log-warning { color: #856404; }
-        .log-error { color: #721c24; }
+            .modal-content button {
+                padding: 8px 15px;
+                background: #333;
+                color: white;
+                border: none;
+                cursor: pointer;
+                margin-top: 10px;
+            }
     </style>
 }
 
 <div class="container">
-    <span id="userName">@ViewBag.UserName</span> (@ViewBag.UserNo)
+    <!-- 使用者資訊 -->
+    <div class="header">
+        <div class="">
+            <strong>@ViewBag.UserName (@ViewBag.UserNo)</strong>
+            <div style="color: #666;">@ViewBag.DepartmentName - @ViewBag.TitleName</div>
+            <div class="current-time" id="currentTime">@ViewBag.CurrentTime</div>
+        </div>
+    </div>
 
+    <!-- 統計資訊 -->
     <div class="section">
-        <h3>控制面板</h3>
-        <button onclick="loadTodayInspection()">載入今日巡檢任務</button>
-        <button onclick="refreshDeviceStatus()">刷新機台狀態</button>
-        <button onclick="toggleRawData()">顯示/隱藏原始資料</button>
+        <h3 class="section-title">目前時段統計</h3>
+        <div class="section-content">
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-number" id="totalDevices">-</div>
+                    <div class="stat-label">總機台</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="runningDevices">-</div>
+                    <div class="stat-label">運行中</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="completedInspections">-</div>
+                    <div class="stat-label">已巡檢</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="pendingInspections">-</div>
+                    <div class="stat-label">待巡檢</div>
+                </div>
+            </div>
+
+            <div class="control-buttons">
+                <button onclick="loadTodayInspection()">重新載入</button>
+                <button onclick="refreshDeviceStatus()">刷新狀態</button>
+            </div>
+        </div>
     </div>
 
-    <!-- NFC狀態區域 -->
-    <div id="nfcSection" class="section">
-        <h3>磁卡感應狀態</h3>
-        <div id="nfcStatus" class="nfc-status" style="display: none;"></div>
-        <button onclick="manualStartNFC()">重新啟動感應模式</button>
-        <button onclick="stopNFC()">停止感應功能</button>
-        <button onclick="clearNFCLog()">清除日誌</button>
-        
-        <h4>感應模式日誌</h4>
-        <div id="nfcLog" class="nfc-log"></div>
+    <!-- 載入/錯誤狀態 -->
+    <div id="loading" class="loading">載入中...</div>
+    <div id="error" class="error"></div>
+
+    <!-- 時段排程 Accordion -->
+    <div id="timePeriodsSection" class="section" style="display: none;">
+        <h3 class="section-title">今日排程</h3>
+        <div class="section-content">
+            <div id="timePeriods" class="time-periods"></div>
+        </div>
     </div>
 
-    <div id="loadingDiv" class="loading" style="display: none;">
-        載入中...
+    <!-- NFC 感應 -->
+    <div class="section">
+        <h3 class="section-title">NFC 感應</h3>
+        <div class="section-content">
+            <div id="nfcStatus" class="nfc-status"></div>
+            <div style="margin-bottom: 8px;" class="control-buttons">
+                <button onclick="manualStartNFC()">啟動感應</button>
+                <button onclick="stopNFC()">停止感應</button>
+                @* <button onclick="clearNFCLog()">清除日誌</button> *@
+            </div>
+            @* <div id="nfcLog" class="nfc-log"></div> *@
+        </div>
     </div>
 
-    <div id="errorDiv" class="error" style="display: none;"></div>
-
-    <div id="devicesSection" class="section" style="display: none;">
-        <h3>機台清單</h3>
-        <div id="deviceCards" class="device-cards"></div>
-    </div>
-
-    <div id="rawDataSection" class="section" style="display: none;">
-        <h3>原始JSON資料</h3>
-        <div id="rawData" class="raw-data"></div>
+    <!-- 檢驗開始提示 -->
+    <div id="inspectionModal" class="modal">
+        <div class="modal-content">
+            <h3>檢驗開始</h3>
+            <p><strong id="modalDevice">-</strong></p>
+            <p id="modalTime">-</p>
+            <p>請在機邊電腦完成資料上傳</p>
+            <p style="color: #666;">
+                <span id="countdown">10</span> 秒後自動關閉
+            </p>
+            <button onclick="closeInspectionModal()">確定</button>
+        </div>
     </div>
 </div>
 
@@ -183,331 +454,134 @@
         let inspectionData = null;
         let nfcReader = null;
         let isNFCSupported = false;
+        let timePeriodsData = [];
 
-        $(document).ready(function () {
+        $(document).ready(function() {
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
             initializeNFC();
             loadTodayInspection();
         });
 
-        // 新增日誌函數
+        function updateCurrentTime() {
+            const now = new Date();
+            $('#currentTime').text(now.toLocaleString('zh-TW').replace(/\//g, '-'));
+        }
+
         function addNFCLog(message, type = 'info') {
-            const timestamp = new Date().toLocaleString('zh-TW');
-            const logEntry = `<div class="log-entry log-${type}">[${timestamp}] ${message}</div>`;
-            
-            const logContainer = $('#nfcLog');
-            logContainer.append(logEntry);
-            
-            // 自動滾動到底部
-            logContainer.scrollTop(logContainer[0].scrollHeight);
-            
-            // 限制日誌條數，保留最新的50條
-            const logEntries = logContainer.find('.log-entry');
-            if (logEntries.length > 50) {
-                logEntries.first().remove();
-            }
+            // const timestamp = new Date().toLocaleTimeString('zh-TW');
+            // const logContainer = $('#nfcLog');
+            // const entry = $('<div class="log-entry"></div>').text(`[${timestamp}] ${message}`);
+            // logContainer.append(entry);
+            // logContainer.scrollTop(logContainer[0].scrollHeight);
+
+            // const entries = logContainer.find('.log-entry');
+            // if (entries.length > 20) {
+            //     entries.first().remove();
+            // }
         }
 
         function clearNFCLog() {
             $('#nfcLog').empty();
-            addNFCLog('日誌已清除', 'info');
+            addNFCLog('日誌已清除');
         }
 
-        function loadTodayInspection() {
-            showLoading(true);
-            hideError();
+        function showNFCStatus(message, type) {
+            const statusDiv = $('#nfcStatus');
+            statusDiv.removeClass('nfc-success nfc-error nfc-warning nfc-info');
+            statusDiv.addClass('nfc-' + type);
+            statusDiv.text(message).show();
 
-            $.ajax({
-                url: '@Url.Action("GetTodayInspection", "Inspection")',
-                type: 'GET',
-                dataType: 'json',
-                success: function (response) {
-                    addNFCLog("載入巡檢任務成功", 'success');
-                    showLoading(false);
-
-                    if (response.success) {
-                        inspectionData = response.data;
-                        displayInspectionData(response.data);
-                    } else {
-                        showError(response.message || '載入失敗');
-                    }
-                },
-                error: function (xhr, status, error) {
-                    addNFCLog(`載入巡檢任務失敗: ${xhr.status} ${error}`, 'error');
-                    showLoading(false);
-
-                    let errorMessage = '載入巡檢任務失敗';
-                    if (status === 'timeout') {
-                        errorMessage = '連線超時，請檢查網路連線';
-                    } else if (xhr.status === 500) {
-                        errorMessage = '伺服器錯誤，請聯繫IT部門';
-                    } else if (xhr.status === 404) {
-                        errorMessage = '找不到服務，請聯繫IT部門';
-                    } else if (xhr.status === 401) {
-                        errorMessage = '登入已過期，請重新登入';
-                        setTimeout(() => window.location.href = '@Url.Action("Login", "Account")', 2000);
-                    }
-
-                    showError(errorMessage);
-                }
-            });
-        }
-
-        function refreshDeviceStatus() {
-            showLoading(true);
-            hideError();
-
-            $.ajax({
-                url: '@Url.Action("RefreshDeviceStatus", "Inspection")',
-                type: 'POST',
-                dataType: 'json',
-                success: function (response) {
-                    addNFCLog("刷新機台狀態成功", 'success');
-                    showLoading(false);
-
-                    if (response.success) {
-                        inspectionData = response.data;
-                        displayInspectionData(response.data);
-                    } else {
-                        showError(response.message || '刷新失敗');
-                    }
-                },
-                error: function (xhr, status, error) {
-                    addNFCLog(`刷新機台狀態失敗: ${xhr.status} ${error}`, 'error');
-                    showLoading(false);
-                    showError('刷新機台狀態失敗');
-                }
-            });
-        }
-
-        function displayInspectionData(data) {
-            console.log("displayInspectionData, data", data)
-            // data = {area:['射出一區'], assignedArea:['射出一區'],completedInspections:0,devicesToInspect:[....],runningDevices:1, totalDevices:15, userName:"",userNo:"G02828"  }
-            addNFCLog(`顯示機台資料: 總計${data.totalDevices}台，運行中${data.runningDevices}台`, 'info');
-
-            // 顯示機台卡片
-            const cardsContainer = $('#deviceCards');
-            cardsContainer.empty();
-
-            if (data.devicesToInspect && data.devicesToInspect.length > 0) {
-                data.devicesToInspect
-                    // device like {area:"射出一區",areaId:1,deviceId:"CLF_2200T-01",deviceLocateId:1,deviceName:"2200T-射出機-全立發",isActive:true,nfcCardId:"df:17:71:c6"}
-
-                    // status like {bpM_NO:"", deviceID:"CLF_2200T-01", deviceStatus:"IDLE", startTime:"2025-08-27T09:31:30", wO_ID:"001700030815"}
-                    .filter(item => (item.status?.deviceStatus || '').toLowerCase() === 'run')
-                    .forEach(item => {
-                        const device = item.device || {};
-                        const statusText = item.status?.deviceStatus || 'UNKNOWN';
-
-                        const lastInspectionTime = item.lastInspectionTime
-                            ? new Date(item.lastInspectionTime).toLocaleString('zh-TW')
-                            : '無';
-
-                        const nfcCardInfo = device.nfcCardId ? `NFC卡片: ${device.nfcCardId}` : 'NFC卡片: 未設定';
-
-                        const card = `
-                      <div class="device-card">
-                      <div class="device-header">${device.deviceId || '未命名'}</div>
-                      <div class="device-header">${device.deviceName || '未命名'}</div>
-                      <div class="device-info">狀態: ${statusText}</div>
-                      <div class="device-info">區域: ${device.areaName || device.area || '未知區域'}</div>
-                      <div class="device-info">需要巡檢: ${item.requiresInspection ? '是' : '否'}</div>
-                      <div class="device-info">最後巡檢時間: ${lastInspectionTime}</div>
-                      <div class="device-info">最後巡檢人員: ${item.lastInspectorName || '無'}</div>
-                      <!--<div class="device-info">${nfcCardInfo}</div>
-                      <button onclick="recordInspection('${device.deviceId}')"
-                              ${!item.requiresInspection ? 'disabled' : ''}>
-                        記錄巡檢
-                      </button>--!>
-                    </div>
-                  `;
-                        cardsContainer.append(card);
-                    });
-            } else {
-                cardsContainer.html('<div style="text-align: center; color: #999; padding: 20px;">無機台資料</div>');
+            if (type !== 'error') {
+                setTimeout(() => {
+                    statusDiv.hide();
+                }, 3000);
             }
-
-            // 顯示所有區塊
-            $('#devicesSection').show();
-
-            // 更新原始資料
-            $('#rawData').text(JSON.stringify(data, null, 2));
         }
 
-        // function recordInspection(deviceId) {
-        //     if (!confirm(`確定要記錄 ${deviceId} 的巡檢嗎？`)) {
-        //         return;
-        //     }
-
-        //     const requestData = {
-        //         cardId: 'MANUAL_' + Date.now(),
-        //         deviceId: deviceId,
-        //         source: 'MANUAL'
-        //     };
-
-        //     addNFCLog(`開始記錄巡檢: ${deviceId}`, 'info');
-
-        //     $.ajax({
-        //         url: '@Url.Action("RecordInspection", "Inspection")',
-        //         type: 'POST',
-        //         contentType: 'application/json',
-        //         data: JSON.stringify(requestData),
-        //         dataType: 'json',
-        //         success: function (response) {
-        //             if (response.success) {
-        //                 addNFCLog(`巡檢記錄成功: ${deviceId} (ID: ${response.recordId})`, 'success');
-        //                 alert(`巡檢記錄成功！\n記錄ID: ${response.recordId}\n時間: ${response.arriveTime}`);
-        //                 loadTodayInspection();
-        //             } else {
-        //                 addNFCLog(`巡檢記錄失敗: ${response.message}`, 'error');
-        //                 showError(response.message || '記錄失敗');
-        //             }
-        //         },
-        //         error: function (xhr, status, error) {
-        //             addNFCLog(`巡檢記錄錯誤: ${xhr.status} ${error}`, 'error');
-        //             showError('記錄巡檢失敗: ' + (xhr.responseJSON?.message || '系統錯誤'));
-        //         }
-        //     });
-        // }
-
-        // NFC相關函數
+        // NFC 相關函數 (簡化版)
         async function initializeNFC() {
             try {
-                addNFCLog('開始初始化NFC功能', 'info');
-                
-                // 檢查瀏覽器是否支援Web NFC
+                addNFCLog('初始化NFC功能');
+
                 if ('NDEFReader' in window) {
                     nfcReader = new NDEFReader();
                     isNFCSupported = true;
-
-                    addNFCLog("NFC支援已檢測到", 'success');
-                    showNFCStatus("NFC功能已啟用", "success");
-
-                    // 開始監聽NFC
+                    addNFCLog("NFC支援已啟用");
+                    showNFCStatus("NFC功能正常", "success");
                     await startNFCReading();
                 } else {
-                    addNFCLog("瀏覽器不支援Web NFC API", 'warning');
-                    showNFCStatus("瀏覽器不支援NFC功能", "warning");
+                    addNFCLog("瀏覽器不支援NFC");
+                    showNFCStatus("瀏覽器不支援NFC", "warning");
                 }
             } catch (error) {
-                addNFCLog(`NFC初始化錯誤: ${error.message}`, 'error');
-                showNFCStatus("NFC初始化失敗: " + error.message, "error");
+                addNFCLog(`NFC錯誤: ${error.message}`);
+                showNFCStatus("NFC初始化失敗", "error");
             }
         }
 
-        // 開始NFC讀取
         async function startNFCReading() {
             try {
-                addNFCLog('請求NFC權限...', 'info');
-                
-                // 請求NFC權限並開始掃描
                 await nfcReader.scan();
-                addNFCLog("NFC掃描已啟動", 'success');
-                showNFCStatus("NFC掃描中...", "info");
+                addNFCLog("NFC掃描啟動");
+                showNFCStatus("NFC掃描中", "info");
 
-                // 監聽NFC讀取事件
                 nfcReader.addEventListener("reading", ({ message, serialNumber }) => {
-                    addNFCLog(`檢測到NFC卡片: ${serialNumber}`, 'success');
-                    
-                    // 處理NFC卡片
+                    addNFCLog(`檢測到卡片: ${serialNumber}`);
                     handleNFCCard(serialNumber, message);
                 });
 
-                // 監聽NFC錯誤
                 nfcReader.addEventListener("readingerror", (error) => {
-                    addNFCLog(`NFC讀取錯誤: ${error.message}`, 'error');
-                    showNFCStatus("NFC讀取錯誤: " + error.message, "error");
+                    addNFCLog(`讀取錯誤: ${error.message}`);
+                    showNFCStatus("讀取錯誤", "error");
                 });
 
             } catch (error) {
-                addNFCLog(`開始NFC掃描失敗: ${error.name} - ${error.message}`, 'error');
-
-                if (error.name === 'NotAllowedError') {
-                    showNFCStatus("NFC權限被拒絕，請在瀏覽器設定中允許NFC存取", "error");
-                } else if (error.name === 'NotSupportedError') {
-                    showNFCStatus("設備不支援NFC功能", "error");
-                } else {
-                    showNFCStatus("NFC啟動失敗: " + error.message, "error");
-                }
+                addNFCLog(`掃描失敗: ${error.message}`);
+                showNFCStatus("NFC掃描失敗", "error");
             }
         }
 
-        // 處理NFC卡片
         function handleNFCCard(serialNumber, message) {
-            const cardId = serialNumber; // 使用序號作為卡片ID
+            const cardId = serialNumber;
+            addNFCLog(`處理卡片: ${cardId}`);
 
-            addNFCLog(`處理NFC卡片: ${cardId}`, 'info');
-            showNFCStatus(`檢測到NFC卡片: ${cardId}`, "success");
-
-            // 解析卡片資料
-            let deviceId = null;
-
-            // 嘗試從NFC訊息中解析設備ID
-            if (message && message.records) {
-                addNFCLog(`NFC卡片包含 ${message.records.length} 條記錄`, 'info');
-                
-                message.records.forEach((record, index) => {
-                    addNFCLog(`記錄 ${index + 1}: 類型=${record.recordType}`, 'info');
-                    
-                    if (record.recordType === "text") {
-                        const textDecoder = new TextDecoder(record.encoding || 'utf-8');
-                        const text = textDecoder.decode(record.data);
-                        addNFCLog(`NFC文字內容: ${text}`, 'info');
-
-                        // 假設NFC卡片存儲的是設備ID
-                        if (text && text.trim()) {
-                            deviceId = text.trim();
-                        }
-                    }
-                });
-            } else {
-                addNFCLog('NFC卡片無文字記錄', 'warning');
-            }
-
-            // 如果沒有找到設備ID，使用卡片ID查找
-            if (!deviceId) {
-                deviceId = findDeviceByCardId(cardId);
-                if (deviceId) {
-                    addNFCLog(`透過卡片ID找到對應設備: ${deviceId}`, 'success');
-                }
-            }
+            let deviceId = findDeviceByCardId(cardId);
 
             if (deviceId) {
-                // 自動記錄巡檢
                 autoRecordInspection(cardId, deviceId);
             } else {
-                addNFCLog(`無法識別的NFC卡片: ${cardId}`, 'warning');
-                showNFCStatus(`無法識別的NFC卡片: ${cardId}`, "warning");
-                // 顯示手動選擇對話框
-                showDeviceSelectionDialog(cardId);
+                addNFCLog(`無法識別卡片: ${cardId}`);
+                showNFCStatus(`無法識別的卡片: ${cardId}`, "warning");
             }
         }
 
-        // 根據卡片ID查找對應的設備
         function findDeviceByCardId(cardId) {
-            if (!inspectionData || !inspectionData.devicesToInspect) {
-                addNFCLog('該感應卡不屬於負責區域', 'warning');
-                return null;
+            if (!timePeriodsData) return null;
+
+            for (const period of timePeriodsData) {
+                if (period.devicesToInspect) {
+                    const matchingDevice = period.devicesToInspect.find(item =>
+                        item.device.nfcCardId === cardId
+                    );
+                    if (matchingDevice) {
+                        return matchingDevice.device.deviceId;
+                    }
+                }
             }
-
-            // 在機台清單中查找匹配的NFC卡片ID
-            const matchingDevice = inspectionData.devicesToInspect.find(item =>
-                item.device.nfcCardId === cardId
-            );
-
-            return matchingDevice ? matchingDevice.device.deviceId : null;
+            return null;
         }
 
-        // 自動記錄巡檢
         function autoRecordInspection(cardId, deviceId) {
-            addNFCLog(`開始自動記錄巡檢: 卡片=${cardId}, 設備=${deviceId}`, 'info');
+            addNFCLog(`記錄巡檢: ${deviceId}`);
 
             const requestData = {
                 cardId: cardId,
                 deviceId: deviceId,
                 source: 'NFC',
-                inspectType: "INSPECT"
+                inspectType: "INJECT_INSPECT"
             };
-            addNFCLog(`requestData=`, JSON.stringify(requestData))
+
             $.ajax({
                 url: '@Url.Action("RecordInspection", "Inspection")',
                 type: 'POST',
@@ -516,233 +590,44 @@
                 dataType: 'json',
                 success: function (response) {
                     if (response.success) {
-                        addNFCLog(`NFC巡檢記錄成功: ${deviceId} (記錄ID: ${response.recordId})`, 'success');
-                        showNFCStatus(`${deviceId} 巡檢記錄成功！時間: ${response.arriveTime}`, "success");
-
-                        // 顯示成功提示
+                        addNFCLog(`巡檢記錄成功: ${deviceId} (ID: ${response.recordId})`);
+                        showNFCStatus(`${deviceId} 記錄成功`, "success");
                         showInspectionStartModal(response.deviceId, response.arriveTime, response.isExisting);
-                        // 重新載入資料
                         loadTodayInspection();
-                    }else if (response.needConfirmation) {
-                    // 需要使用者確認是否替換現有記錄
-                    showReplaceConfirmationModal(cardId, response.pendingDeviceId, response.newDeviceId, response.pendingRecordId);
-                    }else {
-                        addNFCLog(`NFC巡檢記錄失敗: ${response.message}`, 'error');
-                        showNFCStatus(`巡檢記錄失敗: ${response.message}`, "error");
+                    } else if (response.needConfirmation) {
+                        showReplaceConfirmationModal(cardId, response.pendingDeviceId, response.newDeviceId, response.pendingRecordId);
+                    } else {
+                        addNFCLog(`巡檢記錄失敗: ${response.message}`);
+                        showNFCStatus(`記錄失敗: ${response.message}`, "error");
                     }
                 },
                 error: function (xhr, status, error) {
-                    addNFCLog(`NFC巡檢記錄錯誤: ${xhr.status} ${error}`, 'error');
-                    showNFCStatus('NFC巡檢記錄失敗: ' + (xhr.responseJSON?.message || '系統錯誤'), "error");
+                    addNFCLog(`巡檢記錄錯誤: ${xhr.status} ${error}`);
+                    showNFCStatus('記錄失敗: 系統錯誤', "error");
                 }
             });
-        }
-
-        // 顯示設備選擇對話框（當無法自動識別設備時）
-        function showDeviceSelectionDialog(cardId) {
-            if (!inspectionData || !inspectionData.devicesToInspect) {
-                addNFCLog('無可用的設備清單', 'error');
-                alert('無可用的設備清單');
-                return;
-            }
-
-            let deviceOptions = inspectionData.devicesToInspect
-                .filter(item => item.requiresInspection)
-                .map(item => `${item.device.deviceId} - ${item.device.deviceName || '未命名'}`)
-                .join('\n');
-
-            if (!deviceOptions) {
-                addNFCLog('目前沒有需要巡檢的設備', 'warning');
-                alert('目前沒有需要巡檢的設備');
-                return;
-            }
-
-            const selectedDevice = prompt(
-                `檢測到NFC卡片: ${cardId}\n請選擇對應的設備:\n\n${deviceOptions}\n\n請輸入設備ID:`
-            );
-
-            if (selectedDevice) {
-                addNFCLog(`使用者選擇設備: ${selectedDevice}`, 'info');
-                
-                const deviceExists = inspectionData.devicesToInspect.some(item =>
-                    item.device.deviceId === selectedDevice && item.requiresInspection
-                );
-
-                if (deviceExists) {
-                    autoRecordInspection(cardId, selectedDevice);
-                } else {
-                    addNFCLog(`設備ID不存在或不需要巡檢: ${selectedDevice}`, 'error');
-                    alert('設備ID不存在或不需要巡檢');
-                }
-            } else {
-                addNFCLog('使用者取消設備選擇', 'info');
-            }
-        }
-
-                function showInspectionStartModal(deviceId, arriveTime, isExisting) {
-            const statusText = isExisting ? "繼續進行檢驗" : "開始檢驗";
-            const modalHtml = `
-                <div id="inspectionModal" style="
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(0, 0, 0, 0.7);
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    z-index: 9999;
-                ">
-                    <div style="
-                        background: white;
-                        padding: 30px;
-                        border-radius: 10px;
-                        text-align: center;
-                        max-width: 400px;
-                        width: 90%;
-                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-                    ">
-                        <div style="
-                            color: #0071b2;
-                            font-size: 24px;
-                            font-weight: bold;
-                            margin-bottom: 15px;
-                        ">
-                            ✓ 檢驗${statusText}
-                        </div>
-                        <div style="
-                            font-size: 18px;
-                            color: #333;
-                            margin-bottom: 10px;
-                        ">
-                            目前已在 <strong>${deviceId}</strong> 機台${statusText}
-                        </div>
-                        <div style="
-                            color: #666;
-                            font-size: 14px;
-                            margin-bottom: 20px;
-                        ">
-                            時間: ${arriveTime}
-                        </div>
-                        <div style="
-                            background: #f0f8ff;
-                            border: 2px solid #0071b2;
-                            border-radius: 5px;
-                            padding: 15px;
-                            color: #0071b2;
-                            font-weight: bold;
-                        ">
-                            請直接在機邊電腦完成巡檢資料上傳
-                        </div>
-                        <div style="
-                            margin-top: 15px;
-                            color: #999;
-                            font-size: 12px;
-                        ">
-                            此視窗將在 <span id="countdown">10</span> 秒後自動關閉
-                        </div>
-                        <button onclick="closeInspectionModal()" style="
-                            margin-top: 15px;
-                            padding: 8px 20px;
-                            background: #0071b2;
-                            color: white;
-                            border: none;
-                            border-radius: 4px;
-                            cursor: pointer;
-                        ">
-                            確定
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            // 移除既有的 modal
-            $('#inspectionModal').remove();
-
-            // 添加新的 modal
-            $('body').append(modalHtml);
-
-            // 倒數計時
-            let countdown = 10;
-            const countdownInterval = setInterval(() => {
-                countdown--;
-                $('#countdown').text(countdown);
-
-                if (countdown <= 0) {
-                    clearInterval(countdownInterval);
-                    closeInspectionModal();
-                }
-            }, 1000);
-        }
-
-        function closeInspectionModal() {
-            $('#inspectionModal').remove();
-        }
-
-        // 顯示NFC狀態 // 在NFC狀態上面顯示一個block去顯示
-        function showNFCStatus(message, type) {
-            const statusDiv = $('#nfcStatus');
-            statusDiv.removeClass('nfc-success nfc-error nfc-warning nfc-info');
-            statusDiv.addClass('nfc-' + type);
-            statusDiv.text(message).show();
-
-            // 5秒後自動隱藏（除了錯誤訊息）
-            if (type !== 'error') {
-                setTimeout(() => {
-                    statusDiv.fadeOut();
-                }, 5000);
-            }
         }
 
         function showReplaceConfirmationModal(cardId, pendingDeviceId, newDeviceId, pendingRecordId) {
             const confirmed = confirm(
                 `您在 ${pendingDeviceId} 機台還有未完成的巡檢記錄，\n` +
-                `確定要在 ${newDeviceId} 機台開始新的巡檢嗎？\n\n` +
-                `選擇「確定」將會刪除 ${pendingDeviceId} 的未完成記錄，並在 ${newDeviceId} 開始新的巡檢。`
+                `確定要在 ${newDeviceId} 機台開始新的巡檢嗎？`
             );
 
             if (confirmed) {
                 confirmReplaceInspection(cardId, newDeviceId, pendingRecordId);
             } else {
-                addNFCLog('使用者取消替換巡檢記錄', 'info');
+                addNFCLog('使用者取消替換巡檢記錄');
                 showNFCStatus('已取消新的巡檢記錄', 'info');
             }
         }
 
-        // 手動觸發NFC掃描（用於測試或重新啟動）
-        function manualStartNFC() {
-            addNFCLog('手動重新啟動NFC掃描', 'info');
-            if (isNFCSupported && nfcReader) {
-                startNFCReading();
-            } else {
-                addNFCLog('NFC功能不可用', 'error');
-                alert('NFC功能不可用');
-            }
-        }
-
-        // 停止NFC掃描
-        function stopNFC() {
-            if (nfcReader) {
-                try {
-                    addNFCLog('嘗試停止NFC掃描', 'info');
-                    showNFCStatus("NFC掃描已停止", "info");
-                } catch (error) {
-                    addNFCLog(`停止NFC掃描失敗: ${error.message}`, 'error');
-                }
-            } else {
-                addNFCLog('NFC掃描器不存在', 'warning');
-            }
-        }
-
         function confirmReplaceInspection(cardId, newDeviceId, oldRecordId) {
-            addNFCLog(`確認替換巡檢記錄: 新設備=${newDeviceId}, 舊記錄ID=${oldRecordId}`, 'info');
-
             const requestData = {
                 cardId: cardId,
                 newDeviceId: newDeviceId,
                 oldRecordId: oldRecordId,
-                inspectType: "INSPECT",
+                inspectType: "INJECT_INSPECT",
                 source: 'NFC'
             };
 
@@ -754,44 +639,270 @@
                 dataType: 'json',
                 success: function (response) {
                     if (response.success) {
-                        addNFCLog(`替換巡檢記錄成功: ${newDeviceId} (記錄ID: ${response.recordId})`, 'success');
-                        showNFCStatus(`${newDeviceId} 巡檢記錄成功！時間: ${response.arriveTime}`, "success");
-
-                        // 顯示檢驗開始提示視窗
+                        addNFCLog(`替換巡檢記錄成功: ${newDeviceId}`);
+                        showNFCStatus(`${newDeviceId} 記錄成功`, "success");
                         showInspectionStartModal(response.deviceId, response.arriveTime, false);
-
-                        // 重新載入資料
                         loadTodayInspection();
                     } else {
-                        addNFCLog(`替換巡檢記錄失敗: ${response.message}`, 'error');
-                        showNFCStatus(`替換巡檢記錄失敗: ${response.message}`, "error");
+                        addNFCLog(`替換巡檢記錄失敗: ${response.message}`);
+                        showNFCStatus(`替換失敗: ${response.message}`, "error");
                     }
                 },
                 error: function (xhr, status, error) {
-                    addNFCLog(`替換巡檢記錄錯誤: ${xhr.status} ${error}`, 'error');
-                    showNFCStatus('替換巡檢記錄失敗: ' + (xhr.responseJSON?.message || '系統錯誤'), "error");
+                    addNFCLog(`替換巡檢記錄錯誤: ${xhr.status} ${error}`);
+                    showNFCStatus('替換失敗: 系統錯誤', "error");
                 }
             });
         }
 
-        function toggleRawData() {
-            $('#rawDataSection').toggle();
-        }
-
-        function showLoading(show) {
-            if (show) {
-                $('#loadingDiv').show();
+        function manualStartNFC() {
+            addNFCLog('手動啟動NFC');
+            if (isNFCSupported && nfcReader) {
+                startNFCReading();
             } else {
-                $('#loadingDiv').hide();
+                alert('NFC功能不可用');
             }
         }
 
+        function stopNFC() {
+            addNFCLog('NFC掃描停止');
+            showNFCStatus("掃描已停止", "info");
+        }
+
+        function loadTodayInspection() {
+            showLoading(true);
+            hideError();
+
+            $.ajax({
+                url: '@Url.Action("GetTodayInspection", "Inspection")',
+                type: 'GET',
+                dataType: 'json',
+                success: function (response) {
+                    showLoading(false);
+                    if (response.success) {
+                        inspectionData = response.data;
+                        displayTimePeriodsData(response.data);
+                        addNFCLog("資料載入完成");
+                    } else {
+                        showError(response.message || '載入失敗');
+                        addNFCLog("資料載入失敗");
+                    }
+                },
+                error: function (xhr, status, error) {
+                    showLoading(false);
+                    let errorMessage = '載入失敗';
+                    if (xhr.status === 401) {
+                        errorMessage = '登入已過期，請重新登入';
+                        setTimeout(() => window.location.href = '@Url.Action("Login", "Account")', 2000);
+                    }
+                    showError(errorMessage);
+                    addNFCLog(`載入錯誤: ${xhr.status} ${error}`);
+                }
+            });
+        }
+
+        function refreshDeviceStatus() {
+            addNFCLog("刷新機台狀態");
+
+            $.ajax({
+                url: '@Url.Action("RefreshDeviceStatus", "Inspection")',
+                type: 'POST',
+                dataType: 'json',
+                success: function (response) {
+                    if (response.success) {
+                        inspectionData = response.data;
+                        displayTimePeriodsData(response.data);
+                        addNFCLog("狀態刷新完成");
+                        showNFCStatus("狀態已更新", "success");
+                    } else {
+                        showError(response.message || '刷新失敗');
+                        addNFCLog("狀態刷新失敗");
+                    }
+                },
+                error: function (xhr, status, error) {
+                    showError('刷新失敗');
+                    addNFCLog(`刷新錯誤: ${xhr.status} ${error}`);
+                }
+            });
+        }
+
+        function displayTimePeriodsData(data) {
+            console.log({data})
+            // 更新整體統計
+            $('#totalDevices').text(data.totalDevices || 0);
+            $('#runningDevices').text(data.runningDevices || 0);
+            $('#completedInspections').text(data.completedInspections || 0);
+            $('#pendingInspections').text(
+                data.devicesToInspect ? data.devicesToInspect.filter(d => d.requiresInspection).length : 0
+            );
+
+            // 處理時段資料
+            if (data.timePeriods && data.timePeriods.length > 0) {
+                timePeriodsData = data.timePeriods;
+                renderTimePeriods(data.timePeriods);
+                $('#timePeriodsSection').show();
+            } else {
+                $('#timePeriodsSection').hide();
+                addNFCLog("無時段資料");
+            }
+        }
+
+        function renderTimePeriods(periods) {
+            const container = $('#timePeriods');
+            container.empty();
+
+            periods.forEach((period, index) => {
+                const periodElement = createPeriodElement(period, index);
+                container.append(periodElement);
+            });
+        }
+
+        function createPeriodElement(period, index) {
+            const periodClass = period.isCurrent ? 'current' : 'inactive';
+            const statusClass = period.isCurrent ? 'status-current' :
+                               (period.isPast ? 'status-completed' : 'status-upcoming');
+            const statusText = period.isCurrent ? '進行中' :
+                              (period.isPast ? '已結束' : '待執行');
+
+            const areasText = period.areas ? period.areas.join(', ') : '無區域';
+
+            const periodElement = $(`
+                <div class="time-period ${periodClass}" data-period="${index}">
+                    <div class="period-header" onclick="togglePeriod(${index})">
+                        <div>
+                            <div class="period-time">${period.startTime} - ${period.endTime}</div>
+                            <div class="period-areas">${areasText}</div>
+                        </div>
+                        <div>
+                            <span class="period-status ${statusClass}">${statusText}</span>
+                            <span class="accordion-icon">▼</span>
+                        </div>
+                    </div>
+                    <div class="period-content" id="period-content-${index}">
+                        ${createPeriodContentHtml(period)}
+                    </div>
+                </div>
+            `);
+
+            // 如果是當前時段，自動展開
+            if (period.isCurrent) {
+                periodElement.find('.period-content').addClass('expanded');
+                periodElement.find('.accordion-icon').addClass('expanded');
+            }
+
+            return periodElement;
+        }
+
+        function createPeriodContentHtml(period) {
+            console.log(period)
+            let contentHtml = `
+                <div class="period-info">
+                     <strong>${period.eventType || '排程作業'}</strong>
+                    ${period.eventDetail ? `<div>${period.eventDetail}</div>` : ''}
+                </div>
+            `;
+
+            if (period.devicesToInspect && period.devicesToInspect.length > 0) {
+                period.devicesToInspect.forEach(item => {
+                    const device = item.device;
+                    const status = item.status?.deviceStatus || 'UNKNOWN';
+                    const lastInspection = item.lastInspectionTime
+                        ? new Date(item.lastInspectionTime).toLocaleString('zh-TW')
+                        : '-';
+
+                    let cardClass = '';
+                    let badgeClass = '';
+                    let badgeText = '';
+
+                    if (item.requiresInspection) {
+                        cardClass = 'needs-inspection';
+                        badgeClass = 'needs-inspection-badge';
+                        badgeText = '需要巡檢';
+                    } else if (item.lastInspectionTime) {
+                        cardClass = 'completed';
+                        badgeClass = 'completed-badge';
+                        badgeText = '已完成';
+                    } else if (status !== 'RUN') {
+                        cardClass = 'not-running';
+                        badgeClass = 'not-required-badge';
+                        badgeText = '不需要';
+                    } else {
+                        badgeClass = 'not-required-badge';
+                        badgeText = '不需要';
+                    }
+
+                    const statusClass = `status-${status.toLowerCase()}`;
+
+                    contentHtml += `
+                        <div class="device-card ${cardClass}">
+                            <div class="device-header">
+                                <div class="device-id">${device.deviceId}</div>
+                                <div class="device-status ${statusClass}">${status}</div>
+                            </div>
+                            <div class="device-name">${device.deviceName || '-'}</div>
+                            <div class="device-info">區域: ${device.area}</div>
+                            <div class="device-info">最後巡檢: ${lastInspection}</div>
+                            <div class="device-info">巡檢人員: ${item.lastInspectorName || '-'}</div>
+                            <div class="inspection-badge ${badgeClass}">${badgeText}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                contentHtml += '<div class="no-devices">此時段無機台資料</div>';
+            }
+
+            return contentHtml;
+        }
+
+        function togglePeriod(index) {
+            const content = $(`#period-content-${index}`);
+            const icon = $(`.time-period[data-period="${index}"] .accordion-icon`);
+
+            if (content.hasClass('expanded')) {
+                content.removeClass('expanded');
+                icon.removeClass('expanded');
+            } else {
+                content.addClass('expanded');
+                icon.addClass('expanded');
+            }
+        }
+
+        function showInspectionStartModal(deviceId, arriveTime, isExisting) {
+            $('#modalDevice').text(deviceId);
+            $('#modalTime').text(`時間: ${arriveTime}`);
+
+            const modal = $('#inspectionModal');
+            modal.show();
+
+            // 10秒倒數
+            let countdown = 10;
+            const countdownElement = $('#countdown');
+
+            const interval = setInterval(() => {
+                countdown--;
+                countdownElement.text(countdown);
+
+                if (countdown <= 0) {
+                    clearInterval(interval);
+                    closeInspectionModal();
+                }
+            }, 1000);
+        }
+
+        function closeInspectionModal() {
+            $('#inspectionModal').hide();
+        }
+
+        function showLoading(show) {
+            $('#loading').toggle(show);
+        }
+
         function showError(message) {
-            $('#errorDiv').text(message).show();
+            $('#error').text(message).show();
         }
 
         function hideError() {
-            $('#errorDiv').hide();
+            $('#error').hide();
         }
     </script>
 }

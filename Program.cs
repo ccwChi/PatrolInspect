@@ -26,8 +26,6 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromMinutes(appSettings?.SessionTimeout ?? 480); // 8 hours default
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-    options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
 // Register Repository (DI)
@@ -86,7 +84,7 @@ else
     app.UseDeveloperExceptionPage();
 }
 
-// 重要：移除 HTTPS 重定向，因為父程式已經處理 HTTPS
+// 重要：移除 HTTPS 重定向，因為IIS父程式已經處理 HTTPS
 // app.UseHttpsRedirection();
 app.UseStaticFiles();
 

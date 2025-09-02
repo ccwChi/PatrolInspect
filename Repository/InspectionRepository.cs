@@ -39,45 +39,7 @@ namespace PatrolInspect.Repository
             return new SqlConnection(_fnReportConnString);
         }
 
-        public async Task<List<string>> GetUserTodayAreasAsync(string userNo, DateTime date)
-        {
-            using var connection = CreateMesConnection();
 
-            // 先嘗試從 Area 欄位解析，如果是數字格式
-            var sql = @"
-                SELECT DISTINCT Area
-                FROM INSPECTION_SCHEDULE_EVENT 
-                WHERE UserNo = @UserNo 
-                  AND IsActive = 1
-                  AND CAST(StartDateTime AS DATE) = @Date
-                  AND Area IS NOT NULL
-                ORDER BY Area";
-
-            try
-            {
-                var areas = await connection.QueryAsync<string?>(sql, new
-                {
-                    UserNo = userNo,
-                    Date = date.Date
-                });
-
-                var areaList = areas
-                    .Where(a => !string.IsNullOrWhiteSpace(a))
-                    .Select(a => a!)   // 經過 Where 後，這裡確實非 null
-                    .ToList();
-
-                _logger.LogInformation("User {UserNo} assigned to areas: {Areas} for date {Date}",
-                    userNo, string.Join(",", areaList), date.Date);
-
-
-                return areaList;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting user areas for {UserNo} on {Date}", userNo, date);
-                throw;
-            }
-        }
 
         public async Task<List<InspectionDeviceAreaMapping>> GetAreaDevicesAsync(List<string> areas)
         {
@@ -155,89 +117,91 @@ namespace PatrolInspect.Repository
             }
         }
 
-        public async Task<UserTodayInspection> GetUserTodayInspectionAsync(string userNo)
+
+        public async Task<UserTodayInspection> GetTodayInspectionAsync(string userNo, string userName, string department)
         {
             var today = DateTime.Now.Date;
-
+            string eventType = string.Empty;
+            string eventTypeName = string.Empty;
             try
             {
-                // 1. 取得使用者今天負責的區域
-                var assignedAreas = await GetUserTodayAreasAsync(userNo, today);
+                // 1. 取得使用者今天所有的排程
+                var allScheduleEvents = await GetUserAllTodaySchedulesAsync(userNo, today);
 
-                if (!assignedAreas.Any())
-                {
-                    _logger.LogWarning("User {UserNo} has no areas assigned for today", userNo);
-                    return new UserTodayInspection
-                    {
-                        UserNo = userNo,
-                        AssignedAreas = new List<string>(),
-                        DevicesToInspect = new List<InspectionDeviceInfo>()
-                    };
-                }
+                // 2. 處理成時段資料
+                var timePeriods = ProcessTimePeriodsData(allScheduleEvents);
 
-                // 2. 取得區域內的所有機台
-                var areaDevices = await GetAreaDevicesAsync(assignedAreas);
-                var deviceIds = areaDevices.Select(d => d.DeviceId).ToList();
-                // [string, stirng, string...]
-
-                // 3. 取得機台狀態
-                var deviceStatuses = await GetDeviceStatusAsync(deviceIds);
-                var statusDict = deviceStatuses.ToDictionary(s => s.DeviceID, s => s);
-
-                // 4. 取得今天的巡檢記錄
+                // 3. 取得今天的巡檢記錄
                 var todayRecords = await GetTodayInspectionRecordsAsync(userNo, today);
                 var inspectedDevicesDict = todayRecords
                     .Where(r => !string.IsNullOrEmpty(r.DeviceId))
                     .GroupBy(r => r.DeviceId!)
-                    .ToDictionary(
-                        g => g.Key,
-                        g => g.OrderByDescending(r => r.ArriveAt).First()
-                    );
+                    .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.ArriveAt).First());
 
-                // 5. 組合成巡檢設備清單
-                var devicesToInspect = areaDevices.Select(device =>
+                var totalDevices = 0;
+                var runningDevices = 0;
+                var completedInspections = 0;
+                var allDevicesForCurrentUser = new List<InspectionDeviceInfo>();
+
+                // 4. 為每個時段載入機台資料
+                foreach (var period in timePeriods)
                 {
-                    statusDict.TryGetValue(device.DeviceId, out var status);
-                    inspectedDevicesDict.TryGetValue(device.DeviceId, out var lastInspection);
-
-                    var isRunning = status?.DeviceStatus?.ToUpper() == "RUN";
-                    var alreadyInspected = lastInspection != null;
-
-                    return new InspectionDeviceInfo
+                    if (period.Areas.Any())
                     {
-                        Device = device,
-                        Status = status,
-                        RequiresInspection = isRunning && !alreadyInspected,
-                        LastInspectionTime = lastInspection?.ArriveAt,
-                        LastInspectorName = lastInspection?.UserName
-                    };
-                }).ToList();
+                        var areaDevices = await GetAreaDevicesAsync(period.Areas);
+                        var deviceIds = areaDevices.Select(d => d.DeviceId).ToList();
+                        var deviceStatuses = await GetDeviceStatusAsync(deviceIds);
+                        var statusDict = deviceStatuses.ToDictionary(s => s.DeviceID, s => s);
 
-                // 6. 統計資訊
-                var runningDevices = devicesToInspect.Count(d => d.IsRunning);
-                var completedInspections = devicesToInspect.Count(d => d.LastInspectionTime.HasValue);
+                        var devicesToInspect = areaDevices.Select(device =>
+                        {
+                            statusDict.TryGetValue(device.DeviceId, out var status);
+                            inspectedDevicesDict.TryGetValue(device.DeviceId, out var lastInspection);
 
-                // 7. 取得區域名稱
-                var areaNames = areaDevices
-                    .GroupBy(d => d.AreaId)
-                    .Select(g => g.First().Area)
-                    .ToList();
+                            var isRunning = status?.DeviceStatus?.ToUpper() == "RUN";
+                            var alreadyInspected = lastInspection != null && lastInspection.SubmitDataAt == null;
 
-                var result = new UserTodayInspection
+                            return new InspectionDeviceInfo
+                            {
+                                Device = device,
+                                Status = status,
+                                RequiresInspection = isRunning && !alreadyInspected,
+                                LastInspectionTime = lastInspection?.ArriveAt,
+                                LastInspectorName = lastInspection?.UserName
+                            };
+                        }).ToList(); 
+
+                        period.DevicesToInspect = devicesToInspect;
+
+                        // 統計（只統計當前時段的數據）
+                        if (period.IsCurrent)
+                        {
+                            totalDevices += devicesToInspect.Count;
+                            runningDevices += devicesToInspect.Count(d => d.IsRunning);
+                            completedInspections += devicesToInspect.Count(d => d.LastInspectionTime.HasValue);
+                            allDevicesForCurrentUser.AddRange(devicesToInspect);
+                        }
+                    }
+                }
+
+                // 5. 取得當前時段的區域（為了向後相容）
+                var currentPeriod = timePeriods.FirstOrDefault(p => p.IsCurrent);
+                var assignedAreas = currentPeriod?.Areas ?? new List<string>();
+
+                return new UserTodayInspection
                 {
                     UserNo = userNo,
-                    AssignedAreas = assignedAreas,
-                    DevicesToInspect = devicesToInspect,
-                    TotalDevices = devicesToInspect.Count,
+                    UserName= userName,
+                    Department = department,
+                    TimePeriods = timePeriods,
+                    TotalDevices = totalDevices,
                     RunningDevices = runningDevices,
                     CompletedInspections = completedInspections,
-                    Areas = areaNames
+
+                    // 為了向後相容保留的屬性
+                    AssignedAreas = assignedAreas,
+                    DevicesToInspect = allDevicesForCurrentUser
                 };
-
-                _logger.LogInformation("User {UserNo} inspection summary: {Total} devices, {Running} running, {Completed} inspected",
-                    userNo, result.TotalDevices, result.RunningDevices, result.CompletedInspections);
-
-                return result;
             }
             catch (Exception ex)
             {
@@ -245,6 +209,8 @@ namespace PatrolInspect.Repository
                 throw;
             }
         }
+
+
 
         public async Task<int> CreateInspectionRecordAsync(InspectionQcRecord record)
         {
@@ -339,9 +305,89 @@ namespace PatrolInspect.Repository
             }
         }
 
+        public async Task<List<InspectionScheduleEvent>> GetUserAllTodaySchedulesAsync(string userNo, DateTime date)
+        {
+            using var connection = CreateMesConnection();
+
+            var sql = @"
+                    SELECT EventId, UserNo, UserName, Department, EventType, EventTypeName, EventDetail, 
+                           StartDateTime, EndDateTime, Area, IsActive, 
+                           CreateDate, CreateBy, UpdateDate, UpdateBy
+                    FROM INSPECTION_SCHEDULE_EVENT 
+                    WHERE UserNo = @UserNo 
+                      AND IsActive = 1
+                      AND CAST(StartDateTime AS DATE) = @Date
+                    ORDER BY StartDateTime, Area";
+
+            try
+            {
+                var scheduleEvents = await connection.QueryAsync<InspectionScheduleEvent>(sql, new
+                {
+                    UserNo = userNo,
+                    Date = date.Date
+                });
+
+                var eventList = scheduleEvents.ToList();
+
+                _logger.LogInformation("User {UserNo} has {Count} schedule events for date {Date}",
+                    userNo, eventList.Count, date.Date);
+
+                return eventList;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user all schedules for {UserNo} on {Date}", userNo, date);
+                throw;
+            }
+        }
 
 
 
+        public List<TimePeriod> ProcessTimePeriodsData(List<InspectionScheduleEvent> scheduleEvents)
+        {
+            var currentTime = DateTime.Now;
 
+            // 按時間分組排程
+            var timeGroups = scheduleEvents
+                .GroupBy(s => new { s.StartDateTime, s.EndDateTime, s.EventType,s.EventTypeName, s.EventDetail})
+                .Select(g => new
+                {
+                    StartDateTime = g.Key.StartDateTime,
+                    EndDateTime = g.Key.EndDateTime,
+                    EventType = g.Key.EventType,
+                    EventTypeName = g.Key.EventTypeName,
+                    EventDetail = g.Key.EventDetail,
+                    Areas = g.Select(s => s.Area).Distinct().ToList()
+                })
+                .OrderBy(g => g.StartDateTime)
+                .ToList();
+
+            var periods = new List<TimePeriod>();
+
+            foreach (var group in timeGroups)
+            {
+                var isCurrent = group.StartDateTime <= currentTime && group.EndDateTime >= currentTime;
+                var isPast = group.EndDateTime < currentTime;
+
+                var period = new TimePeriod
+                {
+                    StartTime = group.StartDateTime.ToString("HH:mm"),
+                    EndTime = group.EndDateTime.ToString("HH:mm"),
+                    StartDateTime = group.StartDateTime,
+                    EndDateTime = group.EndDateTime,
+                    Areas = group.Areas,
+                    EventType = group.EventType,
+                    EventTypeName = group.EventTypeName,
+                    EventDetail = group.EventDetail,
+                    IsCurrent = isCurrent,
+                    IsPast = isPast,
+                    DevicesToInspect = new List<InspectionDeviceInfo>()
+                };
+
+                periods.Add(period);
+            }
+
+            return periods;
+        }
     }
 }

@@ -28,11 +28,13 @@ namespace PatrolInspect.Models.Entities
         public int EventId { get; set; }
         public string UserNo { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;
+        public string Department { get; set; } = string.Empty;
         public string EventType { get; set; } = string.Empty;
-        public string EventDetail { get; set; } = string.Empty;
+        public string EventTypeName { get; set; } = string.Empty;
+        public string? EventDetail { get; set; } 
         public DateTime StartDateTime { get; set; }
         public DateTime EndDateTime { get; set; }
-        public string Area { get; set; }
+        public string Area { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
         public DateTime CreateDate { get; set; } = DateTime.Now;
         public string? CreateBy { get; set; }
@@ -76,4 +78,24 @@ namespace PatrolInspect.Models.Entities
         public string? DeviceSchedulingStatus { get; set; }
     }
 
+    public class ScheduleInfo
+    {
+        public string EventType { get; set; } = string.Empty;
+        public string StartTime { get; set; } = string.Empty;
+        public string EndTime { get; set; } = string.Empty;
+        public List<string> Areas { get; set; } = new List<string>();
+        public string? EventDetail { get; set; }
+        public DateTime StartDateTime { get; set; }
+        public DateTime EndDateTime { get; set; }
+        public bool IsCurrent { get; set; }
+        public bool IsNext { get; set; }
+    }
+
+    public class InspectEventTypeMaster
+    {
+        public string EventType { get; set; } = string.Empty;
+        public string EventTypeName { get; set; } = string.Empty;
+        public string AllowDepartments { get; set; } = string.Empty;
+        public bool IsActive { get; set; } = true;
+    }
 }
