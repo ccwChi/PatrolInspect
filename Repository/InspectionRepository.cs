@@ -94,7 +94,7 @@ namespace PatrolInspect.Repository
         {
             using var connection = CreateMesConnection();
             var sql = @"
-                SELECT RecordId, CardId, DeviceId, UserNo, UserName, 
+                SELECT RecordId, CardId, DeviceId, UserNo, UserName, InspectType,
                        ArriveAt, SubmitDataAt, Source, CreateDate
                 FROM INSPECTION_QC_RECORD 
                 WHERE UserNo = @UserNo 
@@ -166,7 +166,11 @@ namespace PatrolInspect.Repository
                                 Device = device,
                                 Status = status,
                                 RequiresInspection = isRunning && !alreadyInspected,
-                                LastInspectionTime = lastInspection?.ArriveAt,
+                                LastInspectionTime =
+                                    (lastInspection != null &&
+                                     !string.Equals((lastInspection.InspectType ?? string.Empty).Trim(), "CANCEL", StringComparison.OrdinalIgnoreCase))
+                                    ? lastInspection.SubmitDataAt
+                                    : (DateTime?)null,
                                 LastInspectorName = lastInspection?.UserName
                             };
                         }).ToList(); 

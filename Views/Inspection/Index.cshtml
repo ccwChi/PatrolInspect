@@ -797,7 +797,7 @@
             console.log(period)
             let contentHtml = `
                 <div class="period-info">
-                     <strong>${period.eventType || '排程作業'}</strong>
+                     <strong>${period.eventTypeName || '排程作業'}</strong>
                     ${period.eventDetail ? `<div>${period.eventDetail}</div>` : ''}
                 </div>
             `;

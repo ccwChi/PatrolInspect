@@ -56,8 +56,8 @@ namespace PatrolInspect.Controllers
                     success = true,
                     data = new
                     {
-                        areas,
-                        users,
+                        areas = areas,
+                        users = users,
                         inspectType = inspectTypes
                     }
                 });
@@ -75,7 +75,6 @@ namespace PatrolInspect.Controllers
             try
             {
                 var currentUser = HttpContext.Session.GetString("UserNo");
-
 
                 // 轉換DTO到實體
                 var scheduleEntities = schedules.Select(dto => new InspectionScheduleEvent
