@@ -11,9 +11,9 @@ namespace PatrolInspect.Models
         public InspectionDeviceAreaMapping Device { get; set; } = new();
         public FnDeviceStatus? Status { get; set; }
         public bool RequiresInspection { get; set; }
-        public DateTime? LastInspectionTime { get; set; }
+        public DateTime? LastInspectionStartTime { get; set; }
+        public DateTime? LastInspectionEndTime { get; set; }
         public string? LastInspectorName { get; set; }
-        public bool IsRunning => Status?.DeviceStatus?.ToUpper() == "RUN";
         public bool HasAlarm => !string.IsNullOrEmpty(Status?.AlarmMessage);
     }
 
@@ -28,6 +28,7 @@ namespace PatrolInspect.Models
         public List<TimePeriod> TimePeriods { get; set; } = new List<TimePeriod>(); // 新增
         public int TotalDevices { get; set; }
         public int RunningDevices { get; set; }
+        public int WithWoDevices { get; set; }
         public int CompletedInspections { get; set; }
 
         // 為了向後相容，保留這些屬性
@@ -92,5 +93,60 @@ namespace PatrolInspect.Models
         public bool IsCurrent { get; set; }
         public bool IsPast { get; set; }
         public List<InspectionDeviceInfo> DevicesToInspect { get; set; } = new List<InspectionDeviceInfo>();
+        public Dictionary<string, List<InspectionQcRecord>> DeviceRecordsMap { get; set; }
+            = new Dictionary<string, List<InspectionQcRecord>>(StringComparer.OrdinalIgnoreCase);
+    }
+
+
+    public class InspectionItemQueryDto
+    {
+        public string? Department { get; set; }
+        public string? InspectArea { get; set; }
+        public bool? IsActive { get; set; }
+        public string? SearchText { get; set; }
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 50;
+    }
+
+    // 新增/編輯用的 DTO
+    public class InspectionItemDto
+    {
+        public int InspectItemId { get; set; }
+
+        public string InspectName { get; set; } = string.Empty;
+
+        public string Department { get; set; } = string.Empty;
+
+        public string InspectArea { get; set; } = string.Empty;
+
+        public string? Station { get; set; }
+
+        public string DataType { get; set; } = "TEXT";
+
+        public string? SelectOptions { get; set; }
+
+        public bool IsRequired { get; set; } = false;
+
+        public string? UpdateReason { get; set; }
+    }
+
+    // 分頁結果
+    public class PagedResult<T>
+    {
+        public List<T> Items { get; set; } = new();
+        public int TotalCount { get; set; }
+        public int Page { get; set; }
+        public int PageSize { get; set; }
+        public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
+        public bool HasNextPage => Page < TotalPages;
+        public bool HasPreviousPage => Page > 1;
+    }
+
+    // API 回應格式
+    public class ApiResponse<T>
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public T? Data { get; set; }
     }
 }

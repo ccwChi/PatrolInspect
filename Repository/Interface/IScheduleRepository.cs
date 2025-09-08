@@ -6,7 +6,7 @@ namespace PatrolInspect.Repositories.Interfaces
     public interface IScheduleRepository
     {
         Task<List<InspectionScheduleEvent>> GetAllSchedulesAsync();
-        Task<List<InspectionScheduleEvent>> GetSchedulesByUserAsync(string userNo);
+        Task<List<InspectionScheduleEvent>> GetSearchSchedules(string userName, string depart, DateTime? startDate, DateTime? endDate);
         Task<List<InspectionScheduleEvent>> GetSchedulesByDateRangeAsync(DateTime startDate, DateTime endDate);
         Task<InspectionScheduleEvent?> GetScheduleByIdAsync(int eventId);
 
@@ -19,6 +19,7 @@ namespace PatrolInspect.Repositories.Interfaces
         // 基礎資料
         Task<List<string>> GetAreasAsync();
         Task<List<MesUser>> GetUsersAsync();
+        Task<ScheduleBaseInfo> GetScheduleBaseInfoAsync();
         Task<List<InspectEventTypeMaster>> GetInspectTypesAsync();
     }
 }

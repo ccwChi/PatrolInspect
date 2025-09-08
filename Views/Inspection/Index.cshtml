@@ -12,6 +12,8 @@
             border: 1px solid #ccc;
             margin-bottom: 10px;
             background: #f5f5f5;
+            display: flex;
+            justify-content:space-between
         }
 
         .current-time {
@@ -40,13 +42,13 @@
         }
 
         .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr;
+            display: flex;
             gap: 8px;
             margin-bottom: 10px;
         }
 
         .stat-box {
+            flex:1;
             text-align: center;
             padding: 8px;
             border: 1px solid #ddd;
@@ -373,8 +375,12 @@
     <div class="header">
         <div class="">
             <strong>@ViewBag.UserName (@ViewBag.UserNo)</strong>
-            <div style="color: #666;">@ViewBag.DepartmentName - @ViewBag.TitleName</div>
+            <div style="color: #666;" id="simulateNfc">@ViewBag.DepartmentName - @ViewBag.TitleName</div>
             <div class="current-time" id="currentTime">@ViewBag.CurrentTime</div>
+        </div>
+        <div class="control-buttons">
+            <button onclick="loadTodayInspection()">刷新資料</button>
+            @* <button onclick="refreshDeviceStatus()">刷新狀態</button> *@
         </div>
     </div>
 
@@ -388,23 +394,20 @@
                     <div class="stat-label">總機台</div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-number" id="runningDevices">-</div>
-                    <div class="stat-label">運行中</div>
+                    <div class="stat-number" id="withWoDevices">-</div>
+                    <div class="stat-label">有掛工單機台數</div>
                 </div>
-                <div class="stat-box">
+                @* <div class="stat-box">
                     <div class="stat-number" id="completedInspections">-</div>
                     <div class="stat-label">已巡檢</div>
                 </div>
                 <div class="stat-box">
                     <div class="stat-number" id="pendingInspections">-</div>
                     <div class="stat-label">待巡檢</div>
-                </div>
+                </div> *@
             </div>
 
-            <div class="control-buttons">
-                <button onclick="loadTodayInspection()">重新載入</button>
-                <button onclick="refreshDeviceStatus()">刷新狀態</button>
-            </div>
+
         </div>
     </div>
 
@@ -430,7 +433,7 @@
                 <button onclick="stopNFC()">停止感應</button>
                 @* <button onclick="clearNFCLog()">清除日誌</button> *@
             </div>
-            @* <div id="nfcLog" class="nfc-log"></div> *@
+            <div id="nfcLog" class="nfc-log"></div> 
         </div>
     </div>
 
@@ -441,9 +444,9 @@
             <p><strong id="modalDevice">-</strong></p>
             <p id="modalTime">-</p>
             <p>請在機邊電腦完成資料上傳</p>
-            <p style="color: #666;">
+            @* <p style="color: #666;">
                 <span id="countdown">10</span> 秒後自動關閉
-            </p>
+            </p> *@
             <button onclick="closeInspectionModal()">確定</button>
         </div>
     </div>
@@ -461,7 +464,11 @@
             setInterval(updateCurrentTime, 1000);
             initializeNFC();
             loadTodayInspection();
+                    $(document).on('click', '#simulateNfc', function () {
+          handleNFCCard('62:bc:50:1f', null);
         });
+        });
+
 
         function updateCurrentTime() {
             const now = new Date();
@@ -469,16 +476,16 @@
         }
 
         function addNFCLog(message, type = 'info') {
-            // const timestamp = new Date().toLocaleTimeString('zh-TW');
-            // const logContainer = $('#nfcLog');
-            // const entry = $('<div class="log-entry"></div>').text(`[${timestamp}] ${message}`);
-            // logContainer.append(entry);
-            // logContainer.scrollTop(logContainer[0].scrollHeight);
+            const timestamp = new Date().toLocaleTimeString('zh-TW');
+            const logContainer = $('#nfcLog');
+            const entry = $('<div class="log-entry"></div>').text(`[${timestamp}] ${message}`);
+            logContainer.append(entry);
+            logContainer.scrollTop(logContainer[0].scrollHeight);
 
-            // const entries = logContainer.find('.log-entry');
-            // if (entries.length > 20) {
-            //     entries.first().remove();
-            // }
+            const entries = logContainer.find('.log-entry');
+            if (entries.length > 20) {
+                entries.first().remove();
+            }
         }
 
         function clearNFCLog() {
@@ -553,6 +560,7 @@
             } else {
                 addNFCLog(`無法識別卡片: ${cardId}`);
                 showNFCStatus(`無法識別的卡片: ${cardId}`, "warning");
+                alert("該卡片不屬於目前檢驗時段內任一區域")
             }
         }
 
@@ -610,7 +618,7 @@
 
         function showReplaceConfirmationModal(cardId, pendingDeviceId, newDeviceId, pendingRecordId) {
             const confirmed = confirm(
-                `您在 ${pendingDeviceId} 機台還有未完成的巡檢記錄，\n` +
+                `你在 ${pendingDeviceId} 機台還有未完成的巡檢記錄，\n` +
                 `確定要在 ${newDeviceId} 機台開始新的巡檢嗎？`
             );
 
@@ -727,10 +735,10 @@
         }
 
         function displayTimePeriodsData(data) {
-            console.log({data})
+            console.log("displayTimePeriodsData",data)
             // 更新整體統計
             $('#totalDevices').text(data.totalDevices || 0);
-            $('#runningDevices').text(data.runningDevices || 0);
+            $('#withWoDevices').text(data.withWoDevices || 0);
             $('#completedInspections').text(data.completedInspections || 0);
             $('#pendingInspections').text(
                 data.devicesToInspect ? data.devicesToInspect.filter(d => d.requiresInspection).length : 0
@@ -752,19 +760,21 @@
             container.empty();
 
             periods.forEach((period, index) => {
+                console.log("****************開始建立大時段檢驗**********************")
+                console.log("**************** ", period.startTime,"-",period.endTime," **********************")
                 const periodElement = createPeriodElement(period, index);
                 container.append(periodElement);
             });
         }
 
         function createPeriodElement(period, index) {
-            const periodClass = period.isCurrent ? 'current' : 'inactive';
+            const periodClass = period.isCurrent ? 'current' : 'inactive';  //curent有藍色邊框
             const statusClass = period.isCurrent ? 'status-current' :
                                (period.isPast ? 'status-completed' : 'status-upcoming');
             const statusText = period.isCurrent ? '進行中' :
-                              (period.isPast ? '已結束' : '待執行');
+                              (period.isPast ? '已結束' : '');
 
-            const areasText = period.areas ? period.areas.join(', ') : '無區域';
+            const areasText = period.areas ? period.areas.join(', ') : '未設定區域';
 
             const periodElement = $(`
                 <div class="time-period ${periodClass}" data-period="${index}">
@@ -794,7 +804,7 @@
         }
 
         function createPeriodContentHtml(period) {
-            console.log(period)
+            console.log({period})
             let contentHtml = `
                 <div class="period-info">
                      <strong>${period.eventTypeName || '排程作業'}</strong>
@@ -806,44 +816,40 @@
                 period.devicesToInspect.forEach(item => {
                     const device = item.device;
                     const status = item.status?.deviceStatus || 'UNKNOWN';
+                    const workOrderNo = status?.wO_ID ? status.wO_ID : "-";
                     const lastInspection = item.lastInspectionTime
                         ? new Date(item.lastInspectionTime).toLocaleString('zh-TW')
                         : '-';
-
                     let cardClass = '';
                     let badgeClass = '';
                     let badgeText = '';
 
-                    if (item.requiresInspection) {
-                        cardClass = 'needs-inspection';
-                        badgeClass = 'needs-inspection-badge';
-                        badgeText = '需要巡檢';
-                    } else if (item.lastInspectionTime) {
+                    let lastInspectionStartTime = item?.lastInspectionStartTime ?
+                        item.lastInspectionStartTime.replace("T", " ").replace(/-/g, "/").substring(5, 16) : "-"
+                    let lastInspectionEndTime = item?.lastInspectionEndTime ?
+                        item.lastInspectionEndTime.replace("T", " ").replace(/-/g, "/").substring(5, 16) : "-"
+                    console.log({item})
+
+                    if(item.lastInspectionTime) {
                         cardClass = 'completed';
                         badgeClass = 'completed-badge';
                         badgeText = '已完成';
-                    } else if (status !== 'RUN') {
-                        cardClass = 'not-running';
-                        badgeClass = 'not-required-badge';
-                        badgeText = '不需要';
-                    } else {
-                        badgeClass = 'not-required-badge';
-                        badgeText = '不需要';
-                    }
+                    } 
 
                     const statusClass = `status-${status.toLowerCase()}`;
-
+                    console.log({statusClass})
                     contentHtml += `
                         <div class="device-card ${cardClass}">
                             <div class="device-header">
                                 <div class="device-id">${device.deviceId}</div>
-                                <div class="device-status ${statusClass}">${status}</div>
+                                <div class="device-status ${""}">${status}</div>
                             </div>
                             <div class="device-name">${device.deviceName || '-'}</div>
-                            <div class="device-info">區域: ${device.area}</div>
-                            <div class="device-info">最後巡檢: ${lastInspection}</div>
+                            <div class="device-info">工單: ${workOrderNo}</div>
+                            <div class="device-info">巡檢開始: ${lastInspectionStartTime}</div>
+                            <div class="device-info">巡檢完成: ${lastInspectionEndTime}</div>
                             <div class="device-info">巡檢人員: ${item.lastInspectorName || '-'}</div>
-                            <div class="inspection-badge ${badgeClass}">${badgeText}</div>
+
                         </div>
                     `;
                 });
@@ -853,6 +859,7 @@
 
             return contentHtml;
         }
+
 
         function togglePeriod(index) {
             const content = $(`#period-content-${index}`);
@@ -873,20 +880,6 @@
 
             const modal = $('#inspectionModal');
             modal.show();
-
-            // 10秒倒數
-            let countdown = 10;
-            const countdownElement = $('#countdown');
-
-            const interval = setInterval(() => {
-                countdown--;
-                countdownElement.text(countdown);
-
-                if (countdown <= 0) {
-                    clearInterval(interval);
-                    closeInspectionModal();
-                }
-            }, 1000);
         }
 
         function closeInspectionModal() {

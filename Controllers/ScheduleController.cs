@@ -36,7 +36,6 @@ namespace PatrolInspect.Controllers
 
 
         [HttpGet]
-        [HttpGet]
         public async Task<IActionResult> GetAreasUsersInspectType()
         {
             var userNo = HttpContext.Session.GetString("UserNo");
@@ -49,16 +48,21 @@ namespace PatrolInspect.Controllers
             {
                 var areas = await _scheduleRepository.GetAreasAsync();
                 var users = await _scheduleRepository.GetUsersAsync();
+                var scheduleBase = await _scheduleRepository.GetScheduleBaseInfoAsync();
                 var inspectTypes = await _scheduleRepository.GetInspectTypesAsync();
+                var scheduleUsers = scheduleBase.UserNames;
+                var scheduleDeparts = scheduleBase.Departments;
 
                 return Json(new
                 {
                     success = true,
                     data = new
                     {
-                        areas = areas,
-                        users = users,
-                        inspectType = inspectTypes
+                        areas,
+                        users,
+                        scheduleUsers,
+                        scheduleDeparts,
+                        inspectTypes
                     }
                 });
             }
@@ -135,18 +139,18 @@ namespace PatrolInspect.Controllers
         }
 
 
-[HttpGet]
-        public async Task<IActionResult> GetUserSchedules(string userNo)
+        [HttpGet]
+        public async Task<IActionResult> GetSearchSchedules(string userName, string depart, DateTime startDate, DateTime endDate)
         {
             try
             {
-                var schedules = await _scheduleRepository.GetSchedulesByUserAsync(userNo);
+                var schedules = await _scheduleRepository.GetSearchSchedules(userName, depart, startDate, endDate);
                 return Json(new { success = true, data = schedules });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting user schedules for: {UserNo}", userNo);
-                return Json(new { success = false, message = "載入使用者排班資料失敗" });
+                _logger.LogError(ex, "Error getting user schedules for: {userName}", userName);
+                return Json(new { success = false, message = "搜尋資料失敗" });
             }
         }
 

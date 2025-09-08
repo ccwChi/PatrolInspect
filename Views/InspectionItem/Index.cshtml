@@ -1,0 +1,1270 @@
+﻿@model PatrolInspect.Models.LoginViewModel
+
+@{
+    ViewData["Title"] = "檢驗項目管理 - 巡檢系統";
+    Layout = "_Layout";
+}
+
+@section css {
+    <style>
+        .form-container {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: end;
+            margin-bottom: 15px;
+        }
+
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+            min-width: 120px;
+        }
+
+            .filter-item label {
+                margin-bottom: 5px;
+                font-weight: 600;
+                color: #333;
+            }
+
+            .filter-item input,
+            .filter-item select {
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+            }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+            .btn-primary:hover {
+                background-color: #0056b3;
+            }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+            .btn-secondary:hover {
+                background-color: #545b62;
+            }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+            .btn-success:hover {
+                background-color: #1e7e34;
+            }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+            .btn-danger:hover {
+                background-color: #bd2130;
+            }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+
+        .table-container {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0;
+        }
+
+            .table th,
+            .table td {
+                border: 1px solid #ddd;
+                padding: 12px 8px;
+                text-align: left;
+            }
+
+            .table th {
+                background-color: #f8f9fa;
+                font-weight: 600;
+                color: #333;
+                position: sticky;
+                top: 0;
+            }
+
+            .table tbody tr:hover {
+                background-color: #f5f5f5;
+            }
+
+        .status-active {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .status-inactive {
+            color: #dc3545;
+            font-weight: bold;
+            opacity: 0.6;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: 600;
+                color: #333;
+            }
+
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+            }
+
+            .form-group small {
+                color: #666;
+                font-size: 12px;
+            }
+
+        .pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+            .pagination button {
+                margin: 0 5px;
+            }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        @@media (max-width: 768px) {
+            .filter-row {
+                flex-direction: column;
+            }
+
+            .filter-item {
+                width: 100%;
+            }
+
+            .table-container {
+                overflow-x: auto;
+            }
+
+            .modal-content {
+                margin: 10px;
+                width: calc(100% - 20px);
+            }
+        }
+    </style>
+}
+
+<div class="form-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1 style="margin: 0; color: #333;">檢驗項目管理</h1>
+        <button onclick="openAddModal()" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> 新增檢驗項目
+        </button>
+    </div>
+
+    <!-- 篩選條件 -->
+    <div class="filter-row">
+        <div class="filter-item">
+            <label>部門</label>
+            <select id="filterDepartment" onchange="loadData()">
+                <option value="">全部</option>
+                <option value="QA">QA</option>
+                <option value="環安">環安</option>
+                <option value="生產">生產</option>
+            </select>
+        </div>
+
+        <div class="filter-item">
+            <label>區域</label>
+            <select id="filterArea" onchange="loadData()">
+                <option value="">全部</option>
+                <option value="射出一區">射出一區</option>
+                <option value="射出二區">射出二區</option>
+                <option value="射出三區">射出三區</option>
+                <option value="復興廠射出">復興廠射出</option>
+                <option value="無塵室">無塵室</option>
+            </select>
+        </div>
+
+        <div class="filter-item">
+            <label>狀態</label>
+            <select id="filterStatus" onchange="loadData()">
+                <option value="">全部</option>
+                <option value="true">啟用</option>
+                <option value="false">停用</option>
+            </select>
+        </div>
+
+        <div class="filter-item" style="flex: 1; min-width: 200px;">
+            <label>搜尋</label>
+            <input type="text" id="searchText" placeholder="搜尋檢驗項目名稱" onkeyup="handleSearch()">
+        </div>
+
+        <div class="filter-item">
+            <label>&nbsp;</label>
+            <button onclick="resetFilters()" class="btn btn-secondary">重置</button>
+        </div>
+    </div>
+</div>
+
+<!-- 載入指示器 -->
+<div id="loadingIndicator" class="loading" style="display: none;">
+    <i class="fa-solid fa-spinner fa-spin"></i> 載入中...
+</div>
+
+<!-- 資料表格 -->
+<div id="tableContainer" class="table-container">
+    <table class="table" id="inspectionTable">
+        <thead>
+            <tr>
+                <th style="width: 60px;">ID</th>
+                <th style="width: 180px;">檢驗項目名稱</th>
+                <th style="width: 80px;">部門</th>
+                <th style="width: 80px;">區域</th>
+                <th style="width: 120px;">項目</th>
+                <th style="width: 120px;">資料類型</th>
+                <th style="width: 150px;">選項內容</th>
+                <th style="width: 60px;">必填</th>
+                <th style="width: 60px;">狀態</th>
+                <th style="width: 100px;">建立時間</th>
+                <th style="width: 120px;">操作</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <!-- 動態載入資料 -->
+        </tbody>
+    </table>
+</div>
+
+<!-- 無資料提示 -->
+<div id="noDataMessage" class="no-data" style="display: none;">
+    <i class="fa-solid fa-inbox"></i><br>
+    沒有符合條件的檢驗項目
+</div>
+
+<!-- 分頁控制 -->
+<div id="pagination" class="pagination" style="display: none;">
+    <button id="prevBtn" onclick="changePage(-1)" class="btn btn-secondary">
+        <i class="fa-solid fa-chevron-left"></i> 上一頁
+    </button>
+    <span id="pageInfo" style="margin: 0 20px; line-height: 36px;"></span>
+    <button id="nextBtn" onclick="changePage(1)" class="btn btn-secondary">
+        下一頁 <i class="fa-solid fa-chevron-right"></i>
+    </button>
+</div>
+
+<!-- 新增/編輯 Modal -->
+<div id="itemModal" class="modal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 id="modalTitle" style="margin: 0;">新增檢驗項目</h2>
+            <button onclick="closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+
+        <form id="itemForm">
+            <input type="hidden" id="itemId">
+
+            <div class="form-group">
+                <label>檢驗項目名稱 *</label>
+                <input type="text" id="inspectName" required maxlength="100" placeholder="請輸入檢驗項目名稱">
+            </div>
+
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 1;">
+                    <label>部門 *</label>
+                    <select id="department" required>
+                        <option value="">請選擇部門</option>
+                        <option value="QA">QA</option>
+                        <option value="環安">環安</option>
+                        <option value="QC">QC</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="flex: 1;">
+                    <label>檢驗區域 *</label>
+                    <select id="inspectArea" required>
+                        <option value="">請選擇區域</option>
+                        <option value="all">全部</option>
+                        <option value="射出一區">射出一區</option>
+                        <option value="射出二區">射出二區</option>
+                        <option value="射出三區">射出三區</option>
+                        <option value="復興廠射出">復興廠射出</option>
+                        <option value="無塵室">無塵室</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>站點</label>
+                <input type="text" id="station" maxlength="100" placeholder="選填，如：RSP-150組裝站">
+            </div>
+
+            <div class="form-group">
+                <label>資料類型 *</label>
+                <select id="dataType" required onchange="toggleSelectOptions()">
+                    <option value="">請選擇類型</option>
+                    <option value="TEXT">文字輸入</option>
+                    <option value="NUMBER">數字輸入</option>
+                    <option value="BOOLEAN">是/否選擇</option>
+                    <option value="SELECT">下拉選單</option>
+                    <option value="PHOTO">拍照上傳</option>
+                </select>
+            </div>
+
+            <div id="selectOptionsGroup" class="form-group" style="display: none;">
+                <label>選項內容 (用逗號分隔) *</label>
+                <input type="text" id="selectOptions" maxlength="500" placeholder="例：OK,NG,N/A">
+                <small>僅適用於下拉選單類型，請用逗號分隔各選項</small>
+            </div>
+
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="isRequired" value="true">
+                    <span>必填項目</span>
+                </label>
+            </div>
+
+            <div id="updateReasonGroup" class="form-group" style="display: none;">
+                <label>異動原因</label>
+                <textarea id="updateReason" rows="3" maxlength="200" placeholder="請說明此次異動的原因" style="resize: vertical;"></textarea>
+            </div>
+        </form>
+
+        <div style="text-align: right; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+            <button onclick="closeModal()" class="btn btn-secondary" style="margin-right: 10px;">
+                <i class="fa-solid fa-times"></i> 取消
+            </button>
+            <button onclick="saveItem()" class="btn btn-primary">
+                <i class="fa-solid fa-save"></i> 儲存
+            </button>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+                // 模擬檢驗項目資料
+        const mockInspectionItems = [
+            {
+                InspectItemId: 1,
+                InspectName: "RFID燒錄檢驗",
+                Department: "QA",
+                InspectArea: "無塵室",
+                Station: "RFID燒錄站",
+                DataType: "BOOLEAN",
+                SelectOptions: "OK,NG",
+                IsRequired: true,
+                IsActive: true,
+                CreateDate: "2024-12-01T08:30:00"
+            },
+            {
+                InspectItemId: 2,
+                InspectName: "Q包裝檢查",
+                Department: "QA",
+                InspectArea: "無塵室",
+                Station: "Q包裝站",
+                DataType: "SELECT",
+                SelectOptions: "無破袋,有破袋,包裝不良",
+                IsRequired: true,
+                IsActive: true,
+                CreateDate: "2024-12-01T09:15:00"
+            },
+            {
+                InspectItemId: 3,
+                InspectName: "清洗作業確認",
+                Department: "QA",
+                InspectArea: "無塵室",
+                Station: "清洗站",
+                DataType: "BOOLEAN",
+                SelectOptions: null,
+                IsRequired: true,
+                IsActive: true,
+                CreateDate: "2024-12-01T10:00:00"
+            },
+            {
+                InspectItemId: 4,
+                InspectName: "重量量測記錄",
+                Department: "QA",
+                InspectArea: "無塵室",
+                Station: "量測站",
+                DataType: "NUMBER",
+                SelectOptions: null,
+                IsRequired: true,
+                IsActive: true,
+                CreateDate: "2024-12-01T11:30:00"
+            },
+            {
+                InspectItemId: 5,
+                InspectName: "外觀檢查拍照",
+                Department: "QA",
+                InspectArea: "無塵室",
+                Station: "檢查站",
+                DataType: "PHOTO",
+                SelectOptions: null,
+                IsRequired: true,
+                IsActive: true,
+                CreateDate: "2024-12-01T13:20:00"
+            },
+            {
+                InspectItemId: 6,
+                InspectName: "組裝完成確認",
+                Department: "QA",
+                InspectArea: "無塵室",
+                Station: "組裝站",
+                DataType: "SELECT",
+                SelectOptions: "完成,未完成,異常",
+                IsRequired: true,
+                IsActive: true,
+                CreateDate: "2024-12-01T14:45:00"
+            },
+            {
+                InspectItemId: 7,
+                InspectName: "LD測試數據",
+                Department: "QA",
+                InspectArea: "無塵室",
+                Station: "LD測試站",
+                DataType: "TEXT",
+                SelectOptions: null,
+                IsRequired: true,
+                IsActive: true,
+                CreateDate: "2024-12-01T15:10:00"
+            },
+            {
+                InspectItemId: 8,
+                InspectName: "6S環境檢查",
+                Department: "環安",
+                InspectArea: "無塵室",
+                Station: "現場",
+                DataType: "SELECT",
+                SelectOptions: "良好,一般,不良",
+                IsRequired: true,
+                IsActive: true,
+                CreateDate: "2024-12-01T16:00:00"
+            },
+            {
+                InspectItemId: 9,
+                InspectName: "真空包裝檢驗",
+                Department: "QA",
+                InspectArea: "無塵室",
+                Station: "包裝站",
+                DataType: "BOOLEAN",
+                SelectOptions: null,
+                IsRequired: true,
+                IsActive: true,
+                CreateDate: "2024-11-30T08:00:00"
+            },
+            {
+                InspectItemId: 10,
+                InspectName: "ALU測試確認",
+                Department: "QA",
+                InspectArea: "無塵室",
+                Station: "ALU測試站",
+                DataType: "SELECT",
+                SelectOptions: "通過,失敗,重測",
+                IsRequired: true,
+                IsActive: true,
+                CreateDate: "2024-11-30T14:30:00"
+            }
+        ];
+
+        let currentPage = 1;
+        let currentData = { Items: [], TotalPages: 0, TotalCount: 0 };
+        let searchTimeout = null;
+
+        // 頁面載入時初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+        });
+
+        // 載入資料 (使用模擬資料)
+        function loadData() {
+            showLoading(true);
+
+            // 模擬 API 延遲
+            setTimeout(() => {
+                try {
+                    // 取得篩選條件
+                    const department = document.getElementById('filterDepartment').value || '';
+                    const inspectArea = document.getElementById('filterArea').value || '';
+                    const isActive = document.getElementById('filterStatus').value || '';
+                    const searchText = document.getElementById('searchText').value || '';
+
+                    // 篩選資料
+                    let filteredItems = mockInspectionItems.filter(item => {
+                        if (department && item.Department !== department) return false;
+                        if (inspectArea && item.InspectArea !== inspectArea) return false;
+                        if (isActive && item.IsActive.toString() !== isActive) return false;
+                        if (searchText && !item.InspectName.toLowerCase().includes(searchText.toLowerCase())) return false;
+                        return true;
+                    });
+
+                    // 分頁處理
+                    const pageSize = 50;
+                    const totalPages = Math.ceil(filteredItems.length / pageSize);
+                    const startIndex = (currentPage - 1) * pageSize;
+                    const endIndex = startIndex + pageSize;
+                    const pageItems = filteredItems.slice(startIndex, endIndex);
+
+                    currentData = {
+                        Items: pageItems,
+                        TotalPages: totalPages,
+                        TotalCount: filteredItems.length
+                    };
+
+                    renderTable();
+                    renderPagination();
+                } catch (error) {
+                    console.error('載入資料錯誤:', error);
+                    showError('載入資料失敗: ' + error.message);
+                } finally {
+                    showLoading(false);
+                }
+            }, 300); // 模擬 300ms 延遲
+        }
+
+        // 處理搜尋 (加入延遲)
+        function handleSearch() {
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+
+            searchTimeout = setTimeout(() => {
+                currentPage = 1;
+                loadData();
+            }, 500);
+        }
+
+        // 重置篩選
+        function resetFilters() {
+            document.getElementById('filterDepartment').value = '';
+            document.getElementById('filterArea').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('searchText').value = '';
+            currentPage = 1;
+            loadData();
+        }
+
+        // 顯示載入狀態
+        function showLoading(show) {
+            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+            document.getElementById('tableContainer').style.display = show ? 'none' : 'block';
+        }
+
+        // 顯示錯誤訊息
+        function showError(message) {
+            alert(message);
+        }
+
+        // 渲染表格
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const noDataMessage = document.getElementById('noDataMessage');
+
+            if (!currentData.Items || currentData.Items.length === 0) {
+                tbody.innerHTML = '';
+                document.getElementById('tableContainer').style.display = 'none';
+                noDataMessage.style.display = 'block';
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+
+            noDataMessage.style.display = 'none';
+            document.getElementById('tableContainer').style.display = 'block';
+            document.getElementById('pagination').style.display = currentData.TotalPages > 1 ? 'block' : 'none';
+
+            tbody.innerHTML = currentData.Items.map(item => `
+                <tr class="${!item.IsActive ? 'status-inactive' : ''}">
+                    <td>${item.InspectItemId}</td>
+                    <td><strong>${escapeHtml(item.InspectName)}</strong></td>
+                    <td>${escapeHtml(item.Department)}</td>
+                    <td>${escapeHtml(item.InspectArea)}</td>
+                    <td>${escapeHtml(item.Station || '無')}</td>
+                    <td>${getDataTypeText(item.DataType)}</td>
+                    <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                        title="${escapeHtml(item.SelectOptions || '')}">
+                        ${escapeHtml(item.SelectOptions || '無')}
+                    </td>
+                    <td>${item.IsRequired ? '<span style="color: #dc3545;">是</span>' : '否'}</td>
+                    <td class="${item.IsActive ? 'status-active' : 'status-inactive'}">
+                        ${item.IsActive ? '啟用' : '停用'}
+                    </td>
+                    <td>${formatDate(item.CreateDate)}</td>
+                    <td style="white-space: nowrap;">
+                        <button onclick="editItem(${item.InspectItemId})" class="btn btn-primary btn-sm" title="編輯">
+                            <i class="fa-solid fa-edit"></i>
+                        </button>
+                        <button onclick="toggleStatus(${item.InspectItemId}, ${!item.IsActive})"
+                                class="btn ${item.IsActive ? 'btn-danger' : 'btn-success'} btn-sm"
+                                title="${item.IsActive ? '停用' : '啟用'}">
+                            <i class="fa-solid fa-${item.IsActive ? 'ban' : 'check'}"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 渲染分頁
+        function renderPagination() {
+            const pagination = document.getElementById('pagination');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const pageInfo = document.getElementById('pageInfo');
+
+            if (currentData.TotalPages <= 1) {
+                pagination.style.display = 'none';
+                return;
+            }
+
+            pagination.style.display = 'block';
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= currentData.TotalPages;
+
+            prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
+            nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
+
+            pageInfo.textContent = `第 ${currentPage} 頁，共 ${currentData.TotalPages} 頁 (總計 ${currentData.TotalCount} 筆)`;
+        }
+
+        // 換頁
+        function changePage(direction) {
+            const newPage = currentPage + direction;
+            if (newPage >= 1 && newPage <= currentData.TotalPages) {
+                currentPage = newPage;
+                loadData();
+            }
+        }
+
+        // HTML 跳脫
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 資料類型對應文字
+        function getDataTypeText(dataType) {
+            const types = {
+                'TEXT': '文字',
+                'NUMBER': '數字',
+                'BOOLEAN': '是否',
+                'SELECT': '選單',
+                'PHOTO': '拍照'
+            };
+            return types[dataType] || dataType;
+        }
+
+        // 格式化日期
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+
+            return date.getFullYear() + '/' +
+                   String(date.getMonth() + 1).padStart(2, '0') + '/' +
+                   String(date.getDate()).padStart(2, '0');
+        }
+
+        // 開啟新增 Modal
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = '新增檢驗項目';
+            document.getElementById('itemForm').reset();
+            document.getElementById('itemId').value = '';
+            document.getElementById('updateReasonGroup').style.display = 'none';
+            document.getElementById('selectOptionsGroup').style.display = 'none';
+            document.getElementById('itemModal').style.display = 'block';
+        }
+
+        // 編輯項目 (使用模擬資料)
+        function editItem(id) {
+            const item = mockInspectionItems.find(item => item.InspectItemId === id);
+
+            if (item) {
+                document.getElementById('modalTitle').textContent = '編輯檢驗項目';
+                document.getElementById('itemId').value = item.InspectItemId;
+                document.getElementById('inspectName').value = item.InspectName;
+                document.getElementById('department').value = item.Department;
+                document.getElementById('inspectArea').value = item.InspectArea;
+                document.getElementById('station').value = item.Station || '';
+                document.getElementById('dataType').value = item.DataType;
+                document.getElementById('selectOptions').value = item.SelectOptions || '';
+                document.getElementById('isRequired').checked = item.IsRequired;
+
+                document.getElementById('updateReasonGroup').style.display = 'block';
+                toggleSelectOptions();
+                document.getElementById('itemModal').style.display = 'block';
+            } else {
+                showError('找不到該檢驗項目');
+            }
+        }
+
+        // 切換狀態 (模擬操作)
+        function toggleStatus(id, isActive) {
+            const action = isActive ? '啟用' : '停用';
+            const reason = prompt(`請輸入${action}原因:`);
+
+            if (reason === null) return; // 使用者取消
+
+            // 模擬更新資料
+            const item = mockInspectionItems.find(item => item.InspectItemId === id);
+            if (item) {
+                item.IsActive = isActive;
+                alert(`${action}成功！`);
+                loadData();
+            } else {
+                showError('找不到該檢驗項目');
+            }
+        }
+
+        // 切換選項欄位顯示
+        function toggleSelectOptions() {
+            const dataType = document.getElementById('dataType').value;
+            const optionsGroup = document.getElementById('selectOptionsGroup');
+            const selectOptions = document.getElementById('selectOptions');
+
+            if (dataType === 'SELECT') {
+                optionsGroup.style.display = 'block';
+                selectOptions.required = true;
+            } else {
+                optionsGroup.style.display = 'none';
+                selectOptions.required = false;
+                selectOptions.value = '';
+            }
+        }
+
+        // 關閉 Modal
+        function closeModal() {
+            document.getElementById('itemModal').style.display = 'none';
+        }
+
+        // Modal 外部點擊關閉
+        window.onclick = function(event) {
+            const modal = document.getElementById('itemModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // 儲存項目 (模擬操作)
+        function saveItem() {
+            const form = document.getElementById('itemForm');
+
+            // 表單驗證
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // 額外驗證 SELECT 類型的選項
+            if (document.getElementById('dataType').value === 'SELECT') {
+                const options = document.getElementById('selectOptions').value.trim();
+                if (!options) {
+                    alert('下拉選單類型必須填入選項內容');
+                    document.getElementById('selectOptions').focus();
+                    return;
+                }
+            }
+
+            const itemId = document.getElementById('itemId').value;
+            const isEdit = itemId !== '';
+
+            // 模擬儲存操作
+            alert(isEdit ? '更新成功！' : '新增成功！');
+            closeModal();
+
+            // 如果是新增，可以模擬新增到 mockInspectionItems 陣列
+            if (!isEdit) {
+                const newId = Math.max(...mockInspectionItems.map(item => item.InspectItemId)) + 1;
+                const newItem = {
+                    InspectItemId: newId,
+                    InspectName: document.getElementById('inspectName').value.trim(),
+                    Department: document.getElementById('department').value,
+                    InspectArea: document.getElementById('inspectArea').value,
+                    Station: document.getElementById('station').value.trim() || null,
+                    DataType: document.getElementById('dataType').value,
+                    SelectOptions: document.getElementById('selectOptions').value.trim() || null,
+                    IsRequired: document.getElementById('isRequired').checked,
+                    IsActive: true,
+                    CreateDate: new Date().toISOString()
+                };
+                mockInspectionItems.push(newItem);
+            }
+
+            currentPage = 1;
+            loadData();
+        }
+
+        // ESC 鍵關閉 Modal
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('itemModal');
+                if (modal.style.display === 'block') {
+                    closeModal();
+                }
+            }
+        });
+    </script>
+    @* <script>
+        let currentPage = 1;
+        let currentData = { Items: [], TotalPages: 0, TotalCount: 0 };
+        let searchTimeout = null;
+
+        // 頁面載入時初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+        });
+
+        // 載入資料
+        async function loadData() {
+            showLoading(true);
+
+            try {
+                const params = new URLSearchParams({
+                    page: currentPage,
+                    pageSize: 50,
+                    department: document.getElementById('filterDepartment').value || '',
+                    inspectArea: document.getElementById('filterArea').value || '',
+                    isActive: document.getElementById('filterStatus').value || '',
+                    searchText: document.getElementById('searchText').value || ''
+                });
+
+                const response = await fetch(`@Url.Action("GetInspectionItems", "InspectionItem")?${params}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.Success) {
+                    currentData = result.Data || { Items: [], TotalPages: 0, TotalCount: 0 };
+                    renderTable();
+                    renderPagination();
+                } else {
+                    showError('載入資料失敗: ' + (result.Message || '未知錯誤'));
+                }
+            } catch (error) {
+                console.error('載入資料錯誤:', error);
+                showError('載入資料失敗: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 處理搜尋 (加入延遲)
+        function handleSearch() {
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+
+            searchTimeout = setTimeout(() => {
+                currentPage = 1;
+                loadData();
+            }, 500);
+        }
+
+        // 重置篩選
+        function resetFilters() {
+            document.getElementById('filterDepartment').value = '';
+            document.getElementById('filterArea').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('searchText').value = '';
+            currentPage = 1;
+            loadData();
+        }
+
+        // 顯示載入狀態
+        function showLoading(show) {
+            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+            document.getElementById('tableContainer').style.display = show ? 'none' : 'block';
+        }
+
+        // 顯示錯誤訊息
+        function showError(message) {
+            alert(message); // 可以改成更好的錯誤提示方式
+        }
+
+        // 渲染表格
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const noDataMessage = document.getElementById('noDataMessage');
+
+            if (!currentData.Items || currentData.Items.length === 0) {
+                tbody.innerHTML = '';
+                document.getElementById('tableContainer').style.display = 'none';
+                noDataMessage.style.display = 'block';
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+
+            noDataMessage.style.display = 'none';
+            document.getElementById('tableContainer').style.display = 'block';
+            document.getElementById('pagination').style.display = 'block';
+
+            tbody.innerHTML = currentData.Items.map(item => `
+                <tr class="${!item.IsActive ? 'status-inactive' : ''}">
+                    <td>${item.InspectItemId}</td>
+                    <td><strong>${escapeHtml(item.InspectName)}</strong></td>
+                    <td>${escapeHtml(item.Department)}</td>
+                    <td>${escapeHtml(item.InspectArea)}</td>
+                    <td>${escapeHtml(item.Station || '無')}</td>
+                    <td>${getDataTypeText(item.DataType)}</td>
+                    <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                        title="${escapeHtml(item.SelectOptions || '')}">
+                        ${escapeHtml(item.SelectOptions || '無')}
+                    </td>
+                    <td>${item.IsRequired ? '<span style="color: #dc3545;">是</span>' : '否'}</td>
+                    <td class="${item.IsActive ? 'status-active' : 'status-inactive'}">
+                        ${item.IsActive ? '啟用' : '停用'}
+                    </td>
+                    <td>${formatDate(item.CreateDate)}</td>
+                    <td style="white-space: nowrap;">
+                        <button onclick="editItem(${item.InspectItemId})" class="btn btn-primary btn-sm" title="編輯">
+                            <i class="fa-solid fa-edit"></i>
+                        </button>
+                        <button onclick="toggleStatus(${item.InspectItemId}, ${!item.IsActive})"
+                                class="btn ${item.IsActive ? 'btn-danger' : 'btn-success'} btn-sm"
+                                title="${item.IsActive ? '停用' : '啟用'}">
+                            <i class="fa-solid fa-${item.IsActive ? 'ban' : 'check'}"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 渲染分頁
+        function renderPagination() {
+            const pagination = document.getElementById('pagination');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const pageInfo = document.getElementById('pageInfo');
+
+            if (currentData.TotalPages <= 1) {
+                pagination.style.display = 'none';
+                return;
+            }
+
+            pagination.style.display = 'block';
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= currentData.TotalPages;
+
+            prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
+            nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
+
+            pageInfo.textContent = `第 ${currentPage} 頁，共 ${currentData.TotalPages} 頁 (總計 ${currentData.TotalCount} 筆)`;
+        }
+
+        // 換頁
+        function changePage(direction) {
+            const newPage = currentPage + direction;
+            if (newPage >= 1 && newPage <= currentData.TotalPages) {
+                currentPage = newPage;
+                loadData();
+            }
+        }
+
+        // HTML 跳脫
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 資料類型對應文字
+        function getDataTypeText(dataType) {
+            const types = {
+                'TEXT': '文字',
+                'NUMBER': '數字',
+                'BOOLEAN': '是否',
+                'SELECT': '選單',
+                'PHOTO': '拍照'
+            };
+            return types[dataType] || dataType;
+        }
+
+        // 格式化日期
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+
+            return date.getFullYear() + '/' +
+                   String(date.getMonth() + 1).padStart(2, '0') + '/' +
+                   String(date.getDate()).padStart(2, '0');
+        }
+
+        // 開啟新增 Modal
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = '新增檢驗項目';
+            document.getElementById('itemForm').reset();
+            document.getElementById('itemId').value = '';
+            document.getElementById('updateReasonGroup').style.display = 'none';
+            document.getElementById('selectOptionsGroup').style.display = 'none';
+            document.getElementById('itemModal').style.display = 'block';
+        }
+
+        // 編輯項目
+        async function editItem(id) {
+            try {
+                const response = await fetch(`@Url.Action("GetInspectionItem", "InspectionItem")?id=${id}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.Success && result.Data) {
+                    const item = result.Data;
+
+                    document.getElementById('modalTitle').textContent = '編輯檢驗項目';
+                    document.getElementById('itemId').value = item.InspectItemId;
+                    document.getElementById('inspectName').value = item.InspectName;
+                    document.getElementById('department').value = item.Department;
+                    document.getElementById('inspectArea').value = item.InspectArea;
+                    document.getElementById('station').value = item.Station || '';
+                    document.getElementById('dataType').value = item.DataType;
+                    document.getElementById('selectOptions').value = item.SelectOptions || '';
+                    document.getElementById('isRequired').checked = item.IsRequired;
+
+                    document.getElementById('updateReasonGroup').style.display = 'block';
+                    toggleSelectOptions();
+                    document.getElementById('itemModal').style.display = 'block';
+                } else {
+                    showError('載入項目資料失敗: ' + (result.Message || '未知錯誤'));
+                }
+            } catch (error) {
+                console.error('載入項目資料錯誤:', error);
+                showError('載入項目資料失敗: ' + error.message);
+            }
+        }
+
+        // 切換狀態
+        async function toggleStatus(id, isActive) {
+            const action = isActive ? '啟用' : '停用';
+            const reason = prompt(`請輸入${action}原因:`);
+
+            if (reason === null) return; // 使用者取消
+
+            try {
+                const response = await fetch(`@Url.Action("ToggleInspectionItemStatus", "InspectionItem")?id=${id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    body: JSON.stringify({
+                        IsActive: isActive,
+                        UpdateReason: reason || `狀態變更為${action}`
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.Success) {
+                    alert(result.Message);
+                    loadData();
+                } else {
+                    showError('狀態變更失敗: ' + (result.Message || '未知錯誤'));
+                }
+            } catch (error) {
+                console.error('狀態變更錯誤:', error);
+                showError('狀態變更失敗: ' + error.message);
+            }
+        }
+
+        // 切換選項欄位顯示
+        function toggleSelectOptions() {
+            const dataType = document.getElementById('dataType').value;
+            const optionsGroup = document.getElementById('selectOptionsGroup');
+            const selectOptions = document.getElementById('selectOptions');
+
+            if (dataType === 'SELECT') {
+                optionsGroup.style.display = 'block';
+                selectOptions.required = true;
+            } else {
+                optionsGroup.style.display = 'none';
+                selectOptions.required = false;
+                selectOptions.value = '';
+            }
+        }
+
+        // 關閉 Modal
+        function closeModal() {
+            document.getElementById('itemModal').style.display = 'none';
+        }
+
+        // Modal 外部點擊關閉
+        window.onclick = function(event) {
+            const modal = document.getElementById('itemModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // 儲存項目
+        async function saveItem() {
+            const form = document.getElementById('itemForm');
+
+            // 表單驗證
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // 額外驗證 SELECT 類型的選項
+            if (document.getElementById('dataType').value === 'SELECT') {
+                const options = document.getElementById('selectOptions').value.trim();
+                if (!options) {
+                    alert('下拉選單類型必須填入選項內容');
+                    document.getElementById('selectOptions').focus();
+                    return;
+                }
+            }
+
+            const itemId = document.getElementById('itemId').value;
+            const isEdit = itemId !== '';
+
+            const itemData = {
+                InspectItemId: itemId || 0,
+                InspectName: document.getElementById('inspectName').value.trim(),
+                Department: document.getElementById('department').value,
+                InspectArea: document.getElementById('inspectArea').value,
+                Station: document.getElementById('station').value.trim() || null,
+                DataType: document.getElementById('dataType').value,
+                SelectOptions: document.getElementById('selectOptions').value.trim() || null,
+                IsRequired: document.getElementById('isRequired').checked,
+                UpdateReason: document.getElementById('updateReason').value.trim() || null
+            };
+
+            try {
+                const url = isEdit
+                    ? `@Url.Action("UpdateInspectionItem", "InspectionItem")?id=${itemId}`
+                    : `@Url.Action("CreateInspectionItem", "InspectionItem")`;
+
+                const method = isEdit ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(itemData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.Success) {
+                    alert(result.Message);
+                    closeModal();
+                    currentPage = 1; // 重新載入時回到第一頁
+                    loadData();
+                } else {
+                    showError('儲存失敗: ' + (result.Message || '未知錯誤'));
+                }
+            } catch (error) {
+                console.error('儲存錯誤:', error);
+                showError('儲存失敗: ' + error.message);
+            }
+        }
+
+        // ESC 鍵關閉 Modal
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('itemModal');
+                if (modal.style.display === 'block') {
+                    closeModal();
+                }
+            }
+        });
+    </script> *@
+}

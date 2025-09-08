@@ -48,6 +48,34 @@ namespace PatrolInspect.Repository
                 throw;
             }
         }
+        public async Task<ScheduleBaseInfo> GetScheduleBaseInfoAsync()
+        {
+            using var connection = CreateConnection();
+            var sql = @"
+                SELECT distinct UserName FROM INSPECTION_SCHEDULE_EVENT ORDER BY UserName asc;
+
+                SELECT distinct Department FROM INSPECTION_SCHEDULE_EVENT order by Department asc;
+                ";
+
+            try
+            {
+                using var multi = await connection.QueryMultipleAsync(sql);
+
+                var users = (await multi.ReadAsync<string>()).ToList();
+                var departs = (await multi.ReadAsync<string>()).ToList();
+
+                return new ScheduleBaseInfo
+                {
+                    UserNames = users,
+                    Departments = departs
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting department from INSPECTION_SCHEDULE_EVENT");
+                throw;
+            }
+        }
 
         public async Task<List<string>> GetAreasAsync()
         {
@@ -120,7 +148,7 @@ namespace PatrolInspect.Repository
         {
             using var connection = CreateConnection();
             var sql = @"
-                SELECT EventId, UserNo, UserName, EventType, EventDetail, 
+                SELECT EventId, UserNo, UserName, Department, EventType, EventTypeName, EventDetail, 
                        StartDateTime, EndDateTime, Area, IsActive, 
                        CreateDate, CreateBy, UpdateDate, UpdateBy
                 FROM INSPECTION_SCHEDULE_EVENT 
@@ -316,5 +344,44 @@ namespace PatrolInspect.Repository
                 throw;
             }
         }
+
+        public async Task<List<InspectionScheduleEvent>> GetSearchSchedules(string userName, string depart, DateTime? startDate, DateTime? endDate)
+        {
+            using var connection = CreateConnection();
+            var sql = @"
+                SELECT EventId, UserNo, UserName, Department, EventType, EventTypeName, EventDetail, 
+                       StartDateTime, EndDateTime, Area
+                FROM INSPECTION_SCHEDULE_EVENT 
+                WHERE 1=1 ";
+                
+
+            if (!string.IsNullOrWhiteSpace(userName))
+            {
+                sql += @"and UserName = @userName ";
+            }
+
+            if (!string.IsNullOrWhiteSpace(depart))
+            {
+                sql += @"and Department = @depart ";
+            }
+
+
+            sql += @"and StartDateTime >= @startDate and EndDateTime <=  @endDate
+                    ORDER BY StartDateTime desc, userName asc;";
+
+
+            try
+            {
+                var schedules = await connection.QueryAsync<InspectionScheduleEvent>(sql, new { userName, depart, startDate, endDate });
+                return schedules.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting schedules for user: {userName}", userName);
+                throw;
+            }
+        }
+
+
     }
 }

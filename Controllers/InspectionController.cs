@@ -76,27 +76,6 @@ namespace PatrolInspect.Controllers
             }
         }
 
-        // API: 刷新機台狀態
-        //[HttpPost]
-        //public async Task<IActionResult> RefreshDeviceStatus()
-        //{
-        //    var userNo = HttpContext.Session.GetString("UserNo");
-        //    if (string.IsNullOrEmpty(userNo))
-        //    {
-        //        return Json(new { success = false, message = "未登入" });
-        //    }
-
-        //    try
-        //    {
-        //        var result = await _inspectionRepository.GetUserTodayInspectionAsync(userNo);
-        //        return Json(new { success = true, data = result });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError(ex, "Error refreshing device status for user: {UserNo}", userNo);
-        //        return Json(new { success = false, message = "刷新失敗" });
-        //    }
-        //}
 
         // API: 記錄巡檢到達
         [HttpPost]

@@ -99,6 +99,7 @@ namespace PatrolInspect.Repository
                 FROM INSPECTION_QC_RECORD 
                 WHERE UserNo = @UserNo 
                   AND CAST(ArriveAt AS DATE) = @Date
+                  AND InspectType <> 'CANCEL'
                 ORDER BY ArriveAt DESC";
 
             try
@@ -133,58 +134,89 @@ namespace PatrolInspect.Repository
 
                 // 3. 取得今天的巡檢記錄
                 var todayRecords = await GetTodayInspectionRecordsAsync(userNo, today);
-                var inspectedDevicesDict = todayRecords
+                // 3.1把某個人當天做的撈出來，根據機器分群組後，把美個機台最後一筆(.first)撈出來作為值
+                static DateTime EffectiveTime(InspectionQcRecord r)
+                    => r.SubmitDataAt ?? r.ArriveAt;
+
+                // 1) 先把今天所有有 DeviceId 的紀錄準備好（不分時段）
+                var todaysDeviceRecords = todayRecords
                     .Where(r => !string.IsNullOrEmpty(r.DeviceId))
-                    .GroupBy(r => r.DeviceId!)
-                    .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.ArriveAt).First());
+                    .ToList();
+
 
                 var totalDevices = 0;
-                var runningDevices = 0;
+                var withWoDevices = 0;
                 var completedInspections = 0;
                 var allDevicesForCurrentUser = new List<InspectionDeviceInfo>();
 
                 // 4. 為每個時段載入機台資料
                 foreach (var period in timePeriods)
                 {
-                    if (period.Areas.Any())
+                    if (!period.Areas.Any())
+                        continue;
+
+                    // 2) 取得該時段的機台清單 + 即時狀態
+                    var areaDevices = await GetAreaDevicesAsync(period.Areas);
+                    var deviceIds = areaDevices.Select(d => d.DeviceId).ToList();
+                    var deviceStatuses = await GetDeviceStatusAsync(deviceIds);
+                    var statusDict = deviceStatuses.ToDictionary(s => s.DeviceID, s => s);
+
+                    // 3) 依「歸屬時間」把紀錄分到該時段：SubmitDataAt 為主，為空則用 ArriveAt
+                    //    條件：period.Start <= EffectiveTime(record) < period.End
+                    var periodRecords = todaysDeviceRecords
+                        .Where(r =>
+                        {
+                            var t = EffectiveTime(r);
+                            return t >= period.StartDateTime && t < period.EndDateTime;
+                        })
+                        .GroupBy(r => r.DeviceId!) // 先按機台分群
+                        .ToDictionary(
+                            g => g.Key,
+                            // 這裡保留「該時段此機台的所有紀錄」，依「歸屬時間」由舊到新排序（前端要全列表也好用）
+                            g => g.OrderBy(r => EffectiveTime(r)).ToList()
+                        );
+
+                    // 4) 建立該時段的 DevicesToInspect：每台機台抓「最後一筆」供前端顯示
+                    var devicesToInspect = areaDevices.Select(device =>
                     {
-                        var areaDevices = await GetAreaDevicesAsync(period.Areas);
-                        var deviceIds = areaDevices.Select(d => d.DeviceId).ToList();
-                        var deviceStatuses = await GetDeviceStatusAsync(deviceIds);
-                        var statusDict = deviceStatuses.ToDictionary(s => s.DeviceID, s => s);
+                        statusDict.TryGetValue(device.DeviceId, out var status);
 
-                        var devicesToInspect = areaDevices.Select(device =>
+                        periodRecords.TryGetValue(device.DeviceId, out var recsForThisDeviceInPeriod);
+                        var last = recsForThisDeviceInPeriod?.OrderByDescending(EffectiveTime).FirstOrDefault();
+
+                        // 是否有進行但未提交（最後一筆 SubmitDataAt == null）
+                        var alreadyInspectedButNotSubmitted = last != null && last.SubmitDataAt == null;
+
+                        return new InspectionDeviceInfo
                         {
-                            statusDict.TryGetValue(device.DeviceId, out var status);
-                            inspectedDevicesDict.TryGetValue(device.DeviceId, out var lastInspection);
+                            Device = device,
+                            Status = status,
 
-                            var isRunning = status?.DeviceStatus?.ToUpper() == "RUN";
-                            var alreadyInspected = lastInspection != null && lastInspection.SubmitDataAt == null;
+                            // 最後一筆的開始/結束時間（以利前端顯示）
+                            LastInspectionStartTime = last?.ArriveAt,
+                            LastInspectionEndTime = last?.SubmitDataAt,
 
-                            return new InspectionDeviceInfo
-                            {
-                                Device = device,
-                                Status = status,
-                                RequiresInspection = isRunning && !alreadyInspected,
-                                LastInspectionTime =
-                                    (lastInspection != null &&
-                                     !string.Equals((lastInspection.InspectType ?? string.Empty).Trim(), "CANCEL", StringComparison.OrdinalIgnoreCase))
-                                    ? lastInspection.SubmitDataAt
-                                    : (DateTime?)null,
-                                LastInspectorName = lastInspection?.UserName
-                            };
-                        }).ToList(); 
+                            LastInspectorName = last?.UserName,
 
-                        period.DevicesToInspect = devicesToInspect;
+                            // 你原本的旗標，如果仍需要
+                            //RequiresInspection = (status?.deviceStatus?.Equals("RUN", StringComparison.OrdinalIgnoreCase) ?? false) && !alreadyInspectedButNotSubmitted
+                        };
+                    }).ToList();
 
-                        // 統計（只統計當前時段的數據）
-                        if (period.IsCurrent)
-                        {
-                            totalDevices += devicesToInspect.Count;
-                            runningDevices += devicesToInspect.Count(d => d.IsRunning);
-                            completedInspections += devicesToInspect.Count(d => d.LastInspectionTime.HasValue);
-                            allDevicesForCurrentUser.AddRange(devicesToInspect);
-                        }
+                    period.DevicesToInspect = devicesToInspect;
+
+                    // 5) 若要把「該時段內每台機台的所有紀錄」也提供給前端（可選）
+                    //    例如 period.DeviceRecordsMap: Dictionary<string, List<InspectionQcRecord>>
+                    //    如果 period 沒有這個屬性，你可以在 ViewModel 補上
+                    period.DeviceRecordsMap = periodRecords; // 可選
+
+                    // 6) 統計（只統計當前時段）
+                    if (period.IsCurrent)
+                    {
+                        totalDevices += devicesToInspect.Count;
+                        withWoDevices += devicesToInspect.Count(d => !string.IsNullOrEmpty(d?.Status?.WO_ID));
+                        completedInspections += devicesToInspect.Count(d => d.LastInspectionEndTime.HasValue);
+                        allDevicesForCurrentUser.AddRange(devicesToInspect);
                     }
                 }
 
@@ -199,7 +231,7 @@ namespace PatrolInspect.Repository
                     Department = department,
                     TimePeriods = timePeriods,
                     TotalDevices = totalDevices,
-                    RunningDevices = runningDevices,
+                    WithWoDevices = withWoDevices,
                     CompletedInspections = completedInspections,
 
                     // 為了向後相容保留的屬性
@@ -356,11 +388,11 @@ namespace PatrolInspect.Repository
                 .GroupBy(s => new { s.StartDateTime, s.EndDateTime, s.EventType,s.EventTypeName, s.EventDetail})
                 .Select(g => new
                 {
-                    StartDateTime = g.Key.StartDateTime,
-                    EndDateTime = g.Key.EndDateTime,
-                    EventType = g.Key.EventType,
-                    EventTypeName = g.Key.EventTypeName,
-                    EventDetail = g.Key.EventDetail,
+                    g.Key.StartDateTime,
+                    g.Key.EndDateTime,
+                    g.Key.EventType,
+                    g.Key.EventTypeName,
+                    g.Key.EventDetail,
                     Areas = g.Select(s => s.Area).Distinct().ToList()
                 })
                 .OrderBy(g => g.StartDateTime)

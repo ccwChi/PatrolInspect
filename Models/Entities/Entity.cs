@@ -18,6 +18,7 @@ namespace PatrolInspect.Models.Entities
         public DateTime? SubmitDataAt { get; set; }
         public string Source { get; set; } = "NFC";
         public DateTime CreateDate { get; set; } = DateTime.Now;
+        public string? DeviceRecordsMap { get; set; }
     }
 
     /// <summary>
@@ -78,6 +79,12 @@ namespace PatrolInspect.Models.Entities
         public string? DeviceSchedulingStatus { get; set; }
     }
 
+    public class ScheduleBaseInfo
+    {
+        public List<string> UserNames { get; set; } = new();
+        public List<string> Departments { get; set; } = new();
+    }
+
     public class ScheduleInfo
     {
         public string EventType { get; set; } = string.Empty;
@@ -97,5 +104,34 @@ namespace PatrolInspect.Models.Entities
         public string EventTypeName { get; set; } = string.Empty;
         public string AllowDepartments { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
+    }
+
+
+    public class InspectionItem
+    {
+        public int InspectItemId { get; set; }
+        [StringLength(100, ErrorMessage = "檢驗項目名稱長度不能超過100字")]
+        public string InspectName { get; set; } = string.Empty;
+        [StringLength(50, ErrorMessage = "部門名稱長度不能超過50字")]
+        public string Department { get; set; } = string.Empty;
+        [StringLength(50, ErrorMessage = "檢驗區域長度不能超過50字")]
+        public string InspectArea { get; set; } = string.Empty;
+        [StringLength(50, ErrorMessage = "站點名稱長度不能超過50字")]
+        public string? Station { get; set; }
+        [StringLength(20)]
+        public string DataType { get; set; } = "TEXT";
+        [StringLength(500, ErrorMessage = "選項內容長度不能超過500字")]
+        public string? SelectOptions { get; set; }
+        public bool IsRequired { get; set; } = false;
+        public bool IsActive { get; set; } = true;
+        public DateTime CreateDate { get; set; } = DateTime.Now;
+        [StringLength(50)]
+        public string CreateBy { get; set; } = string.Empty;
+        public DateTime? UpdateDate { get; set; }
+        [StringLength(50)]
+        public string? UpdateBy { get; set; }
+
+        [StringLength(200, ErrorMessage = "異動原因長度不能超過200字")]
+        public string? UpdateReason { get; set; }
     }
 }
