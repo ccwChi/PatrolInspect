@@ -9,12 +9,11 @@ namespace PatrolInspect.Models
     public class InspectionDeviceInfo
     {
         public InspectionDeviceAreaMapping Device { get; set; } = new();
-        public FnDeviceStatus? Status { get; set; }
-        public bool RequiresInspection { get; set; }
+        public List<FnDeviceStatusDto>? Status { get; set; }
         public DateTime? LastInspectionStartTime { get; set; }
         public DateTime? LastInspectionEndTime { get; set; }
         public string? LastInspectorName { get; set; }
-        public bool HasAlarm => !string.IsNullOrEmpty(Status?.AlarmMessage);
+
     }
 
     /// <summary>
@@ -51,25 +50,24 @@ namespace PatrolInspect.Models
     /// <summary>
     /// 排班事件DTO (用於前端編輯)
     /// </summary>
-    public class ScheduleEventDto
-    {
+    //public class ScheduleEventDto
+    //{
 
-        public string UserNo { get; set; } = string.Empty;
-        public string UserName { get; set; } = string.Empty;
-        public string DepartmentName { get; set; } = string.Empty;
-        public string EventType { get; set; } = string.Empty;
-        public string EventTypeName { get; set; } = string.Empty;
-        public string EventDetail { get; set; } = string.Empty;
-        public string StartDate { get; set; } = string.Empty;
-        public string StartTime { get; set; } = string.Empty;
-        public string EndDate { get; set; } = string.Empty;
-        public string EndTime { get; set; } = string.Empty;
-        public DateTime StartDateTime { get; set; }
-        public DateTime EndDateTime { get; set; }
-        public string Area { get; set; } = string.Empty;
-        public bool IsActive { get; set; } = true;
-        public string? CreateBy { get; set; }
-    }
+    //    public string UserNo { get; set; } = string.Empty;
+    //    public string UserName { get; set; } = string.Empty;
+    //    public string DepartmentName { get; set; } = string.Empty;
+    //    public string EventType { get; set; } = string.Empty;
+    //    public string EventDetail { get; set; } = string.Empty;
+    //    public string StartDate { get; set; } = string.Empty;
+    //    public string StartTime { get; set; } = string.Empty;
+    //    public string EndDate { get; set; } = string.Empty;
+    //    public string EndTime { get; set; } = string.Empty;
+    //    public DateTime StartDateTime { get; set; }
+    //    public DateTime EndDateTime { get; set; }
+    //    public string Area { get; set; } = string.Empty;
+    //    public bool IsActive { get; set; } = true;
+    //    public string? CreateBy { get; set; }
+    //}
 
     public class ConfirmReplaceRequest
     {
@@ -88,7 +86,6 @@ namespace PatrolInspect.Models
         public DateTime EndDateTime { get; set; }
         public List<string> Areas { get; set; } = new List<string>();
         public string? EventType { get; set; }
-        public string? EventTypeName { get; set; }
         public string? EventDetail { get; set; }
         public bool IsCurrent { get; set; }
         public bool IsPast { get; set; }
@@ -148,5 +145,70 @@ namespace PatrolInspect.Models
         public bool Success { get; set; }
         public string Message { get; set; } = string.Empty;
         public T? Data { get; set; }
+    }
+
+    public class InspectionRecord
+    {
+        public int RecordId { get; set; }
+        public string TimeSlot { get; set; } = string.Empty; // 時段
+        public string Category { get; set; } = string.Empty; // 類別
+        public string Station { get; set; } = string.Empty; // 站點
+        public string WorkOrder { get; set; } = string.Empty; // 工單
+        public string PartNumber { get; set; } = string.Empty; // 料號
+        public string ProductName { get; set; } = string.Empty; // 品名
+        public string AuditUnit { get; set; } = string.Empty; // 授稽單位
+        public string Inspector { get; set; } = string.Empty; // 稽核人員
+        public string SerialNumbers { get; set; } = string.Empty; // 檢查序號
+
+        // 各項檢驗內容
+        public string CleaningOperation { get; set; } = string.Empty;
+        public string RfidBurning { get; set; } = string.Empty;
+        public string Measurement { get; set; } = string.Empty;
+        public string LdWindSpeedTest { get; set; } = string.Empty;
+        public string QPackaging { get; set; } = string.Empty;
+        public string Rsp150Assembly { get; set; } = string.Empty;
+        public string AluTesting { get; set; } = string.Empty;
+        public string Rsp200Assembly { get; set; } = string.Empty;
+        public string VacuumPackaging { get; set; } = string.Empty;
+        public string SixSAudit { get; set; } = string.Empty;
+        public string AbnormalDescription { get; set; } = string.Empty;
+        public string CarNumber { get; set; } = string.Empty;
+        public string Remarks { get; set; } = string.Empty;
+
+        public DateTime InspectionTime { get; set; } = DateTime.Now;
+        public bool IsCompleted { get; set; }
+        public string Status { get; set; } = "進行中"; // 進行中, 已完成, 異常
+    }
+
+    public class InspectionDashboardViewModel
+    {
+        public List<InspectionRecord> RecentRecords { get; set; } = new();
+        public Dictionary<string, int> StatusSummary { get; set; } = new();
+        public Dictionary<string, int> CategorySummary { get; set; } = new();
+        public int TotalRecords { get; set; }
+        public int TodayRecords { get; set; }
+        public string CurrentUser { get; set; } = string.Empty;
+    }
+
+    public class InspectionFilterViewModel
+    {
+        public string TimeSlot { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string Station { get; set; } = string.Empty;
+        public string Inspector { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 20;
+    }
+
+    public class ProcessNFCRequest
+    {
+        public string NfcId { get; set; } = string.Empty;
+        public string Source { get; set; } = "NFC";
+        public string InspectType { get; set; } = "INJECT_INSPECT";
+        public bool ConfirmReplace { get; set; } = false;
+        public int? OldRecordId { get; set; }
     }
 }

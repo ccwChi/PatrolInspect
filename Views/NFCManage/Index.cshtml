@@ -1,0 +1,300 @@
+﻿@model PatrolInspect.Models.LoginViewModel
+
+@{
+    ViewData["Title"] = "檢驗項目管理 - 巡檢系統";
+    Layout = "_Layout";
+}
+
+@section css {
+    <style>
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        h2 {
+            color: #666;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0 15px 0;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        button {
+            background: #007cba;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+            button:hover {
+                background: #005a8b;
+            }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 3px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+
+}
+
+<h1>NFC 讀寫工具</h1>
+
+<div class="card">
+    <h2>讀取 NFC</h2>
+    <button onclick="startReading()">開始讀取</button>
+    <button onclick="stopReading()">停止讀取</button>
+    <div id="readStatus" class="status info" style="display: none;"></div>
+    <div id="readOutput" class="output" style="display: none;"></div>
+</div>
+
+<div class="card">
+    <h2>寫入 NFC</h2>
+    <label>輸入要寫入的文字:</label>
+    <textarea id="writeText" rows="4" placeholder="輸入要寫入到 NFC 的內容..."></textarea>
+
+    <label>JSON 格式 (可選):</label>
+    <textarea id="writeJson" rows="4" placeholder='例如: {"deviceId": "100T", "location": "A區"}'></textarea>
+
+    <button onclick="writeNFC()">寫入 NFC</button>
+    <button onclick="clearInputs()">清空輸入</button>
+    <div id="writeStatus" class="status info" style="display: none;"></div>
+</div>
+
+<div class="card">
+    <h2>操作記錄</h2>
+    <button onclick="clearLog()">清空記錄</button>
+    <div id="log" class="output"></div>
+</div>
+@section scripts {
+    <script>
+        let nfcReader = null;
+        let isReading = false;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            addLog('頁面載入完成');
+            checkNFCSupport();
+        });
+
+        // 檢查 NFC 支援
+        function checkNFCSupport() {
+            if ('NDEFReader' in window) {
+                addLog('瀏覽器支援 NFC');
+                nfcReader = new NDEFReader();
+            } else {
+                addLog('瀏覽器不支援 NFC');
+                showStatus('readStatus', '瀏覽器不支援 NFC', 'error');
+            }
+        }
+
+        // 開始讀取
+        async function startReading() {
+            if (!nfcReader) {
+                showStatus('readStatus', '無法使用 NFC 功能', 'error');
+                return;
+            }
+
+            try {
+                addLog('開始掃描 NFC...');
+                showStatus('readStatus', '正在掃描，請靠近 NFC 卡片...', 'info');
+
+                await nfcReader.scan();
+                isReading = true;
+
+                nfcReader.addEventListener("reading", ({ message, serialNumber }) => {
+                    addLog(`讀取到卡片: ${serialNumber}`);
+                    displayNFCContent(message, serialNumber);
+                    showStatus('readStatus', '讀取成功！', 'success');
+                });
+
+                nfcReader.addEventListener("readingerror", (error) => {
+                    addLog(`讀取錯誤: ${error.message}`);
+                    showStatus('readStatus', `讀取錯誤: ${error.message}`, 'error');
+                });
+
+            } catch (error) {
+                addLog(`啟動掃描失敗: ${error.message}`);
+                showStatus('readStatus', `啟動失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // 停止讀取
+        function stopReading() {
+            if (isReading) {
+                addLog('停止掃描');
+                showStatus('readStatus', '已停止掃描', 'info');
+                isReading = false;
+            }
+        }
+
+        // 顯示 NFC 內容
+        function displayNFCContent(message, serialNumber) {
+            let content = `序號: ${serialNumber}\n\n`;
+
+            if (message && message.records && message.records.length > 0) {
+                content += `記錄數量: ${message.records.length}\n\n`;
+
+                message.records.forEach((record, index) => {
+                    content += `=== 記錄 ${index + 1} ===\n`;
+                    content += `類型: ${record.recordType}\n`;
+                    content += `媒體類型: ${record.mediaType || 'N/A'}\n`;
+
+                    try {
+                        const decoder = new TextDecoder();
+                        const text = decoder.decode(record.data);
+                        content += `內容: ${text}\n`;
+
+                        // 嘗試解析 JSON
+                        if (record.mediaType === 'application/json' || text.startsWith('{')) {
+                            try {
+                                const json = JSON.parse(text);
+                                content += `JSON 格式:\n${JSON.stringify(json, null, 2)}\n`;
+                            } catch (e) {
+                                // 不是有效的 JSON
+                            }
+                        }
+                    } catch (e) {
+                        content += `內容: [無法解碼]\n`;
+                    }
+                    content += '\n';
+                });
+            } else {
+                content += '沒有 NDEF 記錄\n';
+            }
+
+            document.getElementById('readOutput').textContent = content;
+            document.getElementById('readOutput').style.display = 'block';
+        }
+
+        // 寫入 NFC
+        async function writeNFC() {
+            if (!nfcReader) {
+                showStatus('writeStatus', '無法使用 NFC 功能', 'error');
+                return;
+            }
+
+            const textContent = document.getElementById('writeText').value.trim();
+            const jsonContent = document.getElementById('writeJson').value.trim();
+
+            if (!textContent && !jsonContent) {
+                showStatus('writeStatus', '請輸入要寫入的內容', 'error');
+                return;
+            }
+
+            try {
+                addLog('✏️ 準備寫入 NFC...');
+                showStatus('writeStatus', '請將 NFC 卡片靠近...', 'info');
+
+                const records = [];
+
+                // 新增文字記錄
+                if (textContent) {
+                    records.push({
+                        recordType: "text",
+                        data: textContent
+                    });
+                }
+
+                // 新增 JSON 記錄
+                if (jsonContent) {
+                    try {
+                        JSON.parse(jsonContent); // 驗證 JSON 格式
+                        records.push({
+                            recordType: "text",
+                            mediaType: "application/json",
+                            data: jsonContent
+                        });
+                    } catch (e) {
+                        showStatus('writeStatus', 'JSON 格式錯誤', 'error');
+                        return;
+                    }
+                }
+
+                await nfcReader.write({ records });
+
+                addLog('✅ NFC 寫入成功');
+                showStatus('writeStatus', '寫入成功！', 'success');
+
+            } catch (error) {
+                addLog(`❌ 寫入失敗: ${error.message}`);
+                showStatus('writeStatus', `寫入失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // 清空輸入
+        function clearInputs() {
+            document.getElementById('writeText').value = '';
+            document.getElementById('writeJson').value = '';
+            addLog('已清空輸入內容');
+        }
+
+        // 顯示狀態
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+            element.style.display = 'block';
+        }
+
+        // 新增記錄
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString('zh-TW');
+            const logElement = document.getElementById('log');
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        // 清空記錄
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+            addLog('記錄已清空');
+        }
+    </script>
+}

@@ -27,47 +27,39 @@ namespace PatrolInspect.Repository
             return new SqlConnection(_connectionString);
         }
 
-        public async Task<List<InspectionScheduleEvent>> GetAllSchedulesAsync()
-        {
-            using var connection = CreateConnection();
-            var sql = @"
-                SELECT EventId, UserNo, UserName, EventType, EventDetail, 
-                       StartDateTime, EndDateTime, Area, IsActive, 
-                       CreateDate, CreateBy, UpdateDate, UpdateBy
-                FROM INSPECTION_SCHEDULE_EVENT 
-                ORDER BY StartDateTime DESC";
 
-            try
-            {
-                var schedules = await connection.QueryAsync<InspectionScheduleEvent>(sql);
-                return schedules.ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting all schedules");
-                throw;
-            }
-        }
         public async Task<ScheduleBaseInfo> GetScheduleBaseInfoAsync()
         {
             using var connection = CreateConnection();
             var sql = @"
                 SELECT distinct UserName FROM INSPECTION_SCHEDULE_EVENT ORDER BY UserName asc;
-
                 SELECT distinct Department FROM INSPECTION_SCHEDULE_EVENT order by Department asc;
-                ";
+                SELECT distinct Area FROM INSPECTION_DEVICE_AREA_MAPPING order by Area asc
+                SELECT EventType FROM INSPECTION_EVENT_TYPE_MASTER WHERE IsActive = 1 ORDER BY EventType
+                SELECT 
+                    mu.UserNo, mu.UserName, mu.DepartmentName as Department, md.FatherDepartmentName as FatherDepartment, mu.TitleName
+                FROM MES_USERS mu
+                LEFT JOIN MES_DEPARTMENT md ON mu.DepartmentNo = md.DepartmentNo
+                WHERE (mu.ExpirationDate IS NULL OR mu.ExpirationDate > GETDATE())
+                ORDER BY mu.UserNo";
 
             try
             {
                 using var multi = await connection.QueryMultipleAsync(sql);
 
-                var users = (await multi.ReadAsync<string>()).ToList();
-                var departs = (await multi.ReadAsync<string>()).ToList();
+                var scheduleUsers = (await multi.ReadAsync<string>()).ToList();
+                var scheduleDeparts = (await multi.ReadAsync<string>()).ToList();
+                var areas = (await multi.ReadAsync<string>()).ToList();
+                var eventTypes = (await multi.ReadAsync<string>()).ToList();
+                var allUsers = (await multi.ReadAsync<MesUserDto>()).ToList();
 
                 return new ScheduleBaseInfo
                 {
-                    UserNames = users,
-                    Departments = departs
+                    ScheduleUserNames = scheduleUsers,
+                    ScheduleDepartments = scheduleDeparts,
+                    Areas = areas,
+                    EventTypes = eventTypes,
+                    Users = allUsers
                 };
             }
             catch (Exception ex)
@@ -77,145 +69,44 @@ namespace PatrolInspect.Repository
             }
         }
 
-        public async Task<List<string>> GetAreasAsync()
+        public async Task<List<InspectionScheduleEvent>> GetSearchSchedules(string userName, string depart, DateTime? startDate, DateTime? endDate)
         {
             using var connection = CreateConnection();
             var sql = @"
-                SELECT distinct Area FROM INSPECTION_DEVICE_AREA_MAPPING";
-
-            try
-            {
-                var schedules = await connection.QueryAsync<string>(sql);
-                return schedules.ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting Areas");
-                throw;
-            }
-        }
-
-        public async Task<List<InspectEventTypeMaster>> GetInspectTypesAsync()
-        {
-            using var connection = CreateConnection();
-            var sql = @"
-                SELECT EventType, EventTypeName, AllowDepartments
-                FROM INSPECTION_EVENT_TYPE_MASTER
-                WHERE IsActive = 1
-                ORDER BY EventType";
-
-            try
-            {
-                var inspectTypes = await connection.QueryAsync<InspectEventTypeMaster>(sql);
-                return inspectTypes.ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting inspect types");
-                throw;
-            }
-        }
-
-        public async Task<List<MesUser>> GetUsersAsync()
-        {
-            using var connection = CreateConnection();
-            var sql = @"
-                SELECT 
-                    mu.UserNo, 
-                    mu.UserName, 
-                    mu.DepartmentName, 
-                    md.FatherDepartmentName, 
-                    mu.TitleName, 
-                    mu.ExpirationDate 
-                FROM MES_USERS mu
-                LEFT JOIN MES_DEPARTMENT md ON mu.DepartmentNo = md.DepartmentNo
-                WHERE (mu.ExpirationDate IS NULL OR mu.ExpirationDate > GETDATE())
-                ORDER BY mu.UserNo";
-
-            try
-            {
-                var users = await connection.QueryAsync<MesUser>(sql);
-                return users.ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting users");
-                throw;
-            }
-        }
-
-        public async Task<List<InspectionScheduleEvent>> GetSchedulesByUserAsync(string userNo)
-        {
-            using var connection = CreateConnection();
-            var sql = @"
-                SELECT EventId, UserNo, UserName, Department, EventType, EventTypeName, EventDetail, 
-                       StartDateTime, EndDateTime, Area, IsActive, 
-                       CreateDate, CreateBy, UpdateDate, UpdateBy
+                SELECT EventId, UserNo, UserName, Department, EventType, EventDetail, 
+                       StartDateTime, EndDateTime, Area
                 FROM INSPECTION_SCHEDULE_EVENT 
-                WHERE UserNo = @UserNo 
-                ORDER BY StartDateTime";
+                WHERE 1=1 ";
+
+
+            if (!string.IsNullOrWhiteSpace(userName))
+            {
+                sql += @"and UserName = @userName ";
+            }
+
+            if (!string.IsNullOrWhiteSpace(depart))
+            {
+                sql += @"and Department = @depart ";
+            }
+
+
+            sql += @"and StartDateTime >= @startDate and EndDateTime <=  @endDate
+                    ORDER BY StartDateTime desc, userName asc;";
+
 
             try
             {
-                var schedules = await connection.QueryAsync<InspectionScheduleEvent>(sql, new { UserNo = userNo });
+                var schedules = await connection.QueryAsync<InspectionScheduleEvent>(sql, new { userName, depart, startDate, endDate });
                 return schedules.ToList();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting schedules for user: {UserNo}", userNo);
+                _logger.LogError(ex, "Error getting schedules for user: {userName}", userName);
                 throw;
             }
         }
 
-        public async Task<List<InspectionScheduleEvent>> GetSchedulesByDateRangeAsync(DateTime startDate, DateTime endDate)
-        {
-            using var connection = CreateConnection();
-            var sql = @"
-                SELECT EventId, UserNo, UserName, EventType, EventDetail, 
-                       StartDateTime, EndDateTime, Area, IsActive, 
-                       CreateDate, CreateBy, UpdateDate, UpdateBy
-                FROM INSPECTION_SCHEDULE_EVENT 
-                WHERE StartDateTime >= @StartDate AND StartDateTime <= @EndDate
-                ORDER BY StartDateTime";
 
-            try
-            {
-                var schedules = await connection.QueryAsync<InspectionScheduleEvent>(sql,
-                    new { StartDate = startDate, EndDate = endDate });
-                return schedules.ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting schedules for date range: {StartDate} - {EndDate}", startDate, endDate);
-                throw;
-            }
-        }
-
-        public async Task<int> CreateScheduleAsync(InspectionScheduleEvent schedule)
-        {
-            using var connection = CreateConnection();
-            var sql = @"
-                INSERT INTO INSPECTION_SCHEDULE_EVENT 
-                (UserNo, UserName, Department, EventType, EventTypeName, EventDetail, StartDateTime, EndDateTime, 
-                 Area, IsActive, CreateDate, CreateBy)
-                VALUES 
-                (@UserNo, @UserName, @Department,  @EventType, @EventDetail, @StartDateTime, @EndDateTime, 
-                 @Area, @IsActive, @CreateDate, @CreateBy);
-                SELECT CAST(SCOPE_IDENTITY() as int)";
-
-            try
-            {
-                schedule.CreateDate = DateTime.Now;
-                var eventId = await connection.QuerySingleAsync<int>(sql, schedule);
-                _logger.LogInformation("Created schedule event: {EventId} for user: {UserNo}", eventId, schedule.UserNo);
-                return eventId;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating schedule for user: {UserNo}", schedule.UserNo);
-                throw;
-            }
-        }
 
         public async Task<List<int>> CreateSchedulesBatchAsync(List<InspectionScheduleEvent> schedules)
         {
@@ -227,11 +118,11 @@ namespace PatrolInspect.Repository
             {
                 const string sql = @"
                     INSERT INTO INSPECTION_SCHEDULE_EVENT 
-                    (UserNo, UserName, Department, EventType, EventTypeName, EventDetail, StartDateTime, EndDateTime, 
-                     Area, IsActive, CreateDate, CreateBy)
+                    (UserNo, UserName, Department, EventType, EventDetail, StartDateTime, EndDateTime, 
+                     Area, CreateDate, CreateBy)
                     VALUES 
-                    (@UserNo, @UserName,@Department, @EventType,@EventTypeName, @EventDetail, @StartDateTime, @EndDateTime, 
-                     @Area, @IsActive, @CreateDate, @CreateBy);
+                    (@UserNo, @UserName,@Department, @EventType, @EventDetail, @StartDateTime, @EndDateTime, 
+                     @Area, @CreateDate, @CreateBy);
                     SELECT CAST(SCOPE_IDENTITY() as int);";
 
                 var now = DateTime.Now;
@@ -261,50 +152,6 @@ namespace PatrolInspect.Repository
         }
 
 
-
-        public async Task<bool> UpdateScheduleAsync(InspectionScheduleEvent schedule)
-        {
-            using var connection = CreateConnection();
-            var sql = @"
-                UPDATE INSPECTION_SCHEDULE_EVENT 
-                SET UserNo = @UserNo, UserName = @UserName, Department = @Department, EventType = @EventType, EventTypeName = @EventTypeName, 
-                    EventDetail = @EventDetail, StartDateTime = @StartDateTime, 
-                    EndDateTime = @EndDateTime, Area = @Area, IsActive = @IsActive,
-                    UpdateDate = @UpdateDate, UpdateBy = @UpdateBy
-                WHERE EventId = @EventId";
-
-            try
-            {
-                schedule.UpdateDate = DateTime.Now;
-                var rowsAffected = await connection.ExecuteAsync(sql, schedule);
-                _logger.LogInformation("Updated schedule event: {EventId}", schedule.EventId);
-                return rowsAffected > 0;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating schedule: {EventId}", schedule.EventId);
-                throw;
-            }
-        }
-
-        public async Task<bool> DeleteScheduleAsync(int eventId)
-        {
-            using var connection = CreateConnection();
-            var sql = "DELETE FROM INSPECTION_SCHEDULE_EVENT WHERE EventId = @EventId";
-
-            try
-            {
-                var rowsAffected = await connection.ExecuteAsync(sql, new { EventId = eventId });
-                _logger.LogInformation("Deleted schedule event: {EventId}", eventId);
-                return rowsAffected > 0;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting schedule: {EventId}", eventId);
-                throw;
-            }
-        }
-
         public async Task<bool> DeleteSchedulesBatchAsync(List<int> eventIds)
         {
             using var connection = CreateConnection();
@@ -319,65 +166,6 @@ namespace PatrolInspect.Repository
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error batch deleting {Count} schedules", eventIds.Count);
-                throw;
-            }
-        }
-
-        public async Task<InspectionScheduleEvent?> GetScheduleByIdAsync(int eventId)
-        {
-            using var connection = CreateConnection();
-            var sql = @"
-                SELECT EventId, UserNo, UserName, EventType, EventDetail, 
-                       StartDateTime, EndDateTime, Area, IsActive, 
-                       CreateDate, CreateBy, UpdateDate, UpdateBy
-                FROM INSPECTION_SCHEDULE_EVENT 
-                WHERE EventId = @EventId";
-
-            try
-            {
-                var schedule = await connection.QueryFirstOrDefaultAsync<InspectionScheduleEvent>(sql, new { EventId = eventId });
-                return schedule;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting schedule: {EventId}", eventId);
-                throw;
-            }
-        }
-
-        public async Task<List<InspectionScheduleEvent>> GetSearchSchedules(string userName, string depart, DateTime? startDate, DateTime? endDate)
-        {
-            using var connection = CreateConnection();
-            var sql = @"
-                SELECT EventId, UserNo, UserName, Department, EventType, EventTypeName, EventDetail, 
-                       StartDateTime, EndDateTime, Area
-                FROM INSPECTION_SCHEDULE_EVENT 
-                WHERE 1=1 ";
-                
-
-            if (!string.IsNullOrWhiteSpace(userName))
-            {
-                sql += @"and UserName = @userName ";
-            }
-
-            if (!string.IsNullOrWhiteSpace(depart))
-            {
-                sql += @"and Department = @depart ";
-            }
-
-
-            sql += @"and StartDateTime >= @startDate and EndDateTime <=  @endDate
-                    ORDER BY StartDateTime desc, userName asc;";
-
-
-            try
-            {
-                var schedules = await connection.QueryAsync<InspectionScheduleEvent>(sql, new { userName, depart, startDate, endDate });
-                return schedules.ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting schedules for user: {userName}", userName);
                 throw;
             }
         }

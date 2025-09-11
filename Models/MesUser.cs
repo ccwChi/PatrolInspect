@@ -17,4 +17,13 @@ namespace PatrolInspect.Models
         //    ? DepartmentName
         //    : $"{FatherDepartmentName} - {DepartmentName}";
     }
+
+    public class MesUserDto
+    {
+        public string UserNo { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string Department { get; set; } = string.Empty;
+        public string? FatherDepartment { get; set; }
+        public string TitleName { get; set; } = string.Empty;
+    }
 }

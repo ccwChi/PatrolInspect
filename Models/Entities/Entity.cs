@@ -31,12 +31,10 @@ namespace PatrolInspect.Models.Entities
         public string UserName { get; set; } = string.Empty;
         public string Department { get; set; } = string.Empty;
         public string EventType { get; set; } = string.Empty;
-        public string EventTypeName { get; set; } = string.Empty;
         public string? EventDetail { get; set; } 
         public DateTime StartDateTime { get; set; }
         public DateTime EndDateTime { get; set; }
         public string Area { get; set; } = string.Empty;
-        public bool IsActive { get; set; } = true;
         public DateTime CreateDate { get; set; } = DateTime.Now;
         public string? CreateBy { get; set; }
 
@@ -79,10 +77,42 @@ namespace PatrolInspect.Models.Entities
         public string? DeviceSchedulingStatus { get; set; }
     }
 
+    public class FnDeviceStatusDto
+    {
+        public string DeviceID { get; set; } = string.Empty;
+        public string DeviceStatus { get; set; } = string.Empty;
+        public DateTime? StartTime { get; set; }
+        public DateTime? CreateTime { get; set; }
+        public string? WO_ID { get; set; }
+        public string? BPM_NO { get; set; }
+        public int RecordId { get; set; }
+        public string CardId { get; set; } = string.Empty;
+        public string UserNo { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string InspectType { get; set; } = string.Empty;
+        public DateTime ArriveAt { get; set; }
+        public DateTime? SubmitDataAt { get; set; }
+    }
+
+    public class DeviceStatusDto
+    {
+        public string DeviceID { get; set; } = string.Empty;
+        public string DeviceStatus { get; set; } = string.Empty;
+        public DateTime? StartTime { get; set; }
+        public DateTime? CreateTime { get; set; }
+        public string? WO_ID { get; set; }
+        public string? BPM_NO { get; set; }
+    }
+
+
     public class ScheduleBaseInfo
     {
-        public List<string> UserNames { get; set; } = new();
-        public List<string> Departments { get; set; } = new();
+        public List<string> ScheduleUserNames { get; set; } = new();
+        public List<string> ScheduleDepartments { get; set; } = new();
+        public List<string> Areas { get; set; } = new();
+        public List<string> EventTypes { get; set; } = new();
+        public List<MesUserDto> Users { get; set; } = new();
+        
     }
 
     public class ScheduleInfo
@@ -101,7 +131,6 @@ namespace PatrolInspect.Models.Entities
     public class InspectEventTypeMaster
     {
         public string EventType { get; set; } = string.Empty;
-        public string EventTypeName { get; set; } = string.Empty;
         public string AllowDepartments { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
     }

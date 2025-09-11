@@ -255,19 +255,19 @@
             color: white;
         }
 
-        .status-idle {
-            background: #ffc107;
+        .status-inspecting {
+            background: #e2efd9;
             color: black;
         }
 
-        .status-stop {
-            background: #dc3545;
+        .status-overtime {
+            background: #f7cbac;
             color: white;
         }
 
-        .status-unknown {
-            background: #6c757d;
-            color: white;
+        .status-off {
+            background: #e4e4e4;
+
         }
 
         .device-name {
@@ -375,35 +375,35 @@
     <div class="header">
         <div class="">
             <strong>@ViewBag.UserName (@ViewBag.UserNo)</strong>
-            <div style="color: #666;" id="simulateNfc">@ViewBag.DepartmentName - @ViewBag.TitleName</div>
+            <div style="color: #666;" onclick="showNFCTestModal()">@ViewBag.DepartmentName - @ViewBag.TitleName</div>
             <div class="current-time" id="currentTime">@ViewBag.CurrentTime</div>
         </div>
         <div class="control-buttons">
             <button onclick="loadTodayInspection()">刷新資料</button>
-            @* <button onclick="refreshDeviceStatus()">刷新狀態</button> *@
         </div>
     </div>
 
     <!-- 統計資訊 -->
     <div class="section">
-        <h3 class="section-title">目前時段統計</h3>
+        @* <h3 class="section-title">目前時段統計</h3> *@
         <div class="section-content">
             <div class="stats-grid">
-                <div class="stat-box">
+                <div class="d-flex gap-2 align-items-center">
+                    <div style="height:20px; width:40px;" class="status-off"></div>機台off 
+                </div>
+                <div class="d-flex gap-2 align-items-center" >
+                    <div style="height:20px; width:40px;" class="status-inspecting"></div>已刷卡檢測中
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <div style="height:20px; width:40px;" class="status-overtime"></div>距上次檢測超過2小時
+                </div>
+                @* <div class="stat-box">
                     <div class="stat-number" id="totalDevices">-</div>
                     <div class="stat-label">總機台</div>
                 </div>
                 <div class="stat-box">
                     <div class="stat-number" id="withWoDevices">-</div>
                     <div class="stat-label">有掛工單機台數</div>
-                </div>
-                @* <div class="stat-box">
-                    <div class="stat-number" id="completedInspections">-</div>
-                    <div class="stat-label">已巡檢</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number" id="pendingInspections">-</div>
-                    <div class="stat-label">待巡檢</div>
                 </div> *@
             </div>
 
@@ -416,7 +416,7 @@
     <div id="error" class="error"></div>
 
     <!-- 時段排程 Accordion -->
-    <div id="timePeriodsSection" class="section" style="display: none;">
+    <div id="timePeriodsSection" class="section" style="display: block;">
         <h3 class="section-title">今日排程</h3>
         <div class="section-content">
             <div id="timePeriods" class="time-periods"></div>
@@ -451,6 +451,55 @@
         </div>
     </div>
 </div>
+<div id="nfcTestModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+     background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%; max-height: 80%; overflow-y: auto;">
+        <h3 style="margin-bottom: 20px; color: #333;">選擇測試 NFC 卡片</h3>
+
+        <div style="margin-bottom: 20px;">
+            <input type="text" id="nfcSearchInput" placeholder="搜尋區域或卡片..."
+                   style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
+                   onkeyup="filterNFCCards()">
+        </div>
+
+        <div id="nfcCardList" style="max-height: 300px; overflow-y: auto; border: 1px solid #eee; border-radius: 4px;">
+            <!-- 動態生成的卡片列表 -->
+        </div>
+
+        <div style="text-align: right; margin-top: 20px;">
+            <button onclick="closeNFCTestModal()"
+                    style="padding: 8px 15px; background: #666; color: white; border: none; border-radius: 4px; margin-right: 10px;">
+                取消
+            </button>
+            <button onclick="testCustomNFC()"
+                    style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px;">
+                自訂卡片ID
+            </button>
+        </div>
+    </div>
+</div>
+<!-- 自訂 NFC ID Modal -->
+<div id="customNFCModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+     background: rgba(0,0,0,0.5); z-index: 1001; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 400px; width: 90%;">
+        <h3 style="margin-bottom: 20px; color: #333;">輸入自訂 NFC ID</h3>
+
+        <input type="text" id="customNFCInput" placeholder="輸入 NFC 卡片 ID..."
+               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 20px;">
+
+        <div style="text-align: right;">
+            <button onclick="closeCustomNFCModal()"
+                    style="padding: 8px 15px; background: #666; color: white; border: none; border-radius: 4px; margin-right: 10px;">
+                取消
+            </button>
+            <button onclick="executeCustomNFC()"
+                    style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px;">
+                測試
+            </button>
+        </div>
+    </div>
+</div>
+
 
 @section scripts {
     <script>
@@ -464,217 +513,16 @@
             setInterval(updateCurrentTime, 1000);
             initializeNFC();
             loadTodayInspection();
-                    $(document).on('click', '#simulateNfc', function () {
-          handleNFCCard('62:bc:50:1f', null);
-        });
+
+            // $(document).on('click', '#simulateNfc', function () {
+            //   handleNFCCard('04:7a:86:12:64:6b:80', null);
+            // });
         });
 
 
         function updateCurrentTime() {
             const now = new Date();
             $('#currentTime').text(now.toLocaleString('zh-TW').replace(/\//g, '-'));
-        }
-
-        function addNFCLog(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString('zh-TW');
-            const logContainer = $('#nfcLog');
-            const entry = $('<div class="log-entry"></div>').text(`[${timestamp}] ${message}`);
-            logContainer.append(entry);
-            logContainer.scrollTop(logContainer[0].scrollHeight);
-
-            const entries = logContainer.find('.log-entry');
-            if (entries.length > 20) {
-                entries.first().remove();
-            }
-        }
-
-        function clearNFCLog() {
-            $('#nfcLog').empty();
-            addNFCLog('日誌已清除');
-        }
-
-        function showNFCStatus(message, type) {
-            const statusDiv = $('#nfcStatus');
-            statusDiv.removeClass('nfc-success nfc-error nfc-warning nfc-info');
-            statusDiv.addClass('nfc-' + type);
-            statusDiv.text(message).show();
-
-            if (type !== 'error') {
-                setTimeout(() => {
-                    statusDiv.hide();
-                }, 3000);
-            }
-        }
-
-        // NFC 相關函數 (簡化版)
-        async function initializeNFC() {
-            try {
-                addNFCLog('初始化NFC功能');
-
-                if ('NDEFReader' in window) {
-                    nfcReader = new NDEFReader();
-                    isNFCSupported = true;
-                    addNFCLog("NFC支援已啟用");
-                    showNFCStatus("NFC功能正常", "success");
-                    await startNFCReading();
-                } else {
-                    addNFCLog("瀏覽器不支援NFC");
-                    showNFCStatus("瀏覽器不支援NFC", "warning");
-                }
-            } catch (error) {
-                addNFCLog(`NFC錯誤: ${error.message}`);
-                showNFCStatus("NFC初始化失敗", "error");
-            }
-        }
-
-        async function startNFCReading() {
-            try {
-                await nfcReader.scan();
-                addNFCLog("NFC掃描啟動");
-                showNFCStatus("NFC掃描中", "info");
-
-                nfcReader.addEventListener("reading", ({ message, serialNumber }) => {
-                    addNFCLog(`檢測到卡片: ${serialNumber}`);
-                    handleNFCCard(serialNumber, message);
-                });
-
-                nfcReader.addEventListener("readingerror", (error) => {
-                    addNFCLog(`讀取錯誤: ${error.message}`);
-                    showNFCStatus("讀取錯誤", "error");
-                });
-
-            } catch (error) {
-                addNFCLog(`掃描失敗: ${error.message}`);
-                showNFCStatus("NFC掃描失敗", "error");
-            }
-        }
-
-        function handleNFCCard(serialNumber, message) {
-            const cardId = serialNumber;
-            addNFCLog(`處理卡片: ${cardId}`);
-
-            let deviceId = findDeviceByCardId(cardId);
-
-            if (deviceId) {
-                autoRecordInspection(cardId, deviceId);
-            } else {
-                addNFCLog(`無法識別卡片: ${cardId}`);
-                showNFCStatus(`無法識別的卡片: ${cardId}`, "warning");
-                alert("該卡片不屬於目前檢驗時段內任一區域")
-            }
-        }
-
-        function findDeviceByCardId(cardId) {
-            if (!timePeriodsData) return null;
-
-            for (const period of timePeriodsData) {
-                if (period.devicesToInspect) {
-                    const matchingDevice = period.devicesToInspect.find(item =>
-                        item.device.nfcCardId === cardId
-                    );
-                    if (matchingDevice) {
-                        return matchingDevice.device.deviceId;
-                    }
-                }
-            }
-            return null;
-        }
-
-        function autoRecordInspection(cardId, deviceId) {
-            addNFCLog(`記錄巡檢: ${deviceId}`);
-
-            const requestData = {
-                cardId: cardId,
-                deviceId: deviceId,
-                source: 'NFC',
-                inspectType: "INJECT_INSPECT"
-            };
-
-            $.ajax({
-                url: '@Url.Action("RecordInspection", "Inspection")',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(requestData),
-                dataType: 'json',
-                success: function (response) {
-                    if (response.success) {
-                        addNFCLog(`巡檢記錄成功: ${deviceId} (ID: ${response.recordId})`);
-                        showNFCStatus(`${deviceId} 記錄成功`, "success");
-                        showInspectionStartModal(response.deviceId, response.arriveTime, response.isExisting);
-                        loadTodayInspection();
-                    } else if (response.needConfirmation) {
-                        showReplaceConfirmationModal(cardId, response.pendingDeviceId, response.newDeviceId, response.pendingRecordId);
-                    } else {
-                        addNFCLog(`巡檢記錄失敗: ${response.message}`);
-                        showNFCStatus(`記錄失敗: ${response.message}`, "error");
-                    }
-                },
-                error: function (xhr, status, error) {
-                    addNFCLog(`巡檢記錄錯誤: ${xhr.status} ${error}`);
-                    showNFCStatus('記錄失敗: 系統錯誤', "error");
-                }
-            });
-        }
-
-        function showReplaceConfirmationModal(cardId, pendingDeviceId, newDeviceId, pendingRecordId) {
-            const confirmed = confirm(
-                `你在 ${pendingDeviceId} 機台還有未完成的巡檢記錄，\n` +
-                `確定要在 ${newDeviceId} 機台開始新的巡檢嗎？`
-            );
-
-            if (confirmed) {
-                confirmReplaceInspection(cardId, newDeviceId, pendingRecordId);
-            } else {
-                addNFCLog('使用者取消替換巡檢記錄');
-                showNFCStatus('已取消新的巡檢記錄', 'info');
-            }
-        }
-
-        function confirmReplaceInspection(cardId, newDeviceId, oldRecordId) {
-            const requestData = {
-                cardId: cardId,
-                newDeviceId: newDeviceId,
-                oldRecordId: oldRecordId,
-                inspectType: "INJECT_INSPECT",
-                source: 'NFC'
-            };
-
-            $.ajax({
-                url: '@Url.Action("ConfirmReplaceInspection", "Inspection")',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(requestData),
-                dataType: 'json',
-                success: function (response) {
-                    if (response.success) {
-                        addNFCLog(`替換巡檢記錄成功: ${newDeviceId}`);
-                        showNFCStatus(`${newDeviceId} 記錄成功`, "success");
-                        showInspectionStartModal(response.deviceId, response.arriveTime, false);
-                        loadTodayInspection();
-                    } else {
-                        addNFCLog(`替換巡檢記錄失敗: ${response.message}`);
-                        showNFCStatus(`替換失敗: ${response.message}`, "error");
-                    }
-                },
-                error: function (xhr, status, error) {
-                    addNFCLog(`替換巡檢記錄錯誤: ${xhr.status} ${error}`);
-                    showNFCStatus('替換失敗: 系統錯誤', "error");
-                }
-            });
-        }
-
-        function manualStartNFC() {
-            addNFCLog('手動啟動NFC');
-            if (isNFCSupported && nfcReader) {
-                startNFCReading();
-            } else {
-                alert('NFC功能不可用');
-            }
-        }
-
-        function stopNFC() {
-            addNFCLog('NFC掃描停止');
-            showNFCStatus("掃描已停止", "info");
         }
 
         function loadTodayInspection() {
@@ -760,8 +608,6 @@
             container.empty();
 
             periods.forEach((period, index) => {
-                console.log("****************開始建立大時段檢驗**********************")
-                console.log("**************** ", period.startTime,"-",period.endTime," **********************")
                 const periodElement = createPeriodElement(period, index);
                 container.append(periodElement);
             });
@@ -807,56 +653,85 @@
             console.log({period})
             let contentHtml = `
                 <div class="period-info">
-                     <strong>${period.eventTypeName || '排程作業'}</strong>
+                     <strong>${period.eventType || '排程作業'}</strong>
                     ${period.eventDetail ? `<div>${period.eventDetail}</div>` : ''}
                 </div>
             `;
 
             if (period.devicesToInspect && period.devicesToInspect.length > 0) {
-                period.devicesToInspect.forEach(item => {
+                // 定義狀態優先順序
+                const statusPriority = {
+                    'RUN': 1,
+                    'IDLE': 2,
+                    'ALARM': 3,
+                    'PMC資料缺漏': 4,
+                    'OFF': 5
+                };
+
+                // 排序：優先順序低的數字排在前面
+                const sortedDevices = period.devicesToInspect.sort((a, b) => {
+                    const statusA = a.status?.deviceStatus || 'PMC資料缺漏';
+                    const statusB = b.status?.deviceStatus || 'PMC資料缺漏';
+
+                    const priorityA = statusPriority[statusA] || 99;
+                    const priorityB = statusPriority[statusB] || 99;
+
+                    // 如果狀態相同，按 deviceId 排序
+                    if (priorityA === priorityB) {
+                        return a.device.deviceId.localeCompare(b.device.deviceId);
+                    }
+
+                    return priorityA - priorityB;
+                });
+
+                // 使用排序後的陣列
+                sortedDevices.forEach(item => {
                     const device = item.device;
-                    const status = item.status?.deviceStatus || 'UNKNOWN';
-                    const workOrderNo = status?.wO_ID ? status.wO_ID : "-";
+                    const status = item.status?.deviceStatus || 'PMC資料缺漏';
+                    const workOrderNo = item.status?.wO_ID ? item.status.wO_ID : "-";
                     const lastInspection = item.lastInspectionTime
                         ? new Date(item.lastInspectionTime).toLocaleString('zh-TW')
-                        : '-';
+                        : '';
                     let cardClass = '';
                     let badgeClass = '';
                     let badgeText = '';
 
                     let lastInspectionStartTime = item?.lastInspectionStartTime ?
-                        item.lastInspectionStartTime.replace("T", " ").replace(/-/g, "/").substring(5, 16) : "-"
+                        item.lastInspectionStartTime.replace("T", " ").replace(/-/g, "/").substring(5, 16) : ""
                     let lastInspectionEndTime = item?.lastInspectionEndTime ?
-                        item.lastInspectionEndTime.replace("T", " ").replace(/-/g, "/").substring(5, 16) : "-"
-                    console.log({item})
+                        item.lastInspectionEndTime.replace("T", " ").replace(/-/g, "/").substring(5, 16) : "---"
 
-                    if(item.lastInspectionTime) {
-                        cardClass = 'completed';
-                        badgeClass = 'completed-badge';
-                        badgeText = '已完成';
-                    } 
+
+                    if (status === "OFF" || period.isPast){
+                        cardClass = 'status-off';
+                    }
+
+                    if (item.lastInspectionStartTime && !item.lastInspectionEndTime){
+                        cardClass = 'status-inspecting'
+                    }
 
                     const statusClass = `status-${status.toLowerCase()}`;
-                    console.log({statusClass})
                     contentHtml += `
                         <div class="device-card ${cardClass}">
                             <div class="device-header">
                                 <div class="device-id">${device.deviceId}</div>
-                                <div class="device-status ${""}">${status}</div>
+                                <div class="device-status">${status}</div>
                             </div>
                             <div class="device-name">${device.deviceName || '-'}</div>
                             <div class="device-info">工單: ${workOrderNo}</div>
-                            <div class="device-info">巡檢開始: ${lastInspectionStartTime}</div>
-                            <div class="device-info">巡檢完成: ${lastInspectionEndTime}</div>
-                            <div class="device-info">巡檢人員: ${item.lastInspectorName || '-'}</div>
-
+                            ${lastInspectionStartTime ?
+                                `<div class="device-info">巡檢起始-結束: </div>
+                                 <div class="device-info">${lastInspectionStartTime} ~ ${lastInspectionEndTime}</div>
+                                 <div class="device-info">巡檢人員: ${item.lastInspectorName || '-'}</div>`
+                                :
+                                `<div class="device-info">尚無巡檢資料</div>`
+                            }
                         </div>
                     `;
                 });
             } else {
                 contentHtml += '<div class="no-devices">此時段無機台資料</div>';
             }
-
             return contentHtml;
         }
 
@@ -897,5 +772,480 @@
         function hideError() {
             $('#error').hide();
         }
+
+        // =================== NFC 相關 ======================
+        async function initializeNFC() {
+            try {
+                addNFCLog('初始化NFC功能');
+
+                if ('NDEFReader' in window) {
+                    nfcReader = new NDEFReader();
+                    isNFCSupported = true;
+                    addNFCLog("NFC支援已啟用");
+                    showNFCStatus("NFC功能正常", "success");
+                    await startNFCReading();
+                } else {
+                    addNFCLog("瀏覽器不支援NFC");
+                    showNFCStatus("瀏覽器不支援NFC", "warning");
+                }
+            } catch (error) {
+                addNFCLog(`NFC錯誤: ${error.message}`);
+                showNFCStatus("NFC初始化失敗", "error");
+            }
+        }
+
+        async function startNFCReading() {
+            try {
+                await nfcReader.scan();
+                addNFCLog("NFC掃描啟動");
+                showNFCStatus("NFC掃描中", "info");
+
+                nfcReader.addEventListener("reading", ({ message, nfcId }) => {
+                    addNFCLog(`檢測到卡片: ${nfcId}`);
+                    handleNFCCard(nfcId, message);
+                });
+
+                nfcReader.addEventListener("readingerror", (error) => {
+                    addNFCLog(`讀取錯誤: ${error.message}`);
+                    showNFCStatus("讀取錯誤", "error");
+                });
+
+            } catch (error) {
+                addNFCLog(`掃描失敗: ${error.message}`);
+                showNFCStatus("NFC掃描失敗", "error");
+            }
+        }
+
+        // === 刷NFC卡 ===
+        function handleNFCCard(nfcId, message) {
+            console.log("NFC卡片:", nfcId);
+            addNFCLog(`處理NFC卡片: ${nfcId}`);
+
+            $.ajax({
+                url: '@Url.Action("ProcessNFCInspection", "Inspection")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    nfcId: nfcId,
+                    source: 'NFC',
+                    inspectType: "INJECT_INSPECT"
+                }),
+                dataType: 'json',
+                success: function (response) {
+                    console.log({response});
+
+                    if (response.success) {
+                        if (response.needConfirmation) {
+                            // 需要用戶確認是否替換
+                            showReplaceConfirmationModal(response);
+                        } else {
+                            // 直接成功
+                            handleSuccessResponse(response);
+                        }
+                    } else {
+                        // 處理各種錯誤
+                        addNFCLog(`處理失敗: ${response.message}`);
+                        showNFCStatus(response.message, "error");
+
+                        if (response.errorCode === 'CARD_NOT_FOUND') {
+                            alert("此感應卡不存在於資料庫");
+                        } else if (response.errorCode === 'NOT_LOGGED_IN') {
+                            alert("請先登入系統");
+                            window.location.href = '@Url.Action("Login", "Account")';
+                        }
+                    }
+                },
+                error: function (xhr, status, error) {
+                    addNFCLog(`系統錯誤: ${xhr.status} ${error}`);
+                    showNFCStatus('系統錯誤', "error");
+                }
+            });
+        }
+
+        function handleSuccessResponse(response) {
+            addNFCLog(`巡檢記錄成功: ${response.deviceId} (ID: ${response.recordId})`);
+            showNFCStatus(`${response.deviceId} 記錄成功`, "success");
+            showInspectionStartModal(response.deviceId, response.arriveTime, response.isExisting);
+            loadTodayInspection();
+        }
+
+        function showReplaceConfirmationModal(response) {
+            const confirmed = confirm(
+                `你在 ${response.pendingDeviceId} 機台還有未完成的巡檢記錄，\n` +
+                `確定要在 ${response.newDeviceId} 機台開始新的巡檢嗎？`
+            );
+
+            if (confirmed) {
+                // 確認替換
+                $.ajax({
+                    url: '@Url.Action("ProcessNFCInspection", "Inspection")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        nfcId: response.nfcId,
+                        source: 'NFC',
+                        inspectType: "INJECT_INSPECT",
+                        confirmReplace: true,
+                        oldRecordId: response.pendingRecordId
+                    }),
+                    dataType: 'json',
+                    success: function (confirmResponse) {
+                        if (confirmResponse.success) {
+                            handleSuccessResponse(confirmResponse);
+                        } else {
+                            addNFCLog(`替換失敗: ${confirmResponse.message}`);
+                            showNFCStatus(`替換失敗: ${confirmResponse.message}`, "error");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        addNFCLog(`替換錯誤: ${xhr.status} ${error}`);
+                        showNFCStatus('替換失敗: 系統錯誤', "error");
+                    }
+                });
+            } else {
+                addNFCLog('使用者取消替換巡檢記錄');
+                showNFCStatus('已取消新的巡檢記錄', 'info');
+            }
+        }
+
+        // function handleNFCCard(nfcId, message) {
+        //     console.log("serialNumber", nfcId)
+
+        //     $.ajax({
+        //         url: `@Url.Action("findNFCcard", "Inspection")`,
+        //         type: 'GET',
+        //         data: { nfcId: nfcId },
+        //         dataType: 'json',
+        //         success: function (response) {
+        //             console.log({response})
+        //             if (response.success) {
+
+        //             } else {
+          
+        //             }
+        //         },
+        //         error: function (xhr, status, error) {
+        //         }
+        //     });
+        // }
+
+
+        // function autoRecordInspection(cardId, deviceId) {
+        //     addNFCLog(`記錄巡檢: ${deviceId}`);
+
+        //     const requestData = {
+        //         cardId: cardId,
+        //         deviceId: deviceId,
+        //         source: 'NFC',
+        //         inspectType: "INJECT_INSPECT"
+        //     };
+
+        //     $.ajax({
+        //         url: '@Url.Action("RecordInspection", "Inspection")',
+        //         type: 'POST',
+        //         contentType: 'application/json',
+        //         data: JSON.stringify(requestData),
+        //         dataType: 'json',
+        //         success: function (response) {
+        //             if (response.success) {
+        //                 addNFCLog(`巡檢記錄成功: ${deviceId} (ID: ${response.recordId})`);
+        //                 showNFCStatus(`${deviceId} 記錄成功`, "success");
+        //                 showInspectionStartModal(response.deviceId, response.arriveTime, response.isExisting);
+        //                 loadTodayInspection();
+        //             } else if (response.needConfirmation) {
+        //                 showReplaceConfirmationModal(cardId, response.pendingDeviceId, response.newDeviceId, response.pendingRecordId);
+        //             } else {
+        //                 addNFCLog(`巡檢記錄失敗: ${response.message}`);
+        //                 showNFCStatus(`記錄失敗: ${response.message}`, "error");
+        //             }
+        //         },
+        //         error: function (xhr, status, error) {
+        //             addNFCLog(`巡檢記錄錯誤: ${xhr.status} ${error}`);
+        //             showNFCStatus('記錄失敗: 系統錯誤', "error");
+        //         }
+        //     });
+        // }
+
+        // function showReplaceConfirmationModal(cardId, pendingDeviceId, newDeviceId, pendingRecordId) {
+        //     const confirmed = confirm(
+        //         `你在 ${pendingDeviceId} 機台還有未完成的巡檢記錄，\n` +
+        //         `確定要在 ${newDeviceId} 機台開始新的巡檢嗎？`
+        //     );
+
+        //     if (confirmed) {
+        //         confirmReplaceInspection(cardId, newDeviceId, pendingRecordId);
+        //     } else {
+        //         addNFCLog('使用者取消替換巡檢記錄');
+        //         showNFCStatus('已取消新的巡檢記錄', 'info');
+        //     }
+        // }
+
+        // function confirmReplaceInspection(cardId, newDeviceId, oldRecordId) {
+        //     const requestData = {
+        //         cardId: cardId,
+        //         newDeviceId: newDeviceId,
+        //         oldRecordId: oldRecordId,
+        //         inspectType: "INJECT_INSPECT",
+        //         source: 'NFC'
+        //     };
+
+        //     $.ajax({
+        //         url: '@Url.Action("ConfirmReplaceInspection", "Inspection")',
+        //         type: 'POST',
+        //         contentType: 'application/json',
+        //         data: JSON.stringify(requestData),
+        //         dataType: 'json',
+        //         success: function (response) {
+        //             if (response.success) {
+        //                 addNFCLog(`替換巡檢記錄成功: ${newDeviceId}`);
+        //                 showNFCStatus(`${newDeviceId} 記錄成功`, "success");
+        //                 showInspectionStartModal(response.deviceId, response.arriveTime, false);
+        //                 loadTodayInspection();
+        //             } else {
+        //                 addNFCLog(`替換巡檢記錄失敗: ${response.message}`);
+        //                 showNFCStatus(`替換失敗: ${response.message}`, "error");
+        //             }
+        //         },
+        //         error: function (xhr, status, error) {
+        //             addNFCLog(`替換巡檢記錄錯誤: ${xhr.status} ${error}`);
+        //             showNFCStatus('替換失敗: 系統錯誤', "error");
+        //         }
+        //     });
+        // }
+
+        function manualStartNFC() {
+            addNFCLog('手動啟動NFC');
+            if (isNFCSupported && nfcReader) {
+                startNFCReading();
+            } else {
+                alert('NFC功能不可用');
+            }
+        }
+
+        function stopNFC() {
+            addNFCLog('NFC掃描停止');
+            showNFCStatus("掃描已停止", "info");
+        }
+
+        function addNFCLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString('zh-TW');
+            const logContainer = $('#nfcLog');
+            const entry = $('<div class="log-entry"></div>').text(`[${timestamp}] ${message}`);
+            logContainer.append(entry);
+            logContainer.scrollTop(logContainer[0].scrollHeight);
+
+            const entries = logContainer.find('.log-entry');
+            if (entries.length > 20) {
+                entries.first().remove();
+            }
+        }
+
+        function clearNFCLog() {
+            $('#nfcLog').empty();
+            addNFCLog('日誌已清除');
+        }
+
+        function showNFCStatus(message, type) {
+            const statusDiv = $('#nfcStatus');
+            statusDiv.removeClass('nfc-success nfc-error nfc-warning nfc-info');
+            statusDiv.addClass('nfc-' + type);
+            statusDiv.text(message).show();
+
+            if (type !== 'error') {
+                setTimeout(() => {
+                    statusDiv.hide();
+                }, 3000);
+            }
+        }
     </script>
+    <script>
+                const nfcTestCards = [
+            // 射出一區
+            { area: '射出一區', deviceId: 'CLF_2200T-01', nfcCardId: '2200T-01' },
+            { area: '射出一區', deviceId: 'FCS_1700T-01', nfcCardId: '1700T-01' },
+            { area: '射出一區', deviceId: 'FCS_850T-01', nfcCardId: '850T-01' },
+            { area: '射出一區', deviceId: 'OR_180T-01', nfcCardId: '180T-01' },
+            { area: '射出一區', deviceId: 'OR_180T-02', nfcCardId: '180T-02' },
+            { area: '射出一區', deviceId: 'OR_550T-01', nfcCardId: '550T-01' },
+            { area: '射出一區', deviceId: 'SUMITOMO_130T-01', nfcCardId: '130T-01' },
+            { area: '射出一區', deviceId: 'SUMITOMO_280T-01', nfcCardId: '280T-01' },
+
+            // 射出二區
+            { area: '射出二區', deviceId: 'ARBURG_50T-01', nfcCardId: '50T-01' },
+            { area: '射出二區', deviceId: 'OR_250T-01', nfcCardId: '250T-01' },
+            { area: '射出二區', deviceId: 'OR_250T-02', nfcCardId: '250T-02' },
+            { area: '射出二區', deviceId: 'OR_350T-05', nfcCardId: '350T-05' },
+            { area: '射出二區', deviceId: 'SUMITOMO_180T-04', nfcCardId: '180T-04' },
+            { area: '射出二區', deviceId: 'SUMITOMO_50T-02', nfcCardId: '50T-02' },
+            { area: '射出二區', deviceId: 'TOSHIBA_850T-02', nfcCardId: '850T-02' },
+
+            // 射出三區
+            { area: '射出三區', deviceId: 'OR_100T-02', nfcCardId: '100T-02' },
+            { area: '射出三區', deviceId: 'OR_350T-01', nfcCardId: '350T-01' },
+            { area: '射出三區', deviceId: 'OR_350T-02', nfcCardId: '350T-02' },
+            { area: '射出三區', deviceId: 'OR_350T-04', nfcCardId: '350T-04' },
+            { area: '射出三區', deviceId: 'TOSHIBA_1000T-01', nfcCardId: '1000T-01' },
+            { area: '射出三區', deviceId: 'TOSHIBA_1050T-01', nfcCardId: '1050T-01' },
+            { area: '射出三區', deviceId: 'TOSHIBA_1050T-02', nfcCardId: '1050T-02' },
+            { area: '射出三區', deviceId: 'TOSHIBA_1050T-03', nfcCardId: '1050T-03' },
+            { area: '射出三區', deviceId: 'TOSHIBA_550T-02', nfcCardId: '550T-02' },
+
+            // 復興廠
+            { area: '復興廠', deviceId: 'FANUC_100T-04', nfcCardId: '100T-04' },
+            { area: '復興廠', deviceId: 'FANUC_300T-01', nfcCardId: '300T-01' },
+            { area: '復興廠', deviceId: 'FANUC_300T-02', nfcCardId: '300T-02' },
+            { area: '復興廠', deviceId: 'FANUC_450T-01', nfcCardId: '450T-01' },
+            { area: '復興廠', deviceId: 'TOSHIBA_1050T-04', nfcCardId: '1050T-04' }
+        ];
+
+        function showNFCTestModal() {
+            document.getElementById('nfcTestModal').style.display = 'flex';
+            generateNFCCardList();
+            document.getElementById('nfcSearchInput').focus();
+        }
+
+        function closeNFCTestModal() {
+            document.getElementById('nfcTestModal').style.display = 'none';
+            document.getElementById('nfcSearchInput').value = '';
+        }
+
+        function generateNFCCardList(filteredCards = null) {
+            const cards = filteredCards || nfcTestCards;
+            const listContainer = document.getElementById('nfcCardList');
+
+            if (cards.length === 0) {
+                listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">找不到符合的卡片</div>';
+                return;
+            }
+
+            const html = cards.map(card => `
+                <div class="nfc-card-item" onclick="selectNFCCard('${card.nfcCardId}', '${card.area}', '${card.deviceId}')"
+                     style="padding: 12px 15px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s;"
+                     onmouseover="this.style.background='#f8f9fa'"
+                     onmouseout="this.style.background='white'">
+                    <div style="font-weight: bold; color: #333; margin-bottom: 4px;">
+                        ${card.nfcCardId}
+                    </div>
+                    <div style="font-size: 13px; color: #666;">
+                        ${card.area} - ${card.deviceId}
+                    </div>
+                </div>
+            `).join('');
+
+            listContainer.innerHTML = html;
+        }
+
+        function filterNFCCards() {
+            const searchTerm = document.getElementById('nfcSearchInput').value.toLowerCase();
+            if (!searchTerm) {
+                generateNFCCardList();
+                return;
+            }
+
+            const filteredCards = nfcTestCards.filter(card =>
+                card.area.toLowerCase().includes(searchTerm) ||
+                card.deviceId.toLowerCase().includes(searchTerm) ||
+                card.nfcCardId.toLowerCase().includes(searchTerm)
+            );
+
+            generateNFCCardList(filteredCards);
+        }
+
+        function selectNFCCard(nfcCardId, area, deviceId) {
+            // 確認選擇
+            if (confirm(`確定要測試刷取卡片嗎？\n\n卡片ID: ${nfcCardId}\n區域: ${area}\n設備: ${deviceId}`)) {
+                closeNFCTestModal();
+
+                // 顯示測試提示
+                if (typeof addNFCLog === 'function') {
+                    addNFCLog(`🧪 測試模式：模擬刷取 ${nfcCardId}`);
+                }
+                if (typeof showNFCStatus === 'function') {
+                    showNFCStatus(`測試刷取: ${nfcCardId}`, "info");
+                }
+
+                // 執行 NFC 處理
+                handleNFCCard(nfcCardId, null);
+            }
+        }
+
+        function testCustomNFC() {
+            closeNFCTestModal();
+            document.getElementById('customNFCModal').style.display = 'flex';
+            document.getElementById('customNFCInput').focus();
+        }
+
+        function closeCustomNFCModal() {
+            document.getElementById('customNFCModal').style.display = 'none';
+            document.getElementById('customNFCInput').value = '';
+        }
+
+        function executeCustomNFC() {
+            const customNFCId = document.getElementById('customNFCInput').value.trim();
+
+            if (!customNFCId) {
+                alert('請輸入 NFC 卡片 ID');
+                return;
+            }
+
+            closeCustomNFCModal();
+
+            // 顯示測試提示
+            if (typeof addNFCLog === 'function') {
+                addNFCLog(`🧪 測試模式：模擬刷取自訂卡片 ${customNFCId}`);
+            }
+            if (typeof showNFCStatus === 'function') {
+                showNFCStatus(`測試刷取: ${customNFCId}`, "info");
+            }
+
+            // 執行 NFC 處理
+            handleNFCCard(customNFCId, null);
+        }
+
+        // 鍵盤快捷鍵支援
+        document.addEventListener('keydown', function(e) {
+            // ESC 鍵關閉 Modal
+            if (e.key === 'Escape') {
+                if (document.getElementById('customNFCModal').style.display === 'flex') {
+                    closeCustomNFCModal();
+                } else if (document.getElementById('nfcTestModal').style.display === 'flex') {
+                    closeNFCTestModal();
+                }
+            }
+
+            // Enter 鍵執行自訂 NFC 測試
+            if (e.key === 'Enter' && document.getElementById('customNFCModal').style.display === 'flex') {
+                executeCustomNFC();
+            }
+        });
+
+        // 點擊外部區域關閉 Modal
+        document.getElementById('nfcTestModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeNFCTestModal();
+            }
+        });
+
+        document.getElementById('customNFCModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCustomNFCModal();
+            }
+        });
+
+        // 修改原本的 ready 函數，移除舊的測試邏輯
+        $(document).ready(function() {
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+            initializeNFC();
+            loadTodayInspection();
+
+            // 移除原本的 simulateNfc 點擊事件，改用新的測試選擇器
+            // $(document).on('click', '#simulateNfc', function () {
+            //     handleNFCCard('04:7a:86:12:64:6b:80', null);
+            // });
+        });
+    </script>
+    </script>
+
+
 }

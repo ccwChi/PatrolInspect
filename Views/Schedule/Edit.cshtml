@@ -144,7 +144,7 @@
         .copy-controls {
             padding: 15px;
             margin-top: 15px;
-            display: none;
+            display: block;
             border-top: 1px solid #e9ecef;
         }
 
@@ -208,7 +208,7 @@
 <!-- 篩選控制面板 -->
 <div class="filter-panel">
     <h6>篩選條件</h6>
-    <div class="align-items-end d-flex gap-2">
+    <div class="align-items-end d-flex gap-2 mb-2">
         <div class="" >
             <label class="form-label">人員搜尋</label>
             <select id="filterUser" class="form-select" style="width:150px">
@@ -227,13 +227,46 @@
             <label class="form-label">結束日期</label>
             <input type="date" id="filterEndDate" class="form-control">
         </div>
-        <div class="col-md-3">
+        <div class="">
+            <div style="display:flex">
             <button onclick="filterSchedules()" class="btn btn-primary btn-action">篩選</button>
             <button onclick="clearFilter()" class="btn btn-secondary btn-action">清除</button>
+                <button onclick="exportToExcel()" class="btn btn-outline-secondary btn-action">匯出Excel</button>
+                <button onclick="showImportModal()" class="btn  btn-outline-secondary  btn-action">匯入Excel</button>
+
         </div>
     </div>
 </div>
-
+    <div class="copy-controls" id="copyControls">
+        <h6>批量複製設定</h6>
+        <div class="row">
+            <div class="col-md-2">
+                <label class="form-label">目標工號</label>
+                <input type="text" id="copyTargetUser" class="form-control form-control-sm" placeholder="新的工號">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">目標姓名</label>
+                <input type="text" id="copyTargetName" class="form-control form-control-sm" placeholder="新的姓名">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">日期偏移</label>
+                <input type="number" id="copyDayOffset" class="form-control form-control-sm" value="0" placeholder="天數">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">區域</label>
+                <select id="copyTargetArea" class="form-select form-select-sm">
+                    <option value="">保持原樣</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">時間偏移</label>
+                <input type="number" id="copyTimeOffset" class="form-control form-control-sm" value="0" placeholder="小時">
+            </div>
+            <div class="col-md-2">
+                <button onclick="executeCopy()" class="btn btn-outline-secondary btn-sm">執行複製</button>
+            </div>
+        </div>
+    </div>
 <!-- 篩選結果資訊 -->
 <div class="filter-result-info" id="filterInfo" style="display: none;"></div>
 
@@ -271,7 +304,38 @@
         </div>
     </div>
 </div>
-
+    <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="importModalLabel">匯入 Excel 檔案</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="excelFile" class="form-label">選擇 Excel 檔案</label>
+                        <input type="file" class="form-control" id="excelFile" accept=".xlsx,.xls">
+                        <div class="form-text">支援 .xlsx 和 .xls 格式</div>
+                    </div>
+                    <div class="alert">
+                        <strong>注意事項：</strong>
+                        <ul class="mb-0">
+                            <li>Excel 檔案必須包含標準表頭：請下載任一人的排班作為樣板</li>
+                            <li>
+                                除了"檢驗項目描述"，其餘皆為必填
+                            </li>
+                            <li>開始時間必須小於結束時間</li>
+                            <li><strong>請確保檔案解鎖</strong></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="importFromExcel()">開始匯入</button>
+                </div>
+            </div>
+        </div>
+    </div>
 <!-- 載入中遮罩 -->
 <div id="loadingOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-none" style="background: rgba(0,0,0,0.5); z-index: 9999;">
     <div class="d-flex justify-content-center align-items-center h-100">
@@ -287,11 +351,11 @@
         // ==================== 全域變數 ====================
         let scheduleData = [];
         let originalScheduleData = [];
-        let users = [];
+        let allUsers = [];
         let areas = [];
         let scheduleDeparts = [];
         let scheduleUsers = [];
-        let inspectTypes = [];
+        let eventTypes = [];
         let selectedAutocompleteIndex = -1;
         let currentFilterUser = '';
         let tempIndex = 1
@@ -316,17 +380,18 @@
         function loadInitialData() {
             showLoading(true);
             $.ajax({
-                url: '@Url.Action("GetAreasUsersInspectType", "Schedule")',
+                url: '@Url.Action("GetBaseInfo", "Schedule")',
                 type: 'GET',
                 success: function (response) {
                     if (response.success) {
                         areas = response.data.areas || [];
-                        users = response.data.users || [];
+                        allUsers = response.data.allUsers || [];
                         scheduleDeparts = response.data.scheduleDeparts || [];
                         scheduleUsers = response.data.scheduleUsers || [];
-                        inspectTypes = response.data.inspectTypes || [];
+                        eventTypes = response.data.eventTypes || [];
                         populateFilterDepartDropdown();
                         populateFilterUsersDropdown();
+                            populateCopyAreaDropdown();
                     } else {
                         showAlert('error', '載入基礎資料失敗: ' + response.message);
                     }
@@ -336,6 +401,10 @@
                 },
                 complete: function() {
                     showLoading(false);
+                        console.log({allUsers})
+                            console.log({scheduleDeparts})
+                                console.log({scheduleUsers})
+                                        console.log({eventTypes})
                 }
             });
         }
@@ -351,10 +420,7 @@
             });
         }
 
-
-
-        function populateFilterDepartDropdown() {
-            console.log()
+         function populateFilterDepartDropdown() {
             const departSelect = document.getElementById('filterDepart');
             departSelect.innerHTML = '<option value="">全部</option>';
             scheduleDeparts.forEach(depart => {
@@ -365,6 +431,113 @@
             });
         }
 
+         
+         function populateCopyAreaDropdown() {
+            const areasSelect = document.getElementById('copyTargetArea');
+            areasSelect.innerHTML = '<option value="">維持</option>';
+                areas.forEach(area => {
+                const option = document.createElement('option');
+                    option.value = area;
+                    option.textContent = area;
+                    areasSelect.appendChild(option);
+            });
+        }
+
+         
+
+         // ==================== Excel 匯出功能 ====================
+                     // 匯出 Excel
+            function exportToExcel() {
+                const userFilter = document.getElementById('filterUser').value.trim();
+                const departFilter = document.getElementById('filterDepart').value.trim();
+                const startDate = document.getElementById('filterStartDate').value;
+                const endDate = document.getElementById('filterEndDate').value;
+                    console.log(scheduleData.length)
+                    if (scheduleData.length == 0){
+                        showAlert('warning', '請先搜尋欲匯出內容')
+                        return
+                    }
+
+                if (!startDate || !endDate) {
+                    showAlert('warning', '請先設定日期範圍才能匯出');
+                    return;
+                }
+
+                let queryParams = new URLSearchParams();
+                if (userFilter) queryParams.append('userName', userFilter);
+                if (departFilter) queryParams.append('depart', departFilter);
+                queryParams.append('startDate', startDate);
+                queryParams.append('endDate', endDate);
+
+                showLoading(true);
+
+                // 建立下載連結
+                const downloadUrl = `@Url.Action("ExportSchedulesToExcel", "Schedule")?${queryParams.toString()}`;
+
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = '';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                showLoading(false);
+                showAlert('success', '正在下載 Excel 檔案...');
+            }
+
+            // 顯示匯入 Modal
+            function showImportModal() {
+                const modal = new bootstrap.Modal(document.getElementById('importModal'));
+                modal.show();
+            }
+
+            // 匯入 Excel
+            async function importFromExcel() {
+                const fileInput = document.getElementById('excelFile');
+                const file = fileInput.files[0];
+
+                if (!file) {
+                    showAlert('warning', '請選擇要匯入的 Excel 檔案');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                showLoading(true);
+
+                try {
+                    const response = await fetch('@Url.Action("ImportSchedulesFromExcel", "Schedule")', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showAlert('success', result.message);
+
+                        // 關閉 Modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('importModal'));
+                        modal.hide();
+
+                        // 清空檔案選擇
+                        fileInput.value = '';
+
+                        // 重新載入當前篩選的資料
+                        if (currentFilterUser || document.getElementById('filterStartDate').value) {
+                            setTimeout(() => filterSchedules(), 1000);
+                        }
+                    } else {
+                        showAlert('error', result.message);
+                    }
+                } catch (error) {
+                    showAlert('error', '匯入時發生系統錯誤');
+                    console.error('Import error:', error);
+                } finally {
+                    showLoading(false);
+                }
+            }
         // ==================== 篩選功能 ====================
         function filterSchedules() {
             const userFilter = document.getElementById('filterUser').value.trim();
@@ -411,8 +584,8 @@
                 eventId: item.eventId,
                 userNo: item.userNo,
                 userName: item.userName,
-                departmentName: item.department || '',
-                fatherDepartmentName: '',
+                department: item.department || '',
+                fatherdepartment: '',
                 eventType: item.eventType,
                 eventTypeName: item.eventTypeName || '',
                 eventDetail: item.eventDetail,
@@ -526,8 +699,8 @@
                             data-row="${index}" data-col="3"
                             class="form-select form-select-sm"
                             ${isReadOnly ? 'disabled' : ''}>
-                        ${inspectTypes.map(type =>
-                            `<option value="${type.eventType}" ${item.eventType === type.eventType ? 'selected' : ''}>${type.eventTypeName}</option>`
+                        ${eventTypes.map(type =>
+                                `<option value="${type}" ${item.eventType === type ? 'selected' : ''}>${type}</option>`
                         ).join('')}
                     </select>
                 </td>
@@ -609,7 +782,7 @@
         function formatUserCell(item) {
             if (!item?.userNo) return '';
             const name = item.userName ?? '';
-            const dept = item.departmentName ?? '';
+            const dept = item.department ?? '';
             return escapeHtml([item.userNo, name, dept].filter(Boolean).join('-'));
         }
 
@@ -626,25 +799,25 @@
             const { userNo, userName } = parseUserInput(raw);
 
             if (!userNo) {
-                ['userNo', 'userName', 'departmentName', 'fatherDepartmentName'].forEach(field =>
+                ['userNo', 'userName', 'department', 'fatherDepartment'].forEach(field =>
                     updateSchedule(rowIndex, field, '')
                 );
                 renderTable();
                 return;
             }
 
-            const u = users.find(x => x.userNo.toLowerCase() === userNo.toLowerCase());
+            const u = allUsers.find(x => x.userNo.toLowerCase() === userNo.toLowerCase());
 
             if (u) {
                 updateSchedule(rowIndex, 'userNo', u.userNo);
                 updateSchedule(rowIndex, 'userName', u.userName);
-                updateSchedule(rowIndex, 'departmentName', u.departmentName);
-                updateSchedule(rowIndex, 'fatherDepartmentName', u.fatherDepartmentName);
+                updateSchedule(rowIndex, 'department', u.department);
+                updateSchedule(rowIndex, 'fatherDepartment', u.fatherdepartment);
             } else {
                 updateSchedule(rowIndex, 'userNo', userNo);
                 updateSchedule(rowIndex, 'userName', userName || '');
-                updateSchedule(rowIndex, 'departmentName', '');
-                updateSchedule(rowIndex, 'fatherDepartmentName', '');
+                updateSchedule(rowIndex, 'department', '');
+                updateSchedule(rowIndex, 'fatherDepartment', '');
             }
 
             renderTable();
@@ -655,10 +828,10 @@
             if (!dropdown) return;
 
             const kw = searchValue.toLowerCase();
-            const filteredUsers = users.filter(user =>
+            const filteredUsers = allUsers.filter(user =>
                 String(user.userNo || '').toLowerCase().includes(kw) ||
                 String(user.userName || '').toLowerCase().includes(kw) ||
-                String(user.departmentName || '').toLowerCase().includes(kw)
+                String(user.department || '').toLowerCase().includes(kw)
             ).slice(0, 10);
 
             if (filteredUsers.length > 0) {
@@ -666,7 +839,7 @@
                     `<div class="autocomplete-item"
                           onclick="selectUser(${rowIndex}, '${user.userNo}')"
                           data-index="${i}">
-                        ${user.userNo}-${user.userName}-${user.departmentName ?? ''}
+                        ${user.userNo}-${user.userName}-${user.department ?? ''}
                      </div>`
                 ).join('');
                 dropdown.style.display = 'block';
@@ -677,13 +850,13 @@
         }
 
         function selectUser(rowIndex, userNo) {
-            const u = users.find(user => user.userNo === userNo);
+            const u = allUsers.find(user => user.userNo === userNo);
             if (!u) return;
-
+            console.log({u})
             updateSchedule(rowIndex, 'userNo', u.userNo);
             updateSchedule(rowIndex, 'userName', u.userName);
-            updateSchedule(rowIndex, 'departmentName', u.departmentName);
-            updateSchedule(rowIndex, 'fatherDepartmentName', u.fatherDepartmentName);
+            updateSchedule(rowIndex, 'department', u.department);
+            updateSchedule(rowIndex, 'fatherDepartment', u.fatherdepartment);
             renderTable();
         }
 
@@ -736,8 +909,9 @@
                 scheduleData[index][field] = value;
 
                 if (field === 'eventType') {
-                    const selectType = inspectTypes.find(t => t.eventType === value);
-                    scheduleData[index].eventTypeName = selectType ? (selectType.eventTypeName || '') : '';
+                    const selectType = eventTypes.find(t => t === value);
+                        console.log({selectType})
+                        scheduleData[index].eventType = selectType ? (selectType || '') : '';
                 }
 
                 if (field === 'startDate' && !scheduleData[index].endDate) {
@@ -749,18 +923,16 @@
 
         function addRow() {
             const today = new Date().toISOString().split('T')[0];
-            const eventType = inspectTypes.length > 0 ? inspectTypes[0].eventType : '';
-            const eventTypeName = eventType ?
-                (inspectTypes.find(t => t.eventType === eventType)?.eventTypeName || '') : '';
-
-            scheduleData.push({
+            const eventType = eventTypes.length > 0 ? eventTypes[0] : '';
+                console.log({eventTypes})
+                console.log({eventType})
+                scheduleData.push({
                 tempIndex : tempIndex,
                 userNo: '',
                 userName: '',
-                departmentName: '',
-                fatherDepartmentName: '',
+                department: '',
+                fatherDepartment: '',
                 eventType: eventType,
-                eventTypeName: eventTypeName,
                 eventDetail: '',
                 startDate: today,
                 startTime: '08:00',
@@ -859,7 +1031,9 @@
                 return;
             }
 
+                console.log({newSchedules})
             const invalidRows = validateScheduleData(newSchedules);
+                    console.log({invalidRows})
             if (invalidRows.length > 0) {
                 showAlert('error', `第 ${invalidRows.join(', ')} 列資料不完整，請檢查`);
                 return;
@@ -870,8 +1044,8 @@
             const saveData = newSchedules.map(item => ({
                 UserNo: item.userNo,
                 UserName: item.userName,
-                DepartmentName: item.departmentName,
-                FatherDepartmentName: item.fatherDepartmentName,
+                Department: item.department,
+                FatherDepartment: item.fatherDepartment,
                 EventType: item.eventType,
                 EventTypeName: item.eventTypeName,
                 EventDetail: item.eventDetail,
@@ -880,7 +1054,7 @@
                 Area: item.area,
                 IsActive: item.isActive
             }));
-
+                console.log({saveData})
             $.ajax({
                 url: '@Url.Action("SaveSchedules", "Schedule")',
                 type: 'POST',
@@ -933,6 +1107,7 @@
                 if (end <= start) {
                     const originalIndex = scheduleData.findIndex(s => s === item);
                     invalidRows.push(originalIndex + 1);
+                    alert("結束時間需晚於起始時間")
                 }
             });
             return [...new Set(invalidRows)];
@@ -978,13 +1153,13 @@
             const filteredUsers = users.filter(user =>
                 String(user.userNo || '').toLowerCase().includes(kw) ||
                 String(user.userName || '').toLowerCase().includes(kw) ||
-                String(user.departmentName || '').toLowerCase().includes(kw)
+                String(user.department || '').toLowerCase().includes(kw)
             ).slice(0, 10);
 
             if (filteredUsers.length > 0) {
                 dropdown.innerHTML = filteredUsers.map(user =>
                     `<div class="autocomplete-item" onclick="selectFilterUser('${user.userNo}')">
-                        ${user.userNo}-${user.userName}-${user.departmentName ?? ''}
+                            ${user.userNo}-${user.userName}-${user.department ?? ''}
                      </div>`
                 ).join('');
                 dropdown.style.display = 'block';
@@ -1054,130 +1229,130 @@
 
     <script>
                // ==================== 複製功能 ====================
-        // function toggleeditMode() {
-        //     editMode = !editMode;
-        //     const copyBtn = document.getElementById('editModeBtn');
-        //     const copyControls = document.getElementById('copyControls');
+        function toggleeditMode() {
+            editMode = !editMode;
+            const copyBtn = document.getElementById('editModeBtn');
+            const copyControls = document.getElementById('copyControls');
 
-        //     if (editMode) {
-        //         copyBtn.innerHTML = '退出編輯';
-        //         copyBtn.classList.remove('btn-outline-secondary');
-        //         copyBtn.classList.add('btn-secondary');
-        //         copyControls.style.display = 'block';
-        //         showAlert('info', '已進入複製模式，勾選要複製的排班項目');
-        //     } else {
-        //         copyBtn.innerHTML = '複製模式';
-        //         copyBtn.classList.remove('btn-secondary');
-        //         copyBtn.classList.add('btn-outline-secondary');
-        //         copyControls.style.display = 'none';
-        //         document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);
-        //         document.getElementById('selectAll').checked = false;
-        //         showAlert('info', '已退出複製模式');
-        //     }
+            if (editMode) {
+                copyBtn.innerHTML = '退出編輯';
+                copyBtn.classList.remove('btn-outline-secondary');
+                copyBtn.classList.add('btn-secondary');
+                copyControls.style.display = 'block';
+                showAlert('info', '已進入複製模式，勾選要複製的排班項目');
+            } else {
+                copyBtn.innerHTML = '複製模式';
+                copyBtn.classList.remove('btn-secondary');
+                copyBtn.classList.add('btn-outline-secondary');
+                copyControls.style.display = 'none';
+                document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);
+                document.getElementById('selectAll').checked = false;
+                showAlert('info', '已退出複製模式');
+            }
 
-        //     renderTable();
-        // }
+            renderTable();
+        }
 
-        // function executeCopy() {
-        //     const checkboxes = document.querySelectorAll('.row-checkbox:checked');
-        //     if (checkboxes.length === 0) {
-        //         showAlert('warning', '請先選取要複製的項目');
-        //         return;
-        //     }
+        function executeCopy() {
+            const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showAlert('warning', '請先選取要複製的項目');
+                return;
+            }
 
-        //     const copySettings = getCopySettings();
-        //     if (!validateCopySettings(copySettings)) {
-        //         showAlert('warning', '請至少設定一個複製參數');
-        //         return;
-        //     }
+            const copySettings = getCopySettings();
+            if (!validateCopySettings(copySettings)) {
+                showAlert('warning', '請至少設定一個複製參數');
+                return;
+            }
 
-        //     let copiedCount = 0;
-        //     checkboxes.forEach(checkbox => {
-        //         const row = checkbox.closest('tr').rowIndex - 1;
-        //         const originalItem = scheduleData[row];
-        //         const copiedItem = applyCopySettings(originalItem, copySettings);
-        //         scheduleData.push(copiedItem);
-        //         copiedCount++;
-        //     });
+            let copiedCount = 0;
+            checkboxes.forEach(checkbox => {
+                const row = checkbox.closest('tr').rowIndex - 1;
+                const originalItem = scheduleData[row];
+                const copiedItem = applyCopySettings(originalItem, copySettings);
+                scheduleData.push(copiedItem);
+                copiedCount++;
+            });
 
-        //     scheduleData.sort((a, b) => {
-        //         const dateA = new Date(a.startDate + 'T' + a.startTime);
-        //         const dateB = new Date(b.startDate + 'T' + b.startTime);
-        //         return dateA - dateB;
-        //     });
+            scheduleData.sort((a, b) => {
+                const dateA = new Date(a.startDate + 'T' + a.startTime);
+                const dateB = new Date(b.startDate + 'T' + b.startTime);
+                return dateA - dateB;
+            });
 
-        //     renderTable();
-        //     clearCopySelections();
-        //     showAlert('success', `成功複製 ${copiedCount} 筆排班`);
-        // }
+            renderTable();
+            clearCopySelections();
+            showAlert('success', `成功複製 ${copiedCount} 筆排班`);
+        }
 
-        // function getCopySettings() {
-        //     return {
-        //         targetUser: document.getElementById('copyTargetUser').value.trim(),
-        //         targetName: document.getElementById('copyTargetName').value.trim(),
-        //         dayOffset: parseInt(document.getElementById('copyDayOffset').value) || 0,
-        //         timeOffset: parseInt(document.getElementById('copyTimeOffset').value) || 0,
-        //         targetArea: document.getElementById('copyTargetArea').value
-        //     };
-        // }
+        function getCopySettings() {
+            return {
+                targetUser: document.getElementById('copyTargetUser').value.trim(),
+                targetName: document.getElementById('copyTargetName').value.trim(),
+                dayOffset: parseInt(document.getElementById('copyDayOffset').value) || 0,
+                timeOffset: parseInt(document.getElementById('copyTimeOffset').value) || 0,
+                targetArea: document.getElementById('copyTargetArea').value
+            };
+        }
 
-        // function validateCopySettings(settings) {
-        //     return settings.targetUser || settings.targetName || settings.dayOffset !== 0 ||
-        //            settings.timeOffset !== 0 || settings.targetArea;
-        // }
+        function validateCopySettings(settings) {
+            return settings.targetUser || settings.targetName || settings.dayOffset !== 0 ||
+                   settings.timeOffset !== 0 || settings.targetArea;
+        }
 
-        // function applyCopySettings(originalItem, settings) {
-        //     const copiedItem = { ...originalItem };
-        //     delete copiedItem.eventId;
-        //     copiedItem.isExisting = false;
+        function applyCopySettings(originalItem, settings) {
+            const copiedItem = { ...originalItem };
+            delete copiedItem.eventId;
+            copiedItem.isExisting = false;
 
-        //     if (settings.targetUser) copiedItem.userNo = settings.targetUser;
-        //     if (settings.targetName) copiedItem.userName = settings.targetName;
-        //     if (settings.targetArea) copiedItem.area = settings.targetArea;
+            if (settings.targetUser) copiedItem.userNo = settings.targetUser;
+            if (settings.targetName) copiedItem.userName = settings.targetName;
+            if (settings.targetArea) copiedItem.area = settings.targetArea;
 
-        //     if (settings.dayOffset !== 0) {
-        //         const startDate = new Date(copiedItem.startDate);
-        //         const endDate = new Date(copiedItem.endDate);
-        //         startDate.setDate(startDate.getDate() + settings.dayOffset);
-        //         endDate.setDate(endDate.getDate() + settings.dayOffset);
-        //         copiedItem.startDate = startDate.toISOString().split('T')[0];
-        //         copiedItem.endDate = endDate.toISOString().split('T')[0];
-        //     }
+            if (settings.dayOffset !== 0) {
+                const startDate = new Date(copiedItem.startDate);
+                const endDate = new Date(copiedItem.endDate);
+                startDate.setDate(startDate.getDate() + settings.dayOffset);
+                endDate.setDate(endDate.getDate() + settings.dayOffset);
+                copiedItem.startDate = startDate.toISOString().split('T')[0];
+                copiedItem.endDate = endDate.toISOString().split('T')[0];
+            }
 
-        //     if (settings.timeOffset !== 0) {
-        //         const startTime = timeStringToMinutes(copiedItem.startTime) + (settings.timeOffset * 60);
-        //         const endTime = timeStringToMinutes(copiedItem.endTime) + (settings.timeOffset * 60);
-        //         copiedItem.startTime = minutesToTimeString(startTime);
-        //         copiedItem.endTime = minutesToTimeString(endTime);
+            if (settings.timeOffset !== 0) {
+                const startTime = timeStringToMinutes(copiedItem.startTime) + (settings.timeOffset * 60);
+                const endTime = timeStringToMinutes(copiedItem.endTime) + (settings.timeOffset * 60);
+                copiedItem.startTime = minutesToTimeString(startTime);
+                copiedItem.endTime = minutesToTimeString(endTime);
 
-        //         const s = new Date(`${copiedItem.startDate}T${copiedItem.startTime}:00`);
-        //         const e = new Date(`${copiedItem.endDate}T${copiedItem.endTime}:00`);
-        //         if (e <= s) {
-        //             const e2 = new Date(s.getTime() + 60*60*1000);
-        //             copiedItem.endDate = e2.toISOString().split('T')[0];
-        //             copiedItem.endTime = minutesToTimeString(e2.getHours()*60 + e2.getMinutes());
-        //         }
-        //     }
+                const s = new Date(`${copiedItem.startDate}T${copiedItem.startTime}:00`);
+                const e = new Date(`${copiedItem.endDate}T${copiedItem.endTime}:00`);
+                if (e <= s) {
+                    const e2 = new Date(s.getTime() + 60*60*1000);
+                    copiedItem.endDate = e2.toISOString().split('T')[0];
+                    copiedItem.endTime = minutesToTimeString(e2.getHours()*60 + e2.getMinutes());
+                }
+            }
 
-        //     return copiedItem;
-        // }
+            return copiedItem;
+        }
 
-        // function clearCopySelections() {
-        //     document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);
-        //     document.getElementById('selectAll').checked = false;
-        // }
+        function clearCopySelections() {
+            document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('selectAll').checked = false;
+        }
 
-        // function timeStringToMinutes(timeStr) {
-        //     const [hours, minutes] = timeStr.split(':').map(Number);
-        //     return hours * 60 + minutes;
-        // }
+        function timeStringToMinutes(timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
 
-        // function minutesToTimeString(totalMinutes) {
-        //     totalMinutes = ((totalMinutes % (24 * 60)) + (24 * 60)) % (24 * 60);
-        //     const hours = Math.floor(totalMinutes / 60);
-        //     const minutes = totalMinutes % 60;
-        //     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        // }
+        function minutesToTimeString(totalMinutes) {
+            totalMinutes = ((totalMinutes % (24 * 60)) + (24 * 60)) % (24 * 60);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
 
         // ==================== 鍵盤導航 ====================
         // document.addEventListener('keydown', function(e) {

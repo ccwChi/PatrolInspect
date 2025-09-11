@@ -9,10 +9,11 @@ namespace PatrolInspect.Repositories.Interfaces
         Task<List<InspectionScheduleEvent>> GetUserAllTodaySchedulesAsync(string userNo, DateTime date);
         List<TimePeriod> ProcessTimePeriodsData(List<InspectionScheduleEvent> scheduleEvents);
         Task<List<InspectionDeviceAreaMapping>> GetAreaDevicesAsync(List<string> areas);
-        Task<List<FnDeviceStatus>> GetDeviceStatusAsync(List<string> deviceIds);
+        Task<List<FnDeviceStatusDto>> GetDeviceStatusAsync(List<string> deviceIds);
         Task<List<InspectionQcRecord>> GetTodayInspectionRecordsAsync(string userNo, DateTime date);
         Task<int> CreateInspectionRecordAsync(InspectionQcRecord record);
         Task<InspectionQcRecord?> GetPendingInspectionByUserAsync(string userNo);
         Task<bool> UpdateInspectionRecordAsync(int recordId, string userNo);
+        Task<InspectionDeviceAreaMapping?> FindNFCcard(string nfcId);
     }
 }
