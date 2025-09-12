@@ -53,10 +53,10 @@ namespace PatrolInspect.Controllers
         }
 
         // 取得模擬巡檢記錄數據
-        private List<InspectionRecord> GetMockInspectionRecords()
+        private List<InspectionItemRecord> GetMockInspectionRecords()
         {
             var random = new Random(42);
-            var records = new List<InspectionRecord>();
+            var records = new List<InspectionItemRecord>();
 
             var mockData = new[]
             {
@@ -75,7 +75,7 @@ namespace PatrolInspect.Controllers
             for (int i = 0; i < mockData.Length; i++)
             {
                 var data = mockData[i];
-                records.Add(new InspectionRecord
+                records.Add(new InspectionItemRecord
                 {
                     RecordId = i + 1,
                     Category = data.Category,

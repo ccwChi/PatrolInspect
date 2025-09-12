@@ -10,15 +10,19 @@ namespace PatrolInspect.Models.Entities
     {
         public int RecordId { get; set; }
         public string CardId { get; set; } = string.Empty;
-        public string? DeviceId { get; set; }
-        public string InspectType { get; set; } = string.Empty;
+        public string Area { get; set; } = string.Empty;
+        public string DeviceId { get; set; } = string.Empty;
         public string UserNo { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;
+        public string InspectType { get; set; } = string.Empty;
+        public string? InspectWo { get; set; }
         public DateTime ArriveAt { get; set; }
         public DateTime? SubmitDataAt { get; set; }
         public string Source { get; set; } = "NFC";
-        public DateTime CreateDate { get; set; } = DateTime.Now;
-        public string? DeviceRecordsMap { get; set; }
+        public DateTime CreateDate { get; set; }
+        public string? InspectItemOkNo { get; set; }
+        public string? InspectItemNgNo { get; set; }
+        
     }
 
     /// <summary>
@@ -66,7 +70,7 @@ namespace PatrolInspect.Models.Entities
     public class FnDeviceStatus
     {
         public string DeviceID { get; set; } = string.Empty;
-        public string DeviceStatus { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
         public DateTime? StartTime { get; set; }
         public string? Duration { get; set; }
         public string? AlarmMessage { get; set; }
@@ -77,34 +81,6 @@ namespace PatrolInspect.Models.Entities
         public string? DeviceSchedulingStatus { get; set; }
     }
 
-    public class FnDeviceStatusDto
-    {
-        public string DeviceID { get; set; } = string.Empty;
-        public string DeviceStatus { get; set; } = string.Empty;
-        public DateTime? StartTime { get; set; }
-        public DateTime? CreateTime { get; set; }
-        public string? WO_ID { get; set; }
-        public string? BPM_NO { get; set; }
-        public int RecordId { get; set; }
-        public string CardId { get; set; } = string.Empty;
-        public string UserNo { get; set; } = string.Empty;
-        public string UserName { get; set; } = string.Empty;
-        public string InspectType { get; set; } = string.Empty;
-        public DateTime ArriveAt { get; set; }
-        public DateTime? SubmitDataAt { get; set; }
-    }
-
-    public class DeviceStatusDto
-    {
-        public string DeviceID { get; set; } = string.Empty;
-        public string DeviceStatus { get; set; } = string.Empty;
-        public DateTime? StartTime { get; set; }
-        public DateTime? CreateTime { get; set; }
-        public string? WO_ID { get; set; }
-        public string? BPM_NO { get; set; }
-    }
-
-
     public class ScheduleBaseInfo
     {
         public List<string> ScheduleUserNames { get; set; } = new();
@@ -114,27 +90,6 @@ namespace PatrolInspect.Models.Entities
         public List<MesUserDto> Users { get; set; } = new();
         
     }
-
-    public class ScheduleInfo
-    {
-        public string EventType { get; set; } = string.Empty;
-        public string StartTime { get; set; } = string.Empty;
-        public string EndTime { get; set; } = string.Empty;
-        public List<string> Areas { get; set; } = new List<string>();
-        public string? EventDetail { get; set; }
-        public DateTime StartDateTime { get; set; }
-        public DateTime EndDateTime { get; set; }
-        public bool IsCurrent { get; set; }
-        public bool IsNext { get; set; }
-    }
-
-    public class InspectEventTypeMaster
-    {
-        public string EventType { get; set; } = string.Empty;
-        public string AllowDepartments { get; set; } = string.Empty;
-        public bool IsActive { get; set; } = true;
-    }
-
 
     public class InspectionItem
     {
@@ -163,4 +118,80 @@ namespace PatrolInspect.Models.Entities
         [StringLength(200, ErrorMessage = "異動原因長度不能超過200字")]
         public string? UpdateReason { get; set; }
     }
+
+    public class UserTodayInspection
+    {
+        public string UserNo { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string Department { get; set; } = string.Empty;
+        public List<TimePeriod> TimePeriods { get; set; } = new();
+    }
+
+    public class TimePeriod
+    {
+        public string StartTime { get; set; } = string.Empty;
+        public string EndTime { get; set; } = string.Empty;
+        public DateTime StartDateTime { get; set; }
+        public DateTime EndDateTime { get; set; }
+        public List<string> Areas { get; set; } = new();
+        public string EventType { get; set; } = string.Empty;
+        public string EventDetail { get; set; } = string.Empty;
+        public bool IsCurrent { get; set; }
+        public bool IsPast { get; set; }
+        public List<DeviceInspectionInfo> DevicesToInspect { get; set; } = new();
+        public List<DeviceInspectionInfo> ExtraTask { get; set; } = new();
+    }
+
+    public class DeviceInspectionInfo
+    {
+        public DeviceStatus DeviceStatus { get; set; } = new();
+        public List<InspectionRecord> InspectionList { get; set; } = new();
+    }
+
+    public class DeviceStatus
+    {
+        public string DeviceID { get; set; } = string.Empty;
+        public string DeviceName { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime? StartTime { get; set; }
+        public DateTime? CreateTime { get; set; }
+        public string WO_ID { get; set; } = string.Empty;
+        public string BPM_NO { get; set; } = string.Empty;
+    }
+
+    public class InspectionRecord
+    {
+        public string Time { get; set; } = string.Empty;
+        public string Inspector { get; set; } = string.Empty;
+        public string InspectWo { get; set; } = string.Empty;
+
+    }
+
+    // 用於 SQL 查詢結果的 DTO
+    public class DeviceInspectionRawData
+    {
+        public string DeviceID { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime? StartTime { get; set; }
+        public DateTime? CreateTime { get; set; }
+        public string WO_ID { get; set; } = string.Empty;
+        public string BPM_NO { get; set; } = string.Empty;
+
+        public int? RecordId { get; set; }
+        public string? CardId { get; set; }
+        public string? DeviceId { get; set; }
+        public string? UserNo { get; set; }
+        public string? UserName { get; set; }
+        public string? InspectType { get; set; }
+        public string? InspectWo { get; set; }
+        public DateTime? ArriveAt { get; set; }
+        public DateTime? SubmitDataAt { get; set; }
+        public string? Source { get; set; }
+        public DateTime? RecordCreateDate { get; set; }
+
+        // Device Name (from mapping)
+        public string DeviceName { get; set; } = string.Empty;
+    }
+
+
 }

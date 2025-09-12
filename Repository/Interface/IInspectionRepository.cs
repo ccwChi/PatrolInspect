@@ -5,15 +5,16 @@ namespace PatrolInspect.Repositories.Interfaces
 {
     public interface IInspectionRepository
     {
+
+        // 主要功能
         Task<UserTodayInspection> GetTodayInspectionAsync(string userNo, string userName, string department);
-        Task<List<InspectionScheduleEvent>> GetUserAllTodaySchedulesAsync(string userNo, DateTime date);
-        List<TimePeriod> ProcessTimePeriodsData(List<InspectionScheduleEvent> scheduleEvents);
-        Task<List<InspectionDeviceAreaMapping>> GetAreaDevicesAsync(List<string> areas);
-        Task<List<FnDeviceStatusDto>> GetDeviceStatusAsync(List<string> deviceIds);
-        Task<List<InspectionQcRecord>> GetTodayInspectionRecordsAsync(string userNo, DateTime date);
-        Task<int> CreateInspectionRecordAsync(InspectionQcRecord record);
-        Task<InspectionQcRecord?> GetPendingInspectionByUserAsync(string userNo);
-        Task<bool> UpdateInspectionRecordAsync(int recordId, string userNo);
+
+
+        // NFC 功能
         Task<InspectionDeviceAreaMapping?> FindNFCcard(string nfcId);
+        Task<int> CreateInspectionRecordAsync(InspectionQcRecord record);
+        Task<bool> UpdateInspectionRecordAsync(int recordId, string userNo);
+        Task<InspectionQcRecord?> GetPendingInspectionByUserAsync(string userNo);
+
     }
 }

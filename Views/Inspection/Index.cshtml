@@ -251,18 +251,28 @@
         }
 
         .status-run {
-            background: #28a745;
-            color: white;
+            background: #d3ffd3;
+  
+        }
+
+        .status-idle {
+            background: #fffbce;
+  
+        }
+
+        .status-alarm {
+            background: #eedadb;
+   
         }
 
         .status-inspecting {
             background: #e2efd9;
-            color: black;
+
         }
 
         .status-overtime {
             background: #f7cbac;
-            color: white;
+
         }
 
         .status-off {
@@ -367,6 +377,35 @@
                 cursor: pointer;
                 margin-top: 10px;
             }
+
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none; /* 預設隱藏 */
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+            .modal.show {
+                display: flex; /* 顯示時置中 */
+            }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            max-width: 300px;
+            width: 90%;
+            text-align: center;
+        }
+
     </style>
 }
 
@@ -375,7 +414,7 @@
     <div class="header">
         <div class="">
             <strong>@ViewBag.UserName (@ViewBag.UserNo)</strong>
-            <div style="color: #666;" onclick="showNFCTestModal()">@ViewBag.DepartmentName - @ViewBag.TitleName</div>
+            <div style="color: #666;" onclick="showNFCTestModal('@ViewBag.UserNo')">@ViewBag.DepartmentName - @ViewBag.TitleName</div>
             <div class="current-time" id="currentTime">@ViewBag.CurrentTime</div>
         </div>
         <div class="control-buttons">
@@ -387,27 +426,23 @@
     <div class="section">
         @* <h3 class="section-title">目前時段統計</h3> *@
         <div class="section-content">
-            <div class="stats-grid">
+            <div class="d-flex flex-wrap  gap-2">
                 <div class="d-flex gap-2 align-items-center">
-                    <div style="height:20px; width:40px;" class="status-off"></div>機台off 
-                </div>
-                <div class="d-flex gap-2 align-items-center" >
-                    <div style="height:20px; width:40px;" class="status-inspecting"></div>已刷卡檢測中
+                    <div style="height:20px; width:20px; border-radius:100%" class="status-run"></div><span style="font-size:12px">機台 RUN</span>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
-                    <div style="height:20px; width:40px;" class="status-overtime"></div>距上次檢測超過2小時
+                    <div style="height:20px; width:20px; border-radius:100%" class="status-idle"></div><span style="font-size:12px">機台 IDLE</span>
                 </div>
-                @* <div class="stat-box">
-                    <div class="stat-number" id="totalDevices">-</div>
-                    <div class="stat-label">總機台</div>
+                <div class="d-flex gap-2 align-items-center">
+                    <div style="height:20px; width:20px; border-radius:100%" class="status-off"></div><span style="font-size:12px">機台 OFF</span>
                 </div>
-                <div class="stat-box">
-                    <div class="stat-number" id="withWoDevices">-</div>
-                    <div class="stat-label">有掛工單機台數</div>
-                </div> *@
+                <div class="d-flex gap-2 align-items-center">
+                    <div style="height:20px; width:20px; border-radius:100%" class="status-alarm"></div><span style="font-size:12px">機台 ALARM</span>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <div style="height:20px; width:20px; border-radius:100%" class="status-overtime"></div><span style="font-size:12px">距上次檢測超過2小時</span>
+                </div>
             </div>
-
-
         </div>
     </div>
 
@@ -438,15 +473,15 @@
     </div>
 
     <!-- 檢驗開始提示 -->
-    <div id="inspectionModal" class="modal">
-        <div class="modal-content">
+    <div id="inspectionModal" class="modal" onclick="closeInspectionModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
             <h3>檢驗開始</h3>
             <p><strong id="modalDevice">-</strong></p>
             <p id="modalTime">-</p>
             <p>請在機邊電腦完成資料上傳</p>
             @* <p style="color: #666;">
-                <span id="countdown">10</span> 秒後自動關閉
-            </p> *@
+            <span id="countdown">10</span> 秒後自動關閉
+        </p> *@
             <button onclick="closeInspectionModal()">確定</button>
         </div>
     </div>
@@ -514,9 +549,6 @@
             initializeNFC();
             loadTodayInspection();
 
-            // $(document).on('click', '#simulateNfc', function () {
-            //   handleNFCCard('04:7a:86:12:64:6b:80', null);
-            // });
         });
 
 
@@ -536,12 +568,9 @@
                 success: function (response) {
                     showLoading(false);
                     if (response.success) {
-                        inspectionData = response.data;
                         displayTimePeriodsData(response.data);
-                        addNFCLog("資料載入完成");
                     } else {
                         showError(response.message || '載入失敗');
-                        addNFCLog("資料載入失敗");
                     }
                 },
                 error: function (xhr, status, error) {
@@ -552,49 +581,14 @@
                         setTimeout(() => window.location.href = '@Url.Action("Login", "Account")', 2000);
                     }
                     showError(errorMessage);
-                    addNFCLog(`載入錯誤: ${xhr.status} ${error}`);
-                }
-            });
-        }
-
-        function refreshDeviceStatus() {
-            addNFCLog("刷新機台狀態");
-
-            $.ajax({
-                url: '@Url.Action("RefreshDeviceStatus", "Inspection")',
-                type: 'POST',
-                dataType: 'json',
-                success: function (response) {
-                    if (response.success) {
-                        inspectionData = response.data;
-                        displayTimePeriodsData(response.data);
-                        addNFCLog("狀態刷新完成");
-                        showNFCStatus("狀態已更新", "success");
-                    } else {
-                        showError(response.message || '刷新失敗');
-                        addNFCLog("狀態刷新失敗");
-                    }
-                },
-                error: function (xhr, status, error) {
-                    showError('刷新失敗');
-                    addNFCLog(`刷新錯誤: ${xhr.status} ${error}`);
                 }
             });
         }
 
         function displayTimePeriodsData(data) {
-            console.log("displayTimePeriodsData",data)
-            // 更新整體統計
-            $('#totalDevices').text(data.totalDevices || 0);
-            $('#withWoDevices').text(data.withWoDevices || 0);
-            $('#completedInspections').text(data.completedInspections || 0);
-            $('#pendingInspections').text(
-                data.devicesToInspect ? data.devicesToInspect.filter(d => d.requiresInspection).length : 0
-            );
 
             // 處理時段資料
             if (data.timePeriods && data.timePeriods.length > 0) {
-                timePeriodsData = data.timePeriods;
                 renderTimePeriods(data.timePeriods);
                 $('#timePeriodsSection').show();
             } else {
@@ -615,7 +609,7 @@
 
         function createPeriodElement(period, index) {
             const periodClass = period.isCurrent ? 'current' : 'inactive';  //curent有藍色邊框
-            const statusClass = period.isCurrent ? 'status-current' :
+            const statusClass = period.isCurrent ? 'status-current' : 
                                (period.isPast ? 'status-completed' : 'status-upcoming');
             const statusText = period.isCurrent ? '進行中' :
                               (period.isPast ? '已結束' : '');
@@ -630,7 +624,7 @@
                             <div class="period-areas">${areasText}</div>
                         </div>
                         <div>
-                            <span class="period-status ${statusClass}">${statusText}</span>
+                            <span class="period-status ${!!statusText && statusClass}">${statusText}</span>
                             <span class="accordion-icon">▼</span>
                         </div>
                     </div>
@@ -650,16 +644,20 @@
         }
 
         function createPeriodContentHtml(period) {
-            console.log({period})
             let contentHtml = `
                 <div class="period-info">
-                     <strong>${period.eventType || '排程作業'}</strong>
+                    <strong>${period.eventType || '排程作業'}</strong>
                     ${period.eventDetail ? `<div>${period.eventDetail}</div>` : ''}
                 </div>
             `;
 
-            if (period.devicesToInspect && period.devicesToInspect.length > 0) {
-                // 定義狀態優先順序
+            // 主要機台
+            let devices = [...(period.devicesToInspect || [])];
+            // 額外任務 (不排序，最後顯示)
+            let extraTasks = (period.isCurrent && period.extraTask) ? period.extraTask : [];
+
+            if (devices.length > 0 || extraTasks.length > 0) {
+                // 狀態優先順序
                 const statusPriority = {
                     'RUN': 1,
                     'IDLE': 2,
@@ -667,73 +665,127 @@
                     'PMC資料缺漏': 4,
                     'OFF': 5
                 };
-
-                // 排序：優先順序低的數字排在前面
-                const sortedDevices = period.devicesToInspect.sort((a, b) => {
-                    const statusA = a.status?.deviceStatus || 'PMC資料缺漏';
-                    const statusB = b.status?.deviceStatus || 'PMC資料缺漏';
-
+           
+                // 排序主要機台
+                const sortedDevices = devices.sort((a, b) => {
+                    const statusA = a.deviceStatus?.status || 'PMC資料缺漏';
+                    const statusB = b.deviceStatus?.status || 'PMC資料缺漏';
                     const priorityA = statusPriority[statusA] || 99;
                     const priorityB = statusPriority[statusB] || 99;
-
-                    // 如果狀態相同，按 deviceId 排序
                     if (priorityA === priorityB) {
-                        return a.device.deviceId.localeCompare(b.device.deviceId);
+                        return a.deviceStatus.deviceID.localeCompare(b.deviceStatus.deviceID);
                     }
-
                     return priorityA - priorityB;
                 });
 
-                // 使用排序後的陣列
+                // --- 渲染主要機台 ---
                 sortedDevices.forEach(item => {
-                    const device = item.device;
-                    const status = item.status?.deviceStatus || 'PMC資料缺漏';
-                    const workOrderNo = item.status?.wO_ID ? item.status.wO_ID : "-";
-                    const lastInspection = item.lastInspectionTime
-                        ? new Date(item.lastInspectionTime).toLocaleString('zh-TW')
-                        : '';
-                    let cardClass = '';
-                    let badgeClass = '';
-                    let badgeText = '';
-
-                    let lastInspectionStartTime = item?.lastInspectionStartTime ?
-                        item.lastInspectionStartTime.replace("T", " ").replace(/-/g, "/").substring(5, 16) : ""
-                    let lastInspectionEndTime = item?.lastInspectionEndTime ?
-                        item.lastInspectionEndTime.replace("T", " ").replace(/-/g, "/").substring(5, 16) : "---"
-
-
-                    if (status === "OFF" || period.isPast){
-                        cardClass = 'status-off';
-                    }
-
-                    if (item.lastInspectionStartTime && !item.lastInspectionEndTime){
-                        cardClass = 'status-inspecting'
-                    }
-
-                    const statusClass = `status-${status.toLowerCase()}`;
-                    contentHtml += `
-                        <div class="device-card ${cardClass}">
-                            <div class="device-header">
-                                <div class="device-id">${device.deviceId}</div>
-                                <div class="device-status">${status}</div>
-                            </div>
-                            <div class="device-name">${device.deviceName || '-'}</div>
-                            <div class="device-info">工單: ${workOrderNo}</div>
-                            ${lastInspectionStartTime ?
-                                `<div class="device-info">巡檢起始-結束: </div>
-                                 <div class="device-info">${lastInspectionStartTime} ~ ${lastInspectionEndTime}</div>
-                                 <div class="device-info">巡檢人員: ${item.lastInspectorName || '-'}</div>`
-                                :
-                                `<div class="device-info">尚無巡檢資料</div>`
-                            }
-                        </div>
-                    `;
+                    contentHtml += renderDeviceCard(item, period);
                 });
+
+                // --- 渲染額外任務 (放在最後) ---
+                extraTasks.forEach(extra => {
+                    contentHtml += renderDeviceCard(
+                        { ...extra, isExtraTask: true }, // 加上標記
+                        period
+                    );
+                });
+
             } else {
                 contentHtml += '<div class="no-devices">此時段無機台資料</div>';
             }
+
             return contentHtml;
         }
+
+        function renderDeviceCard(item, period) {
+            const device = item.deviceStatus;
+            const status = device.status || 'PMC資料缺漏';
+            const workOrderNo = device?.wO_ID ? device.wO_ID : "-";
+
+            // 狀態樣式
+            let cardClass = '';
+            if (status === "OFF" || period.isPast) cardClass = 'status-off';
+            if (status === "RUN" || period.isPast) cardClass = 'status-run';
+            if (status === "IDLE" || period.isPast) cardClass = 'status-idle';
+            if (status === "ALARM" || period.isPast) cardClass = 'status-alarm';
+
+            // 額外任務標示
+            let extraBadge = item.isExtraTask
+                ? `<span class="badge bg-secondary">其他執行項目</span>`
+                : "";
+
+            // === 新增警告檢查邏輯 ===
+            if (status === "RUN" && device.wO_ID) {
+                if (!item.inspectionList || item.inspectionList.length === 0) {
+                    // 沒有巡檢資料 → 警告
+                    cardClass = 'status-overtime';
+                } else {
+                    // 檢查最後一筆
+                    const lastRecord = item.inspectionList[0];
+              
+                    if (lastRecord.inspectWo === device.wO_ID) {
+                        // 檢查時間差
+                        const now = new Date();
+                        // lastRecord.time 格式假設是 "HH:mm - HH:mm" 或 "HH:mm - 檢驗中"
+                        let endTimeStr = lastRecord.time.split('-').pop().trim();
+                        if (endTimeStr.includes('檢驗中')) {
+                            // 還在進行中，不算警告
+                        } else {
+                            // 拼成完整日期時間 (今天日期 + 時間字串)
+                            const dateStr = now.toISOString().split('T')[0]; // yyyy-mm-dd
+                            const fullDateTime = new Date(`${dateStr}T${endTimeStr}:00`);
+
+                            const diffMs = now - fullDateTime;
+                            const diffHours = diffMs / (1000 * 60 * 60);
+
+                            if (diffHours > 2) {
+                                cardClass = 'status-overtime';
+                            }
+                        }
+                    } else {
+                        cardClass = 'status-overtime';
+                    }
+                }
+            }
+
+            // 檢驗時間清單
+            let inspectionsHtml = "";
+            if (item.inspectionList && item.inspectionList.length > 0) {
+                inspectionsHtml += `<ul class="inspection-list">`;
+                item.inspectionList.forEach(rec => {
+                    const progressClass = rec.isInProgress ? "in-progress" : "";
+                    inspectionsHtml += `
+                        <li class="${progressClass}">
+                            <span class="inspect-time">${rec.time}</span>
+                            <span class="inspect-inspectWo">${rec.inspectWo}</span>
+                            <span class="inspect-inspector">(${rec.inspector})</span>
+                            ${rec.isInProgress ? `<span class="badge bg-warning ms-1">進行中</span>` : ""}
+                        </li>
+                    `;
+                });
+                inspectionsHtml += `</ul>`;
+            } else {
+                inspectionsHtml = `<div class="no-inspection">無檢驗紀錄</div>`;
+            }
+
+            return `
+                <div class="device-card ${cardClass}">
+                    <div class="device-info">${extraBadge}</div>
+                    <div class="device-header">
+                        <div class="device-id">${device.deviceName}</div>
+                        <div class="device-status">${status}</div>
+                    </div>
+                    <div class="device-name">${device.deviceID || '-'}</div>
+                    <div class="device-info">工單: ${workOrderNo}</div>
+                    <div class="inspection-section">
+                        <strong>檢驗紀錄</strong>
+                        ${inspectionsHtml}
+                    </div>
+                </div>
+            `;
+        }
+
 
 
         function togglePeriod(index) {
@@ -818,7 +870,7 @@
 
         // === 刷NFC卡 ===
         function handleNFCCard(nfcId, message) {
-            console.log("NFC卡片:", nfcId);
+
             addNFCLog(`處理NFC卡片: ${nfcId}`);
 
             $.ajax({
@@ -832,7 +884,6 @@
                 }),
                 dataType: 'json',
                 success: function (response) {
-                    console.log({response});
 
                     if (response.success) {
                         if (response.needConfirmation) {
@@ -908,110 +959,6 @@
             }
         }
 
-        // function handleNFCCard(nfcId, message) {
-        //     console.log("serialNumber", nfcId)
-
-        //     $.ajax({
-        //         url: `@Url.Action("findNFCcard", "Inspection")`,
-        //         type: 'GET',
-        //         data: { nfcId: nfcId },
-        //         dataType: 'json',
-        //         success: function (response) {
-        //             console.log({response})
-        //             if (response.success) {
-
-        //             } else {
-          
-        //             }
-        //         },
-        //         error: function (xhr, status, error) {
-        //         }
-        //     });
-        // }
-
-
-        // function autoRecordInspection(cardId, deviceId) {
-        //     addNFCLog(`記錄巡檢: ${deviceId}`);
-
-        //     const requestData = {
-        //         cardId: cardId,
-        //         deviceId: deviceId,
-        //         source: 'NFC',
-        //         inspectType: "INJECT_INSPECT"
-        //     };
-
-        //     $.ajax({
-        //         url: '@Url.Action("RecordInspection", "Inspection")',
-        //         type: 'POST',
-        //         contentType: 'application/json',
-        //         data: JSON.stringify(requestData),
-        //         dataType: 'json',
-        //         success: function (response) {
-        //             if (response.success) {
-        //                 addNFCLog(`巡檢記錄成功: ${deviceId} (ID: ${response.recordId})`);
-        //                 showNFCStatus(`${deviceId} 記錄成功`, "success");
-        //                 showInspectionStartModal(response.deviceId, response.arriveTime, response.isExisting);
-        //                 loadTodayInspection();
-        //             } else if (response.needConfirmation) {
-        //                 showReplaceConfirmationModal(cardId, response.pendingDeviceId, response.newDeviceId, response.pendingRecordId);
-        //             } else {
-        //                 addNFCLog(`巡檢記錄失敗: ${response.message}`);
-        //                 showNFCStatus(`記錄失敗: ${response.message}`, "error");
-        //             }
-        //         },
-        //         error: function (xhr, status, error) {
-        //             addNFCLog(`巡檢記錄錯誤: ${xhr.status} ${error}`);
-        //             showNFCStatus('記錄失敗: 系統錯誤', "error");
-        //         }
-        //     });
-        // }
-
-        // function showReplaceConfirmationModal(cardId, pendingDeviceId, newDeviceId, pendingRecordId) {
-        //     const confirmed = confirm(
-        //         `你在 ${pendingDeviceId} 機台還有未完成的巡檢記錄，\n` +
-        //         `確定要在 ${newDeviceId} 機台開始新的巡檢嗎？`
-        //     );
-
-        //     if (confirmed) {
-        //         confirmReplaceInspection(cardId, newDeviceId, pendingRecordId);
-        //     } else {
-        //         addNFCLog('使用者取消替換巡檢記錄');
-        //         showNFCStatus('已取消新的巡檢記錄', 'info');
-        //     }
-        // }
-
-        // function confirmReplaceInspection(cardId, newDeviceId, oldRecordId) {
-        //     const requestData = {
-        //         cardId: cardId,
-        //         newDeviceId: newDeviceId,
-        //         oldRecordId: oldRecordId,
-        //         inspectType: "INJECT_INSPECT",
-        //         source: 'NFC'
-        //     };
-
-        //     $.ajax({
-        //         url: '@Url.Action("ConfirmReplaceInspection", "Inspection")',
-        //         type: 'POST',
-        //         contentType: 'application/json',
-        //         data: JSON.stringify(requestData),
-        //         dataType: 'json',
-        //         success: function (response) {
-        //             if (response.success) {
-        //                 addNFCLog(`替換巡檢記錄成功: ${newDeviceId}`);
-        //                 showNFCStatus(`${newDeviceId} 記錄成功`, "success");
-        //                 showInspectionStartModal(response.deviceId, response.arriveTime, false);
-        //                 loadTodayInspection();
-        //             } else {
-        //                 addNFCLog(`替換巡檢記錄失敗: ${response.message}`);
-        //                 showNFCStatus(`替換失敗: ${response.message}`, "error");
-        //             }
-        //         },
-        //         error: function (xhr, status, error) {
-        //             addNFCLog(`替換巡檢記錄錯誤: ${xhr.status} ${error}`);
-        //             showNFCStatus('替換失敗: 系統錯誤', "error");
-        //         }
-        //     });
-        // }
 
         function manualStartNFC() {
             addNFCLog('手動啟動NFC');
@@ -1098,7 +1045,8 @@
             { area: '復興廠', deviceId: 'TOSHIBA_1050T-04', nfcCardId: '1050T-04' }
         ];
 
-        function showNFCTestModal() {
+        function showNFCTestModal(userNo) {
+            if (userNo !=="G02828") return
             document.getElementById('nfcTestModal').style.display = 'flex';
             generateNFCCardList();
             document.getElementById('nfcSearchInput').focus();
@@ -1239,12 +1187,21 @@
             initializeNFC();
             loadTodayInspection();
 
-            // 移除原本的 simulateNfc 點擊事件，改用新的測試選擇器
-            // $(document).on('click', '#simulateNfc', function () {
-            //     handleNFCCard('04:7a:86:12:64:6b:80', null);
-            // });
         });
-    </script>
+
+                function showInspectionStartModal(deviceId, arriveTime, isExisting) {
+            $('#modalDevice').text(deviceId);
+            $('#modalTime').text(`時間: ${arriveTime}`);
+
+            const modal = $('#inspectionModal');
+            modal.addClass('show'); // 使用 flex 置中
+        }
+
+        function closeInspectionModal(e) {
+            // 如果有 event，確保是點背景才關閉
+            if (e && e.target !== e.currentTarget) return;
+            $('#inspectionModal').removeClass('show');
+        }
     </script>
 
 

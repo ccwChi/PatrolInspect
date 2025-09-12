@@ -3,97 +3,6 @@ using PatrolInspect.Models.Entities;
 
 namespace PatrolInspect.Models
 {
-    /// <summary>
-    /// 巡檢設備擴展資訊 (包含狀態和巡檢記錄)
-    /// </summary>
-    public class InspectionDeviceInfo
-    {
-        public InspectionDeviceAreaMapping Device { get; set; } = new();
-        public List<FnDeviceStatusDto>? Status { get; set; }
-        public DateTime? LastInspectionStartTime { get; set; }
-        public DateTime? LastInspectionEndTime { get; set; }
-        public string? LastInspectorName { get; set; }
-
-    }
-
-    /// <summary>
-    /// 使用者今日巡檢總覽
-    /// </summary>
-    public class UserTodayInspection
-    {
-        public string UserNo { get; set; } = string.Empty;
-        public string UserName { get; set; } = string.Empty;
-        public string Department { get; set; } = string.Empty;
-        public List<TimePeriod> TimePeriods { get; set; } = new List<TimePeriod>(); // 新增
-        public int TotalDevices { get; set; }
-        public int RunningDevices { get; set; }
-        public int WithWoDevices { get; set; }
-        public int CompletedInspections { get; set; }
-
-        // 為了向後相容，保留這些屬性
-        public List<string> AssignedAreas { get; set; } = new List<string>();
-        public List<InspectionDeviceInfo> DevicesToInspect { get; set; } = new List<InspectionDeviceInfo>();
-    }
-
-    /// <summary>
-    /// 巡檢記錄請求DTO
-    /// </summary>
-    public class InspectionRecordRequest
-    {
-        public string CardId { get; set; } = string.Empty;
-        public string? DeviceId { get; set; }
-
-        public string InspectType { get; set; } = string.Empty;
-        public string? Source { get; set; } = "NFC";
-    }
-
-    /// <summary>
-    /// 排班事件DTO (用於前端編輯)
-    /// </summary>
-    //public class ScheduleEventDto
-    //{
-
-    //    public string UserNo { get; set; } = string.Empty;
-    //    public string UserName { get; set; } = string.Empty;
-    //    public string DepartmentName { get; set; } = string.Empty;
-    //    public string EventType { get; set; } = string.Empty;
-    //    public string EventDetail { get; set; } = string.Empty;
-    //    public string StartDate { get; set; } = string.Empty;
-    //    public string StartTime { get; set; } = string.Empty;
-    //    public string EndDate { get; set; } = string.Empty;
-    //    public string EndTime { get; set; } = string.Empty;
-    //    public DateTime StartDateTime { get; set; }
-    //    public DateTime EndDateTime { get; set; }
-    //    public string Area { get; set; } = string.Empty;
-    //    public bool IsActive { get; set; } = true;
-    //    public string? CreateBy { get; set; }
-    //}
-
-    public class ConfirmReplaceRequest
-    {
-        public string CardId { get; set; } = string.Empty;
-        public string NewDeviceId { get; set; } = string.Empty;
-        public int OldRecordId { get; set; }
-        public string? InspectType { get; set; }
-        public string? Source { get; set; }
-    }
-
-    public class TimePeriod
-    {
-        public string StartTime { get; set; } = string.Empty;
-        public string EndTime { get; set; } = string.Empty;
-        public DateTime StartDateTime { get; set; }
-        public DateTime EndDateTime { get; set; }
-        public List<string> Areas { get; set; } = new List<string>();
-        public string? EventType { get; set; }
-        public string? EventDetail { get; set; }
-        public bool IsCurrent { get; set; }
-        public bool IsPast { get; set; }
-        public List<InspectionDeviceInfo> DevicesToInspect { get; set; } = new List<InspectionDeviceInfo>();
-        public Dictionary<string, List<InspectionQcRecord>> DeviceRecordsMap { get; set; }
-            = new Dictionary<string, List<InspectionQcRecord>>(StringComparer.OrdinalIgnoreCase);
-    }
-
 
     public class InspectionItemQueryDto
     {
@@ -147,7 +56,16 @@ namespace PatrolInspect.Models
         public T? Data { get; set; }
     }
 
-    public class InspectionRecord
+    public class ProcessNFCRequest
+    {
+        public string NfcId { get; set; } = string.Empty;
+        public string Source { get; set; } = "NFC";
+        public string InspectType { get; set; } = "INJECT_INSPECT";
+        public bool ConfirmReplace { get; set; } = false;
+        public int? OldRecordId { get; set; }
+    }
+
+    public class InspectionItemRecord
     {
         public int RecordId { get; set; }
         public string TimeSlot { get; set; } = string.Empty; // 時段
@@ -178,37 +96,5 @@ namespace PatrolInspect.Models
         public DateTime InspectionTime { get; set; } = DateTime.Now;
         public bool IsCompleted { get; set; }
         public string Status { get; set; } = "進行中"; // 進行中, 已完成, 異常
-    }
-
-    public class InspectionDashboardViewModel
-    {
-        public List<InspectionRecord> RecentRecords { get; set; } = new();
-        public Dictionary<string, int> StatusSummary { get; set; } = new();
-        public Dictionary<string, int> CategorySummary { get; set; } = new();
-        public int TotalRecords { get; set; }
-        public int TodayRecords { get; set; }
-        public string CurrentUser { get; set; } = string.Empty;
-    }
-
-    public class InspectionFilterViewModel
-    {
-        public string TimeSlot { get; set; } = string.Empty;
-        public string Category { get; set; } = string.Empty;
-        public string Station { get; set; } = string.Empty;
-        public string Inspector { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
-        public int Page { get; set; } = 1;
-        public int PageSize { get; set; } = 20;
-    }
-
-    public class ProcessNFCRequest
-    {
-        public string NfcId { get; set; } = string.Empty;
-        public string Source { get; set; } = "NFC";
-        public string InspectType { get; set; } = "INJECT_INSPECT";
-        public bool ConfirmReplace { get; set; } = false;
-        public int? OldRecordId { get; set; }
     }
 }
