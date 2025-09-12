@@ -365,9 +365,9 @@ namespace PatrolInspect.Repository
             using var connection = CreateMesConnection();
             var sql = @"
                 INSERT INTO INSPECTION_QC_RECORD 
-                (CardId, DeviceId, UserNo, UserName, InspectType, ArriveAt, SubmitDataAt, Source, CreateDate)
+                (CardId, DeviceId, UserNo, UserName, InspectType, InspectWo, ArriveAt, SubmitDataAt, Source, CreateDate)
                 VALUES 
-                (@CardId, @DeviceId, @UserNo, @UserName, @InspectType, @ArriveAt, @SubmitDataAt, @Source, @CreateDate);
+                (@CardId, @DeviceId, @UserNo, @UserName, @InspectType, @InspectWo, @ArriveAt, @SubmitDataAt, @Source, @CreateDate);
                 SELECT CAST(SCOPE_IDENTITY() as int)";
 
             try
@@ -421,17 +421,22 @@ namespace PatrolInspect.Repository
             }
         }
 
-        public async Task<InspectionDeviceAreaMapping?> FindNFCcard(string nfcId)
+        public async Task<InspectionDeviceAreaMappingDto?> FindNFCcard(string nfcId)
         {
-            using var connection = CreateMesConnection();
+            using var connection = CreateFineReportConnection();
 
             var sql = @"
-                    SELECT Area, DeviceId, DeviceName from INSPECTION_DEVICE_AREA_MAPPING where NfcCardId = @nfcId and IsActive = 1";
+                    with nfcInfo as (
+                        SELECT Area, DeviceId, DeviceName from TNCIMDEV01.MES_DEV.dbo.INSPECTION_DEVICE_AREA_MAPPING 
+                        mes where 1=1 and NfcCardId = @nfcId and IsActive = 1
+                    )
+                        Select nfc.*, fn.WO_ID as InspectWo from nfcInfo nfc
+                            left join FineReport.dbo.FN_EQPSTATUS fn on nfc.DeviceId = fn.deviceId";
 
 
             try
             {
-                var nfcInfo = await connection.QueryFirstOrDefaultAsync<InspectionDeviceAreaMapping>(sql, new {nfcId});
+                var nfcInfo = await connection.QueryFirstOrDefaultAsync<InspectionDeviceAreaMappingDto>(sql, new {nfcId});
 
                 return nfcInfo;
             }

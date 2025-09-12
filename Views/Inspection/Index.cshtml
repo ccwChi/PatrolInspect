@@ -723,7 +723,7 @@
                 } else {
                     // 檢查最後一筆
                     const lastRecord = item.inspectionList[0];
-              
+                    console.log({lastRecord})
                     if (lastRecord.inspectWo === device.wO_ID) {
                         // 檢查時間差
                         const now = new Date();
@@ -1189,7 +1189,7 @@
 
         });
 
-                function showInspectionStartModal(deviceId, arriveTime, isExisting) {
+        function showInspectionStartModal(deviceId, arriveTime, isExisting) {
             $('#modalDevice').text(deviceId);
             $('#modalTime').text(`時間: ${arriveTime}`);
 

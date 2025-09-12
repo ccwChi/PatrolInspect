@@ -64,6 +64,16 @@ namespace PatrolInspect.Models.Entities
         public string? UpdateBy { get; set; }
     }
 
+    public class InspectionDeviceAreaMappingDto
+    {
+
+        public string Area { get; set; } = string.Empty;
+        public string DeviceId { get; set; } = string.Empty;
+        public string? DeviceName { get; set; }
+        public string? NfcCardId { get; set; }
+        public string? InspectWo { get; set; }
+
+    }
     /// <summary>
     /// FN_EQPSTATUS
     /// </summary>

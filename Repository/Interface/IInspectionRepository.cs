@@ -11,7 +11,7 @@ namespace PatrolInspect.Repositories.Interfaces
 
 
         // NFC 功能
-        Task<InspectionDeviceAreaMapping?> FindNFCcard(string nfcId);
+        Task<InspectionDeviceAreaMappingDto?> FindNFCcard(string nfcId);
         Task<int> CreateInspectionRecordAsync(InspectionQcRecord record);
         Task<bool> UpdateInspectionRecordAsync(int recordId, string userNo);
         Task<InspectionQcRecord?> GetPendingInspectionByUserAsync(string userNo);
