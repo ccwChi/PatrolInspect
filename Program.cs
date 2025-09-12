@@ -32,7 +32,7 @@ builder.Services.AddSession(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
 builder.Services.AddScoped<IInspectionRepository, InspectionRepository>();
-builder.Services.AddScoped<IInspectionItemRepository, InspectionItemRepository>();
+builder.Services.AddScoped<IItemManageRepository, ItemManageRepository>();
 
 // Add Logging
 builder.Services.AddLogging(config =>

@@ -3,11 +3,11 @@ using PatrolInspect.Models;
 
 namespace PatrolInspect.Controllers
 {
-    public class InspectionItemController : Controller
+    public class ItemManageController : Controller
     {
         private readonly ILogger<InspectionController> _logger;
 
-        public InspectionItemController(ILogger<InspectionController> logger)
+        public ItemManageController(ILogger<InspectionController> logger)
         {
             _logger = logger;
         }

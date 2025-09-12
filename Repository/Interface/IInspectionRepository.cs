@@ -9,7 +9,6 @@ namespace PatrolInspect.Repositories.Interfaces
         // 主要功能
         Task<UserTodayInspection> GetTodayInspectionAsync(string userNo, string userName, string department);
 
-
         // NFC 功能
         Task<InspectionDeviceAreaMappingDto?> FindNFCcard(string nfcId);
         Task<int> CreateInspectionRecordAsync(InspectionQcRecord record);

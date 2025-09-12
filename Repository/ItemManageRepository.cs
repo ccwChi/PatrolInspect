@@ -9,12 +9,12 @@ using PatrolInspect.Models.Entities;
 
 namespace PatrolInspect.Repository
 {
-    public class InspectionItemRepository : IInspectionItemRepository
+    public class ItemManageRepository : IItemManageRepository
     {
         private readonly string _mesConn;
-        private readonly ILogger<InspectionItemRepository> _logger;
+        private readonly ILogger<ItemManageRepository> _logger;
 
-        public InspectionItemRepository(IConfiguration configuration, IOptions<AppSettings> appSettings, ILogger<InspectionItemRepository> logger)
+        public ItemManageRepository(IConfiguration configuration, IOptions<AppSettings> appSettings, ILogger<ItemManageRepository> logger)
         {
             _logger = logger;
             var envFlag = appSettings.Value.EnvFlag;

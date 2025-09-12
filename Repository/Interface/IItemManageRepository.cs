@@ -3,7 +3,7 @@ using PatrolInspect.Models.Entities;
 
 namespace PatrolInspect.Repositories.Interfaces
 {
-    public interface IInspectionItemRepository
+    public interface IItemManageRepository
     {
         Task<PagedResult<InspectionItem>> GetInspectionItemsAsync(InspectionItemQueryDto query);
         Task<List<InspectionItem>> GetAllInspectionItemsAsync();
