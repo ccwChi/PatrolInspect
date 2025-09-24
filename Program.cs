@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using PatrolInspect.Models;
 using PatrolInspect.Repositories.Interfaces;
 using PatrolInspect.Repository;
@@ -13,7 +15,10 @@ builder.Services.Configure<IISServerOptions>(options =>
 });
 
 // Add services to the container
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add(new IgnoreAntiforgeryTokenAttribute());
+});
 
 // Configure AppSettings
 builder.Services.Configure<AppSettings>(

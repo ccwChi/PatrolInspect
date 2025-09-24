@@ -29,6 +29,11 @@
             padding: 2px 0 ;
         }
 
+        ol, ul {
+            margin: 0;
+            padding-left: 1.25rem;
+        }
+
         .navbar * {
             font-weight: bold;
             font-size: 18px;
@@ -95,7 +100,7 @@
                 else
                 {
                     <!-- 手機版未登入狀態 -->
-                    <a class="nav-link text-white" href="@Url.Action("CheckLoginStatus", "Account")">
+                    <a class="nav-link text-white" href="@Url.Action("Login", "Account")">
                         <i class="fa-solid fa-user"></i>
                         <span>未登入</span>
                     </a>
@@ -151,7 +156,7 @@
                     {
                         <!-- 桌面版未登入狀態 -->
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="@Url.Action("CheckLoginStatus", "Account")">
+                            <a class="nav-link text-white" href="@Url.Action("Login", "Account")">
                                 <i class="fa-solid fa-user me-1"></i>
                                 <span>未登入</span>
                             </a>
@@ -177,7 +182,7 @@
                     else
                     {
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="@Url.Action("CheckLoginStatus", "Account")">
+                            <a class="nav-link text-white" href="@Url.Action("Login", "Account")">
                                 <i class="fa-solid fa-user me-2"></i>登入
                             </a>
                         </li>

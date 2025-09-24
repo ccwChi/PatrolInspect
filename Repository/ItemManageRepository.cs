@@ -25,6 +25,7 @@ namespace PatrolInspect.Repository
 
         private IDbConnection CreateConnection() => new SqlConnection(_mesConn);
 
+
         public async Task<PagedResult<InspectionItem>> GetInspectionItemsAsync(InspectionItemQueryDto query)
         {
             using var connection = CreateConnection();
@@ -65,12 +66,12 @@ namespace PatrolInspect.Repository
                 // 取得分頁資料
                 var offset = (query.Page - 1) * query.PageSize;
                 var dataSql = $@"
-                    SELECT InspectItemId, InspectName, Department, InspectArea, Station, 
+                    SELECT ItemId, InspectName, Department, InspectArea, Station, 
                            DataType, SelectOptions, IsRequired, IsActive, CreateDate, 
                            CreateBy, UpdateDate, UpdateBy, UpdateReason
                     FROM INSPECTION_ITEM_LIST 
                     {whereClause}
-                    ORDER BY CreateDate DESC, InspectItemId DESC
+                    ORDER BY CreateDate DESC, ItemId DESC
                     OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
                 parameters.Add("Offset", offset);
@@ -97,10 +98,11 @@ namespace PatrolInspect.Repository
         {
             using var connection = CreateConnection();
             var sql = @"
-                SELECT InspectItemId, InspectName, Department, InspectArea, Station, 
+                SELECT ItemId, InspectName, Department, InspectArea, Station, 
                        DataType, SelectOptions, IsRequired, IsActive, CreateDate, 
                        CreateBy, UpdateDate, UpdateBy, UpdateReason
                 FROM INSPECTION_ITEM_LIST 
+                WHERE IsActive = 1
                 ORDER BY Department, InspectArea, InspectName";
 
             try
@@ -115,23 +117,23 @@ namespace PatrolInspect.Repository
             }
         }
 
-        public async Task<InspectionItem?> GetInspectionItemByIdAsync(int inspectItemId)
+        public async Task<InspectionItem?> GetInspectionItemByIdAsync(int itemId)
         {
             using var connection = CreateConnection();
             var sql = @"
-                SELECT InspectItemId, InspectName, Department, InspectArea, Station, 
+                SELECT ItemId, InspectName, Department, InspectArea, Station, 
                        DataType, SelectOptions, IsRequired, IsActive, CreateDate, 
                        CreateBy, UpdateDate, UpdateBy, UpdateReason
                 FROM INSPECTION_ITEM_LIST 
-                WHERE InspectItemId = @InspectItemId";
+                WHERE ItemId = @ItemId";
 
             try
             {
-                return await connection.QueryFirstOrDefaultAsync<InspectionItem>(sql, new { InspectItemId = inspectItemId });
+                return await connection.QueryFirstOrDefaultAsync<InspectionItem>(sql, new { ItemId = itemId });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting inspection item by ID: {InspectItemId}", inspectItemId);
+                _logger.LogError(ex, "Error getting inspection item by ID: {ItemId}", itemId);
                 throw;
             }
         }
@@ -140,7 +142,7 @@ namespace PatrolInspect.Repository
         {
             using var connection = CreateConnection();
             var sql = @"
-                SELECT InspectItemId, InspectName, Department, InspectArea, Station, 
+                SELECT ItemId, InspectName, Department, InspectArea, Station, 
                        DataType, SelectOptions, IsRequired, IsActive, CreateDate, 
                        CreateBy, UpdateDate, UpdateBy, UpdateReason
                 FROM INSPECTION_ITEM_LIST 
@@ -164,7 +166,7 @@ namespace PatrolInspect.Repository
         {
             using var connection = CreateConnection();
             var sql = @"
-                SELECT InspectItemId, InspectName, Department, InspectArea, Station, 
+                SELECT ItemId, InspectName, Department, InspectArea, Station, 
                        DataType, SelectOptions, IsRequired, IsActive, CreateDate, 
                        CreateBy, UpdateDate, UpdateBy, UpdateReason
                 FROM INSPECTION_ITEM_LIST 
@@ -190,16 +192,16 @@ namespace PatrolInspect.Repository
             var sql = @"
                 INSERT INTO INSPECTION_ITEM_LIST 
                 (InspectName, Department, InspectArea, Station, DataType, SelectOptions, IsRequired, CreateBy)
-                OUTPUT INSERTED.InspectItemId
+                OUTPUT INSERTED.ItemId
                 VALUES 
                 (@InspectName, @Department, @InspectArea, @Station, @DataType, @SelectOptions, @IsRequired, @CreateBy)";
 
             try
             {
-                var inspectItemId = await connection.QuerySingleAsync<int>(sql, item);
-                _logger.LogInformation("Created inspection item: {InspectItemId} - {InspectName} by {CreateBy}",
-                    inspectItemId, item.InspectName, item.CreateBy);
-                return inspectItemId;
+                var itemId = await connection.QuerySingleAsync<int>(sql, item);
+                _logger.LogInformation("Created inspection item: {ItemId} - {InspectName} by {CreateBy}",
+                    itemId, item.InspectName, item.CreateBy);
+                return itemId;
             }
             catch (Exception ex)
             {
@@ -223,7 +225,7 @@ namespace PatrolInspect.Repository
                     UpdateDate = GETDATE(),
                     UpdateBy = @UpdateBy,
                     UpdateReason = @UpdateReason
-                WHERE InspectItemId = @InspectItemId";
+                WHERE ItemId = @ItemId";
 
             try
             {
@@ -232,20 +234,20 @@ namespace PatrolInspect.Repository
 
                 if (success)
                 {
-                    _logger.LogInformation("Updated inspection item: {InspectItemId} - {InspectName} by {UpdateBy}",
-                        item.InspectItemId, item.InspectName, item.UpdateBy);
+                    _logger.LogInformation("Updated inspection item: {ItemId} - {InspectName} by {UpdateBy}",
+                        item.ItemId, item.InspectName, item.UpdateBy);
                 }
 
                 return success;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating inspection item: {InspectItemId}", item.InspectItemId);
+                _logger.LogError(ex, "Error updating inspection item: {ItemId}", item.ItemId);
                 throw;
             }
         }
 
-        public async Task<bool> ToggleInspectionItemStatusAsync(int inspectItemId, bool isActive, string updateBy, string? updateReason = null)
+        public async Task<bool> ToggleInspectionItemStatusAsync(int itemId, bool isActive, string updateBy, string? updateReason = null)
         {
             using var connection = CreateConnection();
             var sql = @"
@@ -254,13 +256,13 @@ namespace PatrolInspect.Repository
                     UpdateDate = GETDATE(),
                     UpdateBy = @UpdateBy,
                     UpdateReason = @UpdateReason
-                WHERE InspectItemId = @InspectItemId";
+                WHERE ItemId = @ItemId";
 
             try
             {
                 var affected = await connection.ExecuteAsync(sql, new
                 {
-                    InspectItemId = inspectItemId,
+                    ItemId = itemId,
                     IsActive = isActive,
                     UpdateBy = updateBy,
                     UpdateReason = updateReason ?? $"狀態變更為{(isActive ? "啟用" : "停用")}"
@@ -270,39 +272,39 @@ namespace PatrolInspect.Repository
 
                 if (success)
                 {
-                    _logger.LogInformation("Toggled inspection item status: {InspectItemId} to {IsActive} by {UpdateBy}",
-                        inspectItemId, isActive, updateBy);
+                    _logger.LogInformation("Toggled inspection item status: {ItemId} to {IsActive} by {UpdateBy}",
+                        itemId, isActive, updateBy);
                 }
 
                 return success;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error toggling inspection item status: {InspectItemId}", inspectItemId);
+                _logger.LogError(ex, "Error toggling inspection item status: {ItemId}", itemId);
                 throw;
             }
         }
 
-        public async Task<bool> DeleteInspectionItemAsync(int inspectItemId)
+        public async Task<bool> DeleteInspectionItemAsync(int itemId)
         {
             using var connection = CreateConnection();
-            var sql = "DELETE FROM INSPECTION_ITEM_LIST WHERE InspectItemId = @InspectItemId";
+            var sql = "DELETE FROM INSPECTION_ITEM_LIST WHERE ItemId = @ItemId";
 
             try
             {
-                var affected = await connection.ExecuteAsync(sql, new { InspectItemId = inspectItemId });
+                var affected = await connection.ExecuteAsync(sql, new { ItemId = itemId });
                 var success = affected > 0;
 
                 if (success)
                 {
-                    _logger.LogInformation("Deleted inspection item: {InspectItemId}", inspectItemId);
+                    _logger.LogInformation("Deleted inspection item: {ItemId}", itemId);
                 }
 
                 return success;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting inspection item: {InspectItemId}", inspectItemId);
+                _logger.LogError(ex, "Error deleting inspection item: {ItemId}", itemId);
                 throw;
             }
         }
@@ -316,7 +318,7 @@ namespace PatrolInspect.Repository
                 WHERE InspectName = @InspectName 
                 AND Department = @Department 
                 AND InspectArea = @InspectArea
-                AND (@ExcludeId IS NULL OR InspectItemId != @ExcludeId)";
+                AND (@ExcludeId IS NULL OR ItemId != @ExcludeId)";
 
             try
             {
@@ -334,6 +336,22 @@ namespace PatrolInspect.Repository
             {
                 _logger.LogError(ex, "Error checking inspection item name exists: {InspectName}", inspectName);
                 throw;
+            }
+        }
+
+        public async Task<bool> TestConnectionAsync()
+        {
+            try
+            {
+                using var connection = CreateConnection();
+                await connection.QueryFirstOrDefaultAsync<int>("SELECT 1");
+                _logger.LogInformation("Inspection item database connection test successful");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Inspection item database connection test failed");
+                return false;
             }
         }
     }

@@ -389,9 +389,10 @@
                         scheduleDeparts = response.data.scheduleDeparts || [];
                         scheduleUsers = response.data.scheduleUsers || [];
                         eventTypes = response.data.eventTypes || [];
-                        populateFilterDepartDropdown();
-                        populateFilterUsersDropdown();
-                            populateCopyAreaDropdown();
+                        // 
+                        updateAllDropdowns();
+                        // 1秒後再執行一次確保（防禦性程式設計）
+                        setTimeout(updateAllDropdowns, 1000);
                     } else {
                         showAlert('error', '載入基礎資料失敗: ' + response.message);
                     }
@@ -408,6 +409,12 @@
                 }
             });
         }
+
+         function updateAllDropdowns() {
+                populateFilterDepartDropdown();
+                populateFilterUsersDropdown();
+                populateCopyAreaDropdown();
+            }
 
          function populateFilterUsersDropdown() {
             const userSelect = document.getElementById('filterUser');

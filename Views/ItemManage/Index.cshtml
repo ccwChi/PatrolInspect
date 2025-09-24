@@ -44,59 +44,6 @@
                 font-size: 14px;
             }
 
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            text-decoration: none;
-            display: inline-block;
-            transition: background-color 0.2s;
-        }
-
-        .btn-primary {
-            background-color: #007bff;
-            color: white;
-        }
-
-            .btn-primary:hover {
-                background-color: #0056b3;
-            }
-
-        .btn-secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-
-            .btn-secondary:hover {
-                background-color: #545b62;
-            }
-
-        .btn-success {
-            background-color: #28a745;
-            color: white;
-        }
-
-            .btn-success:hover {
-                background-color: #1e7e34;
-            }
-
-        .btn-danger {
-            background-color: #dc3545;
-            color: white;
-        }
-
-            .btn-danger:hover {
-                background-color: #bd2130;
-            }
-
-        .btn-sm {
-            padding: 4px 8px;
-            font-size: 12px;
-            margin-right: 5px;
-        }
-
         .table-container {
             background: white;
             border: 1px solid #ddd;
@@ -183,6 +130,7 @@
                 border: 1px solid #ddd;
                 border-radius: 4px;
                 font-size: 14px;
+                box-sizing: border-box;
             }
 
             .form-group small {
@@ -211,6 +159,25 @@
             color: #999;
         }
 
+        .alert {
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
         @@media (max-width: 768px) {
             .filter-row {
                 flex-direction: column;
@@ -235,8 +202,8 @@
 <div class="form-container">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h1 style="margin: 0; color: #333;">檢驗項目管理</h1>
-        <button onclick="openAddModal()" class="btn btn-primary">
-            <i class="fa-solid fa-plus"></i> 新增檢驗項目
+        <button onclick="openAddModal()" class="btn btn-primary btn-action">
+           新增檢驗項目
         </button>
     </div>
 
@@ -247,6 +214,7 @@
             <select id="filterDepartment" onchange="loadData()">
                 <option value="">全部</option>
                 <option value="QA">QA</option>
+                <option value="QC">QC</option>
                 <option value="環安">環安</option>
                 <option value="生產">生產</option>
             </select>
@@ -256,6 +224,7 @@
             <label>區域</label>
             <select id="filterArea" onchange="loadData()">
                 <option value="">全部</option>
+                <option value="all">全部</option>
                 <option value="射出一區">射出一區</option>
                 <option value="射出二區">射出二區</option>
                 <option value="射出三區">射出三區</option>
@@ -280,7 +249,7 @@
 
         <div class="filter-item">
             <label>&nbsp;</label>
-            <button onclick="resetFilters()" class="btn btn-secondary">重置</button>
+            <button onclick="resetFilters()" class="btn btn-outline-secondary">重置</button>
         </div>
     </div>
 </div>
@@ -299,10 +268,9 @@
                 <th style="width: 180px;">檢驗項目名稱</th>
                 <th style="width: 80px;">部門</th>
                 <th style="width: 80px;">區域</th>
-                <th style="width: 120px;">項目</th>
-                <th style="width: 120px;">資料類型</th>
+                <th style="width: 120px;">站點</th>
+                <th style="width: 80px;">資料類型</th>
                 <th style="width: 150px;">選項內容</th>
-                <th style="width: 60px;">必填</th>
                 <th style="width: 60px;">狀態</th>
                 <th style="width: 100px;">建立時間</th>
                 <th style="width: 120px;">操作</th>
@@ -341,6 +309,9 @@
             </button>
         </div>
 
+        <!-- Alert 訊息 -->
+        <div id="modalAlert" class="alert" style="display: none;"></div>
+
         <form id="itemForm">
             <input type="hidden" id="itemId">
 
@@ -355,8 +326,9 @@
                     <select id="department" required>
                         <option value="">請選擇部門</option>
                         <option value="QA">QA</option>
-                        <option value="環安">環安</option>
                         <option value="QC">QC</option>
+                        <option value="環安">環安</option>
+                        <option value="生產">生產</option>
                     </select>
                 </div>
 
@@ -376,7 +348,7 @@
 
             <div class="form-group">
                 <label>站點</label>
-                <input type="text" id="station" maxlength="100" placeholder="選填，如：RSP-150組裝站">
+                <input type="text" id="station" maxlength="50" placeholder="選填，如：RSP-150組裝站">
             </div>
 
             <div class="form-group">
@@ -393,7 +365,7 @@
 
             <div id="selectOptionsGroup" class="form-group" style="display: none;">
                 <label>選項內容 (用逗號分隔) *</label>
-                <input type="text" id="selectOptions" maxlength="500" placeholder="例：OK,NG,N/A">
+                <input type="text" id="selectOptions" maxlength="999" placeholder="例：OK,NG,N/A">
                 <small>僅適用於下拉選單類型，請用逗號分隔各選項</small>
             </div>
 
@@ -404,18 +376,18 @@
                 </label>
             </div>
 
-            <div id="updateReasonGroup" class="form-group" style="display: none;">
+            <div id="updateReasonGroup" class="form-group " style="display: none;">
                 <label>異動原因</label>
-                <textarea id="updateReason" rows="3" maxlength="200" placeholder="請說明此次異動的原因" style="resize: vertical;"></textarea>
+                <textarea id="updateReason" rows="3" maxlength="50" placeholder="請說明此次異動的原因" style="resize: vertical;"></textarea>
             </div>
         </form>
 
         <div style="text-align: right; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
             <button onclick="closeModal()" class="btn btn-secondary" style="margin-right: 10px;">
-                <i class="fa-solid fa-times"></i> 取消
+                取消
             </button>
-            <button onclick="saveItem()" class="btn btn-primary">
-                <i class="fa-solid fa-save"></i> 儲存
+            <button onclick="saveItem()" class="btn btn-primary" id="saveBtn">
+                儲存
             </button>
         </div>
     </div>
@@ -423,186 +395,131 @@
 
 @section scripts {
     <script>
-                // 模擬檢驗項目資料
-        const mockInspectionItems = [
-            {
-                InspectItemId: 1,
-                InspectName: "RFID燒錄檢驗",
-                Department: "QA",
-                InspectArea: "無塵室",
-                Station: "RFID燒錄站",
-                DataType: "BOOLEAN",
-                SelectOptions: "OK,NG",
-                IsRequired: true,
-                IsActive: true,
-                CreateDate: "2024-12-01T08:30:00"
-            },
-            {
-                InspectItemId: 2,
-                InspectName: "Q包裝檢查",
-                Department: "QA",
-                InspectArea: "無塵室",
-                Station: "Q包裝站",
-                DataType: "SELECT",
-                SelectOptions: "無破袋,有破袋,包裝不良",
-                IsRequired: true,
-                IsActive: true,
-                CreateDate: "2024-12-01T09:15:00"
-            },
-            {
-                InspectItemId: 3,
-                InspectName: "清洗作業確認",
-                Department: "QA",
-                InspectArea: "無塵室",
-                Station: "清洗站",
-                DataType: "BOOLEAN",
-                SelectOptions: null,
-                IsRequired: true,
-                IsActive: true,
-                CreateDate: "2024-12-01T10:00:00"
-            },
-            {
-                InspectItemId: 4,
-                InspectName: "重量量測記錄",
-                Department: "QA",
-                InspectArea: "無塵室",
-                Station: "量測站",
-                DataType: "NUMBER",
-                SelectOptions: null,
-                IsRequired: true,
-                IsActive: true,
-                CreateDate: "2024-12-01T11:30:00"
-            },
-            {
-                InspectItemId: 5,
-                InspectName: "外觀檢查拍照",
-                Department: "QA",
-                InspectArea: "無塵室",
-                Station: "檢查站",
-                DataType: "PHOTO",
-                SelectOptions: null,
-                IsRequired: true,
-                IsActive: true,
-                CreateDate: "2024-12-01T13:20:00"
-            },
-            {
-                InspectItemId: 6,
-                InspectName: "組裝完成確認",
-                Department: "QA",
-                InspectArea: "無塵室",
-                Station: "組裝站",
-                DataType: "SELECT",
-                SelectOptions: "完成,未完成,異常",
-                IsRequired: true,
-                IsActive: true,
-                CreateDate: "2024-12-01T14:45:00"
-            },
-            {
-                InspectItemId: 7,
-                InspectName: "LD測試數據",
-                Department: "QA",
-                InspectArea: "無塵室",
-                Station: "LD測試站",
-                DataType: "TEXT",
-                SelectOptions: null,
-                IsRequired: true,
-                IsActive: true,
-                CreateDate: "2024-12-01T15:10:00"
-            },
-            {
-                InspectItemId: 8,
-                InspectName: "6S環境檢查",
-                Department: "環安",
-                InspectArea: "無塵室",
-                Station: "現場",
-                DataType: "SELECT",
-                SelectOptions: "良好,一般,不良",
-                IsRequired: true,
-                IsActive: true,
-                CreateDate: "2024-12-01T16:00:00"
-            },
-            {
-                InspectItemId: 9,
-                InspectName: "真空包裝檢驗",
-                Department: "QA",
-                InspectArea: "無塵室",
-                Station: "包裝站",
-                DataType: "BOOLEAN",
-                SelectOptions: null,
-                IsRequired: true,
-                IsActive: true,
-                CreateDate: "2024-11-30T08:00:00"
-            },
-            {
-                InspectItemId: 10,
-                InspectName: "ALU測試確認",
-                Department: "QA",
-                InspectArea: "無塵室",
-                Station: "ALU測試站",
-                DataType: "SELECT",
-                SelectOptions: "通過,失敗,重測",
-                IsRequired: true,
-                IsActive: true,
-                CreateDate: "2024-11-30T14:30:00"
-            }
-        ];
 
         let currentPage = 1;
-        let currentData = { Items: [], TotalPages: 0, TotalCount: 0 };
+        let currentData = { items: [], totalPages: 0, totalCount: 0 };
         let searchTimeout = null;
 
         // 頁面載入時初始化
-        document.addEventListener('DOMContentLoaded', function() {
+        $(document).ready(function() {
+            document.getElementById('filterStatus').value = 'true'
             loadData();
         });
 
-        // 載入資料 (使用模擬資料)
         function loadData() {
             showLoading(true);
 
-            // 模擬 API 延遲
-            setTimeout(() => {
-                try {
-                    // 取得篩選條件
-                    const department = document.getElementById('filterDepartment').value || '';
-                    const inspectArea = document.getElementById('filterArea').value || '';
-                    const isActive = document.getElementById('filterStatus').value || '';
-                    const searchText = document.getElementById('searchText').value || '';
+            const query = {
+                Page: currentPage,
+                PageSize: 50,
+                Department: document.getElementById('filterDepartment').value || null,
+                InspectArea: document.getElementById('filterArea').value || null,
+                IsActive: document.getElementById('filterStatus').value === '' ? null :
+                          document.getElementById('filterStatus').value === 'true',
+                SearchText: document.getElementById('searchText').value.trim() || null
+            };
 
-                    // 篩選資料
-                    let filteredItems = mockInspectionItems.filter(item => {
-                        if (department && item.Department !== department) return false;
-                        if (inspectArea && item.InspectArea !== inspectArea) return false;
-                        if (isActive && item.IsActive.toString() !== isActive) return false;
-                        if (searchText && !item.InspectName.toLowerCase().includes(searchText.toLowerCase())) return false;
-                        return true;
-                    });
+            $.ajax({
+                url: '@Url.Action("GetInspectionItems", "ItemManage")',
+                type: "POST",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                data: JSON.stringify(query),
+                success: function(response) {
+                    console.log('Response:', response);
 
-                    // 分頁處理
-                    const pageSize = 50;
-                    const totalPages = Math.ceil(filteredItems.length / pageSize);
-                    const startIndex = (currentPage - 1) * pageSize;
-                    const endIndex = startIndex + pageSize;
-                    const pageItems = filteredItems.slice(startIndex, endIndex);
-
-                    currentData = {
-                        Items: pageItems,
-                        TotalPages: totalPages,
-                        TotalCount: filteredItems.length
-                    };
-
-                    renderTable();
-                    renderPagination();
-                } catch (error) {
-                    console.error('載入資料錯誤:', error);
-                    showError('載入資料失敗: ' + error.message);
-                } finally {
+                    if (response.success) {
+                        currentData = response.data;
+                        renderTable();
+                        renderPagination();
+                    } else {
+                        alert(response.message || '載入資料失敗');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', xhr.responseText);
+                    alert('載入基礎資料時發生錯誤: ' + error);
+                },
+                complete: function() {
                     showLoading(false);
                 }
-            }, 300); // 模擬 300ms 延遲
+            });
         }
 
-        // 處理搜尋 (加入延遲)
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const noDataMessage = document.getElementById('noDataMessage');
+
+            if (!currentData || !currentData.items || currentData.items.length === 0) {
+                tbody.innerHTML = '';
+                document.getElementById('tableContainer').style.display = 'none';
+                noDataMessage.style.display = 'block';
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+
+            noDataMessage.style.display = 'none';
+            document.getElementById('tableContainer').style.display = 'block';
+            document.getElementById('pagination').style.display = currentData.totalPages > 1 ? 'block' : 'none';
+
+            tbody.innerHTML = currentData.items.map(item => `
+                <tr class="${!item.isActive ? 'opacity-50' : ''}">
+                    <td>${item.itemId}</td>
+                    <td><strong>${escapeHtml(item.inspectName)}</strong></td>
+                    <td>${escapeHtml(item.department)}</td>
+                    <td>${escapeHtml(item.inspectArea)}</td>
+                    <td>${escapeHtml(item.station || '無')}</td>
+                    <td>${getDataTypeText(item.dataType)}</td>
+                    <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                        title="${escapeHtml(item.selectOptions || '')}">
+                        ${escapeHtml(item.selectOptions || '無')}
+                    </td>
+                    <td class="${item.isActive ? 'text-success fw-bold' : 'text-danger fw-bold'}">
+                        ${item.isActive ? '啟用' : '停用'}
+                    </td>
+                    <td>${formatDate(item.createDate)}</td>
+                    <td style="white-space: nowrap;">
+                        <button onclick="editItem(${item.itemId})" class="btn btn-outline-primary btn-sm me-1" title="編輯">
+                            編輯
+                        </button>
+                        <button onclick="toggleStatus(${item.itemId}, ${!item.isActive})"
+                                class="btn ${item.isActive ? 'btn-outline-warning' : 'btn-outline-success'} btn-sm"
+                                title="${item.isActive ? '停用' : '啟用'}">
+                            ${item.isActive ? '停用' : '啟用'}
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPagination() {
+            const pagination = document.getElementById('pagination');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const pageInfo = document.getElementById('pageInfo');
+
+            if (!currentData || currentData.totalPages <= 1) {
+                pagination.style.display = 'none';
+                return;
+            }
+
+            pagination.style.display = 'block';
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= currentData.totalPages;
+
+            pageInfo.textContent = `第 ${currentPage} 頁，共 ${currentData.totalPages} 頁 (總計 ${currentData.totalCount} 筆)`;
+        }
+
+        // 換頁
+        function changePage(direction) {
+            const newPage = currentPage + direction;
+            if (newPage >= 1 && newPage <= currentData.totalPages) {
+                currentPage = newPage;
+                loadData();
+            }
+        }
+
+        // 處理搜尋
         function handleSearch() {
             if (searchTimeout) {
                 clearTimeout(searchTimeout);
@@ -618,7 +535,7 @@
         function resetFilters() {
             document.getElementById('filterDepartment').value = '';
             document.getElementById('filterArea').value = '';
-            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterStatus').value = 'true';
             document.getElementById('searchText').value = '';
             currentPage = 1;
             loadData();
@@ -630,121 +547,6 @@
             document.getElementById('tableContainer').style.display = show ? 'none' : 'block';
         }
 
-        // 顯示錯誤訊息
-        function showError(message) {
-            alert(message);
-        }
-
-        // 渲染表格
-        function renderTable() {
-            const tbody = document.getElementById('tableBody');
-            const noDataMessage = document.getElementById('noDataMessage');
-
-            if (!currentData.Items || currentData.Items.length === 0) {
-                tbody.innerHTML = '';
-                document.getElementById('tableContainer').style.display = 'none';
-                noDataMessage.style.display = 'block';
-                document.getElementById('pagination').style.display = 'none';
-                return;
-            }
-
-            noDataMessage.style.display = 'none';
-            document.getElementById('tableContainer').style.display = 'block';
-            document.getElementById('pagination').style.display = currentData.TotalPages > 1 ? 'block' : 'none';
-
-            tbody.innerHTML = currentData.Items.map(item => `
-                <tr class="${!item.IsActive ? 'status-inactive' : ''}">
-                    <td>${item.InspectItemId}</td>
-                    <td><strong>${escapeHtml(item.InspectName)}</strong></td>
-                    <td>${escapeHtml(item.Department)}</td>
-                    <td>${escapeHtml(item.InspectArea)}</td>
-                    <td>${escapeHtml(item.Station || '無')}</td>
-                    <td>${getDataTypeText(item.DataType)}</td>
-                    <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                        title="${escapeHtml(item.SelectOptions || '')}">
-                        ${escapeHtml(item.SelectOptions || '無')}
-                    </td>
-                    <td>${item.IsRequired ? '<span style="color: #dc3545;">是</span>' : '否'}</td>
-                    <td class="${item.IsActive ? 'status-active' : 'status-inactive'}">
-                        ${item.IsActive ? '啟用' : '停用'}
-                    </td>
-                    <td>${formatDate(item.CreateDate)}</td>
-                    <td style="white-space: nowrap;">
-                        <button onclick="editItem(${item.InspectItemId})" class="btn btn-primary btn-sm" title="編輯">
-                            <i class="fa-solid fa-edit"></i>
-                        </button>
-                        <button onclick="toggleStatus(${item.InspectItemId}, ${!item.IsActive})"
-                                class="btn ${item.IsActive ? 'btn-danger' : 'btn-success'} btn-sm"
-                                title="${item.IsActive ? '停用' : '啟用'}">
-                            <i class="fa-solid fa-${item.IsActive ? 'ban' : 'check'}"></i>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        // 渲染分頁
-        function renderPagination() {
-            const pagination = document.getElementById('pagination');
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
-            const pageInfo = document.getElementById('pageInfo');
-
-            if (currentData.TotalPages <= 1) {
-                pagination.style.display = 'none';
-                return;
-            }
-
-            pagination.style.display = 'block';
-            prevBtn.disabled = currentPage <= 1;
-            nextBtn.disabled = currentPage >= currentData.TotalPages;
-
-            prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
-            nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
-
-            pageInfo.textContent = `第 ${currentPage} 頁，共 ${currentData.TotalPages} 頁 (總計 ${currentData.TotalCount} 筆)`;
-        }
-
-        // 換頁
-        function changePage(direction) {
-            const newPage = currentPage + direction;
-            if (newPage >= 1 && newPage <= currentData.TotalPages) {
-                currentPage = newPage;
-                loadData();
-            }
-        }
-
-        // HTML 跳脫
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // 資料類型對應文字
-        function getDataTypeText(dataType) {
-            const types = {
-                'TEXT': '文字',
-                'NUMBER': '數字',
-                'BOOLEAN': '是否',
-                'SELECT': '選單',
-                'PHOTO': '拍照'
-            };
-            return types[dataType] || dataType;
-        }
-
-        // 格式化日期
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return '';
-
-            return date.getFullYear() + '/' +
-                   String(date.getMonth() + 1).padStart(2, '0') + '/' +
-                   String(date.getDate()).padStart(2, '0');
-        }
-
         // 開啟新增 Modal
         function openAddModal() {
             document.getElementById('modalTitle').textContent = '新增檢驗項目';
@@ -752,47 +554,76 @@
             document.getElementById('itemId').value = '';
             document.getElementById('updateReasonGroup').style.display = 'none';
             document.getElementById('selectOptionsGroup').style.display = 'none';
+            document.getElementById('modalAlert').style.display = 'none';
             document.getElementById('itemModal').style.display = 'block';
         }
 
-        // 編輯項目 (使用模擬資料)
-        function editItem(id) {
-            const item = mockInspectionItems.find(item => item.InspectItemId === id);
+        // 編輯項目
+        async function editItem(id) {
+            try {
+                const response = await fetch(`@Url.Action("GetInspectionItem", "ItemManage")?id=${id}`, {
+                    method: 'GET'
+                });
 
-            if (item) {
-                document.getElementById('modalTitle').textContent = '編輯檢驗項目';
-                document.getElementById('itemId').value = item.InspectItemId;
-                document.getElementById('inspectName').value = item.InspectName;
-                document.getElementById('department').value = item.Department;
-                document.getElementById('inspectArea').value = item.InspectArea;
-                document.getElementById('station').value = item.Station || '';
-                document.getElementById('dataType').value = item.DataType;
-                document.getElementById('selectOptions').value = item.SelectOptions || '';
-                document.getElementById('isRequired').checked = item.IsRequired;
+                const result = await response.json();
 
-                document.getElementById('updateReasonGroup').style.display = 'block';
-                toggleSelectOptions();
-                document.getElementById('itemModal').style.display = 'block';
-            } else {
-                showError('找不到該檢驗項目');
+                if (result.success && result.data) {
+                    const item = result.data;
+
+                    document.getElementById('modalTitle').textContent = '編輯檢驗項目';
+                    document.getElementById('itemId').value = item.itemId;
+                    document.getElementById('inspectName').value = item.inspectName;
+                    document.getElementById('department').value = item.department;
+                    document.getElementById('inspectArea').value = item.inspectArea;
+                    document.getElementById('station').value = item.station || '';
+                    document.getElementById('dataType').value = item.dataType;
+                    document.getElementById('selectOptions').value = item.selectOptions || '';
+                    document.getElementById('isRequired').checked = item.isRequired;
+
+                    document.getElementById('updateReasonGroup').style.display = 'block';
+                    document.getElementById('modalAlert').style.display = 'none';
+                    toggleSelectOptions();
+                    document.getElementById('itemModal').style.display = 'block';
+                } else {
+                    alert(result.message || '載入資料失敗');
+                }
+            } catch (error) {
+                console.error('編輯項目錯誤:', error);
+                alert('載入資料失敗: ' + error.message);
             }
         }
 
-        // 切換狀態 (模擬操作)
-        function toggleStatus(id, isActive) {
+        // 切換狀態
+        async function toggleStatus(id, isActive) {
             const action = isActive ? '啟用' : '停用';
             const reason = prompt(`請輸入${action}原因:`);
 
-            if (reason === null) return; // 使用者取消
+            if (reason === null) return;
 
-            // 模擬更新資料
-            const item = mockInspectionItems.find(item => item.InspectItemId === id);
-            if (item) {
-                item.IsActive = isActive;
-                alert(`${action}成功！`);
-                loadData();
-            } else {
-                showError('找不到該檢驗項目');
+            try {
+                const response = await fetch('@Url.Action("ToggleInspectionItemStatus", "ItemManage")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ItemId: id,
+                        IsActive: isActive,
+                        UpdateReason: reason.trim()
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(result.message || `${action}成功！`);
+                    loadData();
+                } else {
+                    alert(result.message || `${action}失敗`);
+                }
+            } catch (error) {
+                console.error('切換狀態錯誤:', error);
+                alert(`${action}失敗: ` + error.message);
             }
         }
 
@@ -815,27 +646,18 @@
         // 關閉 Modal
         function closeModal() {
             document.getElementById('itemModal').style.display = 'none';
+            document.getElementById('modalAlert').style.display = 'none';
         }
 
-        // Modal 外部點擊關閉
-        window.onclick = function(event) {
-            const modal = document.getElementById('itemModal');
-            if (event.target === modal) {
-                closeModal();
-            }
-        }
-
-        // 儲存項目 (模擬操作)
-        function saveItem() {
+        // 儲存項目
+        async function saveItem() {
             const form = document.getElementById('itemForm');
 
-            // 表單驗證
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
             }
 
-            // 額外驗證 SELECT 類型的選項
             if (document.getElementById('dataType').value === 'SELECT') {
                 const options = document.getElementById('selectOptions').value.trim();
                 if (!options) {
@@ -848,30 +670,85 @@
             const itemId = document.getElementById('itemId').value;
             const isEdit = itemId !== '';
 
-            // 模擬儲存操作
-            alert(isEdit ? '更新成功！' : '新增成功！');
-            closeModal();
+            const saveBtn = document.getElementById('saveBtn');
+            const originalText = saveBtn.textContent;
+            saveBtn.disabled = true;
+            saveBtn.textContent = '處理中...';
 
-            // 如果是新增，可以模擬新增到 mockInspectionItems 陣列
-            if (!isEdit) {
-                const newId = Math.max(...mockInspectionItems.map(item => item.InspectItemId)) + 1;
-                const newItem = {
-                    InspectItemId: newId,
+            try {
+                const data = {
                     InspectName: document.getElementById('inspectName').value.trim(),
                     Department: document.getElementById('department').value,
                     InspectArea: document.getElementById('inspectArea').value,
                     Station: document.getElementById('station').value.trim() || null,
                     DataType: document.getElementById('dataType').value,
                     SelectOptions: document.getElementById('selectOptions').value.trim() || null,
-                    IsRequired: document.getElementById('isRequired').checked,
-                    IsActive: true,
-                    CreateDate: new Date().toISOString()
+                    IsRequired: document.getElementById('isRequired').checked
                 };
-                mockInspectionItems.push(newItem);
-            }
 
-            currentPage = 1;
-            loadData();
+                if (isEdit) {
+                    data.ItemId = parseInt(itemId);
+                    data.UpdateReason = document.getElementById('updateReason').value.trim() || null;
+                }
+
+                const url = isEdit
+                    ? '@Url.Action("UpdateInspectionItem", "ItemManage")'
+                    : '@Url.Action("CreateInspectionItem", "ItemManage")';
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(result.message || (isEdit ? '更新成功！' : '新增成功！'));
+                    closeModal();
+                    currentPage = 1;
+                    loadData();
+                } else {
+                    alert(result.message || (isEdit ? '更新失敗' : '新增失敗'));
+                }
+            } catch (error) {
+                console.error('儲存項目錯誤:', error);
+                alert((isEdit ? '更新' : '新增') + '失敗: ' + error.message);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = originalText;
+            }
+        }
+
+        // 輔助函數
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function getDataTypeText(dataType) {
+            const types = {
+                'TEXT': '文字',
+                'NUMBER': '數字',
+                'BOOLEAN': '是否',
+                'SELECT': '選單',
+                'PHOTO': '拍照'
+            };
+            return types[dataType] || dataType;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+
+            return date.getFullYear() + '/' +
+                   String(date.getMonth() + 1).padStart(2, '0') + '/' +
+                   String(date.getDate()).padStart(2, '0');
         }
 
         // ESC 鍵關閉 Modal
@@ -884,3 +761,4 @@
             }
         });
     </script>
+}

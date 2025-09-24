@@ -7,6 +7,7 @@ using PatrolInspect.Models.Entities;
 using PatrolInspect.Repositories.Interfaces;
 using System.Data;
 using System.Linq;
+using static PatrolInspect.Controllers.InspectionController;
 
 namespace PatrolInspect.Repository
 {
@@ -14,19 +15,20 @@ namespace PatrolInspect.Repository
     {
         private readonly string _mesConnString;
         private readonly string _fnReportConnString;
+        private readonly int _envFlag;
         private readonly ILogger<InspectionRepository> _logger;
 
         public InspectionRepository(IConfiguration configuration, IOptions<AppSettings> appSettings, ILogger<InspectionRepository> logger)
         {
             _logger = logger;
-            var envFlag = appSettings.Value.EnvFlag;
-
-            var MesConnKey = EnvironmentHelper.GetMesConnectionStringKey(envFlag);
+            _envFlag = appSettings.Value.EnvFlag;
+            _logger.LogInformation("Current EnvFlag: {EnvFlag}", _envFlag);
+            var MesConnKey = EnvironmentHelper.GetMesConnectionStringKey(_envFlag);
             _mesConnString = configuration.GetConnectionString(MesConnKey)
                 ?? throw new ArgumentNullException($"ConnectionString '{MesConnKey}' not found");
 
             // FineReport 連線字串 (需要在 appsettings.json 中新增)
-            var FnConnKey = EnvironmentHelper.GetFnReportConnectionStringKey(envFlag);
+            var FnConnKey = EnvironmentHelper.GetFnReportConnectionStringKey(_envFlag);
             _fnReportConnString = configuration.GetConnectionString(FnConnKey)
                 ?? throw new ArgumentNullException("FineReport ConnectionString not found");
         }
@@ -39,6 +41,23 @@ namespace PatrolInspect.Repository
         private IDbConnection CreateFineReportConnection()
         {
             return new SqlConnection(_fnReportConnString);
+        }
+
+        public async Task <List<string>> GetInspectTypeList()
+        {
+            using var connection = CreateMesConnection();
+            var sql = @" SELECT EventType from INSPECTION_EVENT_TYPE_MASTER where IsActive = '1' order by SortOrder";
+
+            try
+            {
+                var eventTypes = await connection.QueryAsync<string>(sql);
+                return eventTypes.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting department from INSPECTION_SCHEDULE_EVENT");
+                throw;
+            }
         }
 
         public async Task<UserTodayInspection> GetTodayInspectionAsync(string userNo, string userName, string department)
@@ -59,8 +78,8 @@ namespace PatrolInspect.Repository
                 // 4. 為每個時段處理機台資料
                 foreach (var period in timePeriods)
                 {
-                    if (!period.Areas.Any())
-                        continue;
+                    //if (!period.Areas.Any())
+                    //    continue;
 
                     // 取得該時段負責區域的機台狀態和巡檢紀錄
                     var periodDeviceData = await GetDeviceInspectionDataAsync(period.Areas, today);
@@ -162,26 +181,26 @@ namespace PatrolInspect.Repository
         {
             if (!areas.Any()) return new List<DeviceInspectionRawData>();
 
+            var dbname = _envFlag.ToString() == "1" ? "TNCIMDB01.MES" : "TNCIMDEV01.MES_DEV";
+
             using var connection = CreateFineReportConnection();
 
-            var sql = @"
+            var sql = $@"
                 WITH deviceIds AS (
                     SELECT DeviceId, DeviceName
-                    FROM TNCIMDEV01.MES_DEV.dbo.INSPECTION_DEVICE_AREA_MAPPING
+                    FROM {dbname}.dbo.INSPECTION_DEVICE_AREA_MAPPING
                     WHERE Area IN @Areas AND IsActive = 1
                 ),
                 machineStatus AS (
-                    SELECT DeviceID, DeviceStatus, StartTime, CreateTime, WO_ID, BPM_NO
-                    FROM FineReport.dbo.FN_EQPSTATUS 
-                    WHERE DeviceID IN (SELECT DeviceId FROM deviceIds) 
+                    SELECT d.DeviceID,fne.DeviceStatus, fnr.WO_ID
+                    FROM deviceIds d 
+                    LEFT JOIN FineReport.dbo.FN_ORDER_RUNTIME fnr on d.DeviceId = fnr.DeviceID
+                    LEFT JOIN FineReport.dbo.FN_EQPSTATUS fne on d.deviceId = fne.DeviceID
                 )
                 SELECT 
                     ms.DeviceID,
                     ms.DeviceStatus as Status,
-                    ms.StartTime,
-                    ms.CreateTime,
                     ms.WO_ID,
-                    ms.BPM_NO,
                     iqc.RecordId,
                     iqc.CardId,
                     iqc.DeviceId,
@@ -196,9 +215,10 @@ namespace PatrolInspect.Repository
                     d.DeviceName
                 FROM machineStatus ms
                 LEFT JOIN deviceIds d ON ms.DeviceID = d.DeviceId
-                LEFT JOIN TNCIMDEV01.MES_DEV.dbo.INSPECTION_QC_RECORD iqc 
+                LEFT JOIN {dbname}.dbo.INSPECTION_QC_RECORD iqc 
                     ON ms.DeviceID = iqc.DeviceId 
                     AND CAST(iqc.ArriveAt AS DATE) = @Date
+                    AND ms.WO_ID = iqc.InspectWo
                 WHERE (iqc.InspectType <> 'CANCEL' OR iqc.InspectType IS NULL)
                 ORDER BY ms.DeviceID, iqc.ArriveAt DESC";
 
@@ -218,7 +238,7 @@ namespace PatrolInspect.Repository
         {
             using var connection = CreateMesConnection();
             var sql = @"
-                SELECT RecordId, CardId, DeviceId, UserNo, UserName, InspectType,
+                SELECT RecordId, CardId, DeviceId, UserNo, UserName, InspectType, InspectWo,
                        ArriveAt, SubmitDataAt, Source, CreateDate,
                        InspectItemOkNo, InspectItemNgNo
                 FROM INSPECTION_QC_RECORD 
@@ -287,7 +307,11 @@ namespace PatrolInspect.Repository
                     Status = firstRecord.Status,
                     StartTime = firstRecord.StartTime,
                     CreateTime = firstRecord.CreateTime,
-                    WO_ID = firstRecord.WO_ID ?? string.Empty,
+                    WO_ID =  string.Join(",", deviceRecords
+                    .Where(r=> !string.IsNullOrEmpty(r.WO_ID))
+                    .Select(r=> r.WO_ID!)
+                    .Distinct()
+                    .OrderBy(x=>x)),
                     BPM_NO = firstRecord.BPM_NO ?? string.Empty
                 };
 
@@ -299,7 +323,10 @@ namespace PatrolInspect.Repository
                     {
                         Time = FormatInspectionTime(r.ArriveAt!.Value, r.SubmitDataAt),
                         Inspector = r.UserName ?? "Unknown",
-                        InspectWo = r.InspectWo ?? ""
+                        InspectWo = r.InspectWo ?? "",
+                        RecordId = r.RecordId,
+                        InspectType = r.InspectType,
+                        InspectorId = r.UserNo
                     })
                     .ToList();
 
@@ -326,14 +353,18 @@ namespace PatrolInspect.Repository
                         DeviceName = deviceNameMapping.GetValueOrDefault(record.DeviceId, record.DeviceId),
                         // 這裡可能需要額外查詢機台狀態，暫時用預設值
                         Status = "---",
-                        WO_ID = string.Empty,
+                        WO_ID = record.InspectWo ?? string.Empty,
                         BPM_NO = string.Empty
                     };
 
                     var inspectionRecord = new InspectionRecord
                     {
+                        InspectWo = record.InspectWo ?? string.Empty,
+                        RecordId = record.RecordId,
                         Time = FormatInspectionTime(record.ArriveAt, record.SubmitDataAt),
-                        Inspector = record.UserName
+                        Inspector = record.UserName,
+                        InspectorId = record.UserNo,
+                        InspectType = record.InspectType
                     };
 
                     var extraTaskInfo = new DeviceInspectionInfo
@@ -349,6 +380,10 @@ namespace PatrolInspect.Repository
             return (devicesToInspect, extraTasks);
         }
 
+
+
+
+
         private static string FormatInspectionTime(DateTime arriveAt, DateTime? submitDataAt)
         {
             var arriveTime = arriveAt.ToString("HH:mm");
@@ -357,6 +392,76 @@ namespace PatrolInspect.Repository
         }
 
 
+
+
+
+
+        public async Task<object> UpdateInspectionQuantityAsync(int recordId, int okQuantity, int ngQuantity, string updatedBy)
+        {
+            using var connection = CreateMesConnection();
+
+            try
+            {
+                // 1. 檢查記錄是否存在且可以更新
+                var checkSql = @"
+                    SELECT RecordId, UserNo, DeviceId, InspectWo, ArriveAt, SubmitDataAt, 
+                           InspectItemOkNo, InspectItemNgNo
+                    FROM INSPECTION_QC_RECORD 
+                    WHERE RecordId = @RecordId
+                    AND SubmitDataAt is NULL";
+
+                var existingRecord = await connection.QueryFirstOrDefaultAsync<dynamic>(checkSql, new { RecordId = recordId });
+
+                if (existingRecord == null)
+                {
+                    return new
+                    {
+                        Success = false,
+                        Message = "找不到指定的檢驗記錄"
+                    };
+                }
+
+                // 4. 更新檢驗數量
+                var updateSql = @"
+                        UPDATE INSPECTION_QC_RECORD 
+                        SET InspectItemOkNo = @OkQuantity,
+                            InspectItemNgNo = @NgQuantity,
+                            SubmitDataAt = GETDATE()
+                        WHERE RecordId = @RecordId
+                        AND SubmitDataAt is null";
+
+                var updateResult = await connection.ExecuteAsync(
+                    updateSql,
+                    new
+                    {
+                        RecordId = recordId,
+                        OkQuantity = okQuantity.ToString(),
+                        NgQuantity = ngQuantity.ToString()
+                    }
+                );
+
+                if (updateResult == 0)
+                {
+                    return new
+                    {
+                        Success = false,
+                        Message = "更新失敗，請稍後再試"
+                    };
+                }
+
+
+                return new
+                {
+                    Success = true,
+                    Message = "檢驗數量更新成功"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "更新檢驗數量時發生錯誤: RecordId={RecordId}", recordId);
+                throw; // 讓Controller處理異常
+            }
+        }
         //==============================讀取NFC並新增===========================================
         //========================================================================================================
 
@@ -365,10 +470,15 @@ namespace PatrolInspect.Repository
             using var connection = CreateMesConnection();
             var sql = @"
                 INSERT INTO INSPECTION_QC_RECORD 
-                (CardId, DeviceId, UserNo, UserName, InspectType, InspectWo, ArriveAt, SubmitDataAt, Source, CreateDate)
+                (CardId, DeviceId, UserNo, UserName,Area, InspectType, InspectWo, ArriveAt, SubmitDataAt, Source, CreateDate)
                 VALUES 
-                (@CardId, @DeviceId, @UserNo, @UserName, @InspectType, @InspectWo, @ArriveAt, @SubmitDataAt, @Source, @CreateDate);
+                (@CardId, @DeviceId, @UserNo, @UserName,@Area, @InspectType, @InspectWo, @ArriveAt, @SubmitDataAt, @Source, @CreateDate);
                 SELECT CAST(SCOPE_IDENTITY() as int)";
+
+            if (!string.IsNullOrWhiteSpace(record.UserInputWorkOrderNo))
+            {
+                record.InspectWo = record.UserInputWorkOrderNo ?? "";
+            }
 
             try
             {
@@ -388,20 +498,20 @@ namespace PatrolInspect.Repository
             }
         }
 
-        public async Task<bool> UpdateInspectionRecordAsync(int recordId, string userNo)
+        public async Task<bool> UpdateInspectionRecordAsync(int recordId, string  deviceId, string userNo)
         {
             using var connection = CreateMesConnection();
             var sql = @"
                 UPDATE INSPECTION_QC_RECORD 
                 SET InspectType = 'CANCEL', 
                     SubmitDataAt = GETDATE()
-                WHERE RecordId = @RecordId 
+                WHERE DeviceId <> @deviceId 
                   AND UserNo = @UserNo 
                   AND SubmitDataAt IS NULL"; 
 
             try
             {
-                var rowsAffected = await connection.ExecuteAsync(sql, new { RecordId = recordId, UserNo = userNo });
+                var rowsAffected = await connection.ExecuteAsync(sql, new { DeviceId = deviceId, UserNo = userNo });
 
                 if (rowsAffected > 0)
                 {
@@ -421,24 +531,27 @@ namespace PatrolInspect.Repository
             }
         }
 
-        public async Task<InspectionDeviceAreaMappingDto?> FindNFCcard(string nfcId)
+        public async Task<List<InspectionDeviceAreaMappingDto>> FindNFCcard(string nfcId)
         {
             using var connection = CreateFineReportConnection();
 
-            var sql = @"
-                    with nfcInfo as (
-                        SELECT Area, DeviceId, DeviceName from TNCIMDEV01.MES_DEV.dbo.INSPECTION_DEVICE_AREA_MAPPING 
-                        mes where 1=1 and NfcCardId = @nfcId and IsActive = 1
-                    )
-                        Select nfc.*, fn.WO_ID as InspectWo from nfcInfo nfc
-                            left join FineReport.dbo.FN_EQPSTATUS fn on nfc.DeviceId = fn.deviceId";
+            var dbname = _envFlag.ToString() == "1" ? "TNCIMDB01.MES" : "TNCIMDEV01.MES_DEV";
+
+            var sql = $@"
+                        with nfcInfo as (
+                        SELECT Area, DeviceId, DeviceName, NfcCardId from {dbname}.dbo.INSPECTION_DEVICE_AREA_MAPPING 
+                        where 1=1 and NfcCardId = @nfcId and IsActive = 1
+                    	)
+                        Select d.*, fnr.WO_ID as InspectWo from nfcInfo d
+                        LEFT JOIN FineReport.dbo.FN_ORDER_RUNTIME fnr on d.DeviceId = fnr.DeviceID
+    					LEFT JOIN FineReport.dbo.FN_EQPSTATUS fne on d.deviceId = fne.DeviceID";
 
 
             try
             {
-                var nfcInfo = await connection.QueryFirstOrDefaultAsync<InspectionDeviceAreaMappingDto>(sql, new {nfcId});
+                var nfcInfo = await connection.QueryAsync<InspectionDeviceAreaMappingDto>(sql, new {nfcId});
 
-                return nfcInfo;
+                return nfcInfo.ToList();
             }
             catch (Exception ex)
             {
@@ -446,11 +559,11 @@ namespace PatrolInspect.Repository
             }
         }
 
-        public async Task<InspectionQcRecord?> GetPendingInspectionByUserAsync(string userNo)
+        public async Task<List<InspectionQcRecord>> GetPendingInspectionByUserAsync(string userNo)
         {
             using var connection = CreateMesConnection();
             var sql = @"
-                SELECT TOP 1 
+                SELECT 
                     RecordId, CardId, DeviceId, UserNo, UserName, InspectType,
                     ArriveAt, SubmitDataAt, Source, CreateDate
                 FROM INSPECTION_QC_RECORD 
@@ -460,15 +573,9 @@ namespace PatrolInspect.Repository
 
             try
             {
-                var record = await connection.QueryFirstOrDefaultAsync<InspectionQcRecord>(sql, new { UserNo = userNo });
+                var record = await connection.QueryAsync<InspectionQcRecord>(sql, new { UserNo = userNo });
 
-                if (record != null)
-                {
-                    _logger.LogDebug("Found pending inspection record: {RecordId} for user: {UserNo} at device: {DeviceId}",
-                        record.RecordId, userNo, record.DeviceId);
-                }
-
-                return record;
+                return record.ToList();
             }
             catch (Exception ex)
             {
@@ -477,8 +584,170 @@ namespace PatrolInspect.Repository
             }
         }
 
-        //==============================作廢區=====================================
-        //========================================================================================================
+        public async Task<(bool Success, string Message)> SubmitWarehouseInspectionAsync(int originalRecordId, List<WarehouseOrderInfo> orders, string userNo)
+        {
+            await using var connection = (SqlConnection)CreateMesConnection();
+
+            await connection.OpenAsync();
+
+
+            await using var transaction = await connection.BeginTransactionAsync();
+
+            try
+            {
+                // 1. 取得原始記錄資料
+                var originalRecord = await GetOriginalInspectionRecordAsync(connection, transaction, originalRecordId, userNo);
+                if (originalRecord == null)
+                {
+                    return (false, "找不到指定的檢驗記錄或您沒有權限修改");
+                }
+
+                // 2. 驗證記錄狀態
+                if (originalRecord.SubmitDataAt.HasValue)
+                {
+                    return (false, "該檢驗記錄已經完成，無法重複提交");
+                }
+
+                // 3. 更新原始記錄為第一筆工單
+                var firstOrder = orders.First();
+                await UpdateOriginalRecordAsync(connection, transaction, originalRecordId, firstOrder);
+
+                // 4. 為其餘工單創建新記錄
+                if (orders.Count > 1)
+                {
+                    var remainingOrders = orders.Skip(1);
+                    await CreateAdditionalWarehouseRecordsAsync(connection, transaction, originalRecord, remainingOrders);
+                }
+
+                // 5. 記錄處理日誌
+                await LogWarehouseInspectionAsync(connection, transaction, originalRecordId, orders, userNo);
+
+                transaction.Commit();
+
+                _logger.LogInformation(
+                    "入庫檢驗提交成功: RecordId={RecordId}, OrderCount={OrderCount}, UserNo={UserNo}",
+                    originalRecordId, orders.Count, userNo);
+
+                return (true, "入庫檢驗提交成功");
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                _logger.LogError(ex, "提交入庫檢驗時發生錯誤: RecordId={RecordId}", originalRecordId);
+                throw;
+            }
+        }
+
+        private async Task<InspectionQcRecord?> GetOriginalInspectionRecordAsync(
+            IDbConnection connection,
+            IDbTransaction transaction,
+            int recordId,
+            string userNo)
+        {
+            var sql = @"
+                SELECT RecordId, CardId, DeviceId, UserNo, UserName, Area, InspectType,
+                       InspectWo, ArriveAt, SubmitDataAt, Source, CreateDate
+                FROM INSPECTION_QC_RECORD 
+                WHERE RecordId = @RecordId AND UserNo = @UserNo";
+
+            return await connection.QueryFirstOrDefaultAsync<InspectionQcRecord>(
+                sql,
+                new { RecordId = recordId, UserNo = userNo },
+                transaction);
+        }
+
+        private async Task UpdateOriginalRecordAsync(IDbConnection connection, IDbTransaction transaction, int recordId, WarehouseOrderInfo orderInfo)
+        {
+            var updateSql = @"
+                UPDATE INSPECTION_QC_RECORD 
+                SET InspectWo = @WorkOrder,
+                    InspectItemOkNo = @OkQuantity,
+                    InspectItemNgNo = @NgQuantity,
+                    SubmitDataAt = GETDATE()
+                WHERE RecordId = @RecordId";
+
+            await connection.ExecuteAsync(updateSql, new
+            {
+                RecordId = recordId,
+                WorkOrder = orderInfo.WorkOrder,
+                OkQuantity = orderInfo.OkQuantity.ToString(),
+                NgQuantity = orderInfo.NgQuantity.ToString()
+            }, transaction);
+        }
+
+        private async Task CreateAdditionalWarehouseRecordsAsync(
+            IDbConnection connection,
+            IDbTransaction transaction,
+            InspectionQcRecord originalRecord,
+            IEnumerable<WarehouseOrderInfo> orders)
+        {
+            var insertSql = @"
+                INSERT INTO INSPECTION_QC_RECORD 
+                (CardId, DeviceId, UserNo, UserName, Area, InspectType, InspectWo, 
+                 ArriveAt, SubmitDataAt, Source, CreateDate, InspectItemOkNo, InspectItemNgNo)
+                VALUES 
+                (@CardId, @DeviceId, @UserNo, @UserName, @Area, @InspectType, @InspectWo, 
+                 @ArriveAt, @SubmitDataAt, @Source, @CreateDate, @InspectItemOkNo, @InspectItemNgNo)";
+
+            foreach (var order in orders)
+            {
+                var newRecord = new
+                {
+                    CardId = originalRecord.CardId,
+                    DeviceId = originalRecord.DeviceId,
+                    UserNo = originalRecord.UserNo,
+                    UserName = originalRecord.UserName,
+                    Area = originalRecord.Area,
+                    InspectType = originalRecord.InspectType,
+                    InspectWo = order.WorkOrder,
+                    ArriveAt = originalRecord.ArriveAt,
+                    SubmitDataAt = DateTime.Now,
+                    Source = originalRecord.Source,
+                    CreateDate = DateTime.Now,
+                    InspectItemOkNo = order.OkQuantity.ToString(),
+                    InspectItemNgNo = order.NgQuantity.ToString(),
+                };
+
+                await connection.ExecuteAsync(insertSql, newRecord, transaction);
+            }
+        }
+
+        private async Task LogWarehouseInspectionAsync(
+            IDbConnection connection,
+            IDbTransaction transaction,
+            int originalRecordId,
+            List<WarehouseOrderInfo> orders,
+            string userNo)
+        {
+            // 可選：如果需要記錄處理日誌的話
+            var logSql = @"
+                INSERT INTO INSPECTION_WAREHOUSE_LOG 
+                (OriginalRecordId, UserNo, OrderCount, ProcessTime, OrderDetails)
+                VALUES 
+                (@OriginalRecordId, @UserNo, @OrderCount, @ProcessTime, @OrderDetails)";
+
+            var orderDetails = string.Join(";", orders.Select(o => $"{o.WorkOrder}:{o.OkQuantity}:{o.NgQuantity}"));
+
+            try
+            {
+                await connection.ExecuteAsync(logSql, new
+                {
+                    OriginalRecordId = originalRecordId,
+                    UserNo = userNo,
+                    OrderCount = orders.Count,
+                    ProcessTime = DateTime.Now,
+                    OrderDetails = orderDetails
+                }, transaction);
+            }
+            catch (Exception ex)
+            {
+                // 日誌記錄失敗不影響主要流程
+                _logger.LogWarning(ex, "記錄入庫檢驗日誌失敗: RecordId={RecordId}", originalRecordId);
+            }
+        }
+        
+        
+        //==============================================================================================
 
 
 
