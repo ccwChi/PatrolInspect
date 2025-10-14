@@ -19,5 +19,6 @@ namespace PatrolInspect.Repositories.Interfaces
         Task<List<InspectionQcRecord>> GetPendingInspectionByUserAsync(string userNo);
 
 
+
     }
 }

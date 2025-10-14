@@ -38,6 +38,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
 builder.Services.AddScoped<IInspectionRepository, InspectionRepository>();
 builder.Services.AddScoped<IItemManageRepository, ItemManageRepository>();
+builder.Services.AddScoped<ActivityChartRepository>();
 
 // Add Logging
 builder.Services.AddLogging(config =>

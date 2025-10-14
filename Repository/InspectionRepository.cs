@@ -745,11 +745,11 @@ namespace PatrolInspect.Repository
                 _logger.LogWarning(ex, "記錄入庫檢驗日誌失敗: RecordId={RecordId}", originalRecordId);
             }
         }
-        
-        
+
+
         //==============================================================================================
 
-
+        
 
     }
 }

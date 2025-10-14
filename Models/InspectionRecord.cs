@@ -36,17 +36,6 @@ namespace PatrolInspect.Models
         public string? UpdateReason { get; set; }
     }
 
-    // 分頁結果
-
-
-    // API 回應格式
-    //public class ApiResponse<T>
-    //{
-    //    public bool Success { get; set; }
-    //    public string Message { get; set; } = string.Empty;
-    //    public T? Data { get; set; }
-    //}
-
     public class ProcessNFCRequest
     {
         public string NfcId { get; set; } = string.Empty;
@@ -88,5 +77,42 @@ namespace PatrolInspect.Models
         public DateTime InspectionTime { get; set; } = DateTime.Now;
         public bool IsCompleted { get; set; }
         public string Status { get; set; } = "進行中"; // 進行中, 已完成, 異常
+    }
+
+    public class InspectionActivity
+    {
+        public int RecordId { get; set; }
+        public string CardId { get; set; } = string.Empty;
+        public string Area { get; set; } = string.Empty;
+        public string DeviceId { get; set; } = string.Empty;
+        public string UserNo { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string InspectType { get; set; } = string.Empty;
+        public string? InspectWo { get; set; }
+        public DateTime ArriveAt { get; set; }
+        public DateTime? SubmitDataAt { get; set; }
+        public string Source { get; set; } = string.Empty;
+
+        // 計算屬性
+        public double StartHour => ArriveAt.Hour + ArriveAt.Minute / 60.0;
+        public double EndHour => SubmitDataAt.HasValue
+            ? SubmitDataAt.Value.Hour + SubmitDataAt.Value.Minute / 60.0
+            : StartHour + 0.5; // 如果沒有結束時間，預設顯示 30 分鐘
+        public double Duration => EndHour - StartHour;
+        public double LeftPosition => (StartHour / 24.0) * 100; // 百分比
+        public double Width => (Duration / 24.0) * 100; // 百分比
+    }
+
+    public class UserActivityViewModel
+    {
+        public string UserNo { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public List<InspectionActivity> Activities { get; set; } = new();
+    }
+
+    public class ActivityChartViewModel
+    {
+        public DateTime SelectedDate { get; set; } = DateTime.Today;
+        public List<UserActivityViewModel> UserActivities { get; set; } = new();
     }
 }

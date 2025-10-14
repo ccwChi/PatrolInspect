@@ -1,0 +1,535 @@
+﻿@{
+    Layout = null;
+
+    var statusLegends = new Dictionary<string, string>
+    {
+        { "RUN < 60 min", "#b2b4b8" },
+        { "OFF", "#9ca3af" },
+        { "應檢未檢", "#ef4444" },
+        { "已檢驗", "#22c55e" },
+        { "待檢測", "#ca8a04" }
+    };
+}
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>機台巡檢紀錄</title>
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: "Microsoft JhengHei", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        }
+
+        p {
+            margin: 0;
+            padding: 2px 0;
+        }
+
+        ol, ul {
+            margin: 0;
+            padding-left: 1.25rem;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            background-color: #0f172a;
+            color: white;
+        }
+
+        .content-wrapper {
+            flex: 1;
+            padding: 20px 5px;
+            overflow: auto;
+        }
+
+        footer {
+            text-align: center;
+            font-size: small;
+            padding: 10px;
+            background: #1e293b;
+            color: #94a3b8;
+        }
+
+        .custom-tooltip .tooltip-inner {
+            text-align: left;
+            white-space: normal;
+            max-width: 280px;
+            background-color: rgba(0, 0, 0, 0.9);
+            color: #f8fafc;
+            font-size: 13px;
+            line-height: 1.6;
+            padding: 10px 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .custom-tooltip .tooltip-arrow::before {
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+
+    </style>
+</head>
+<body>
+    <main class="content-wrapper container-fluid">
+        <div style="padding: 20px;">
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger mb-3">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            <!-- Loading -->
+            <div id="loadingOverlay" style="width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #0f172a;">
+                <div style="font-size: 20px;">載入中...</div>
+            </div>
+
+            <!-- Error -->
+            <div id="errorOverlay" style="width: 100%; height: 100vh; display: none; align-items: center; justify-content: center; background-color: #0f172a;">
+                <div class="text-center">
+                    <div id="errorMessage" class="text-danger mb-3" style="font-size: 20px;"></div>
+                    <button class="btn btn-primary" onclick="loadData()">重新載入</button>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div id="mainContent" style="display: none;">
+                <!-- Header -->
+                <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 20px;">
+                    <h3 style="margin: 0; white-space:nowrap">機台巡檢紀錄</h3>
+                    <input type="date" id="dateInput" class="form-control"
+                           value="@ViewBag.SelectedDate"
+                           style="width: 150px; padding: 5px; background-color: #334155; color: white; border: 1px solid #475569;">
+                    <div style="padding: 15px; display: flex; align-items: center; justify-content: end; width: 100%;">
+                        <div>
+                            @foreach (var legend in statusLegends)
+                            {
+                                <span style="margin-left: 30px;">
+                                    <span style="display: inline-block; width: 20px; height: 20px; background-color: @legend.Value; vertical-align: middle; margin-right: 5px; border: 1px solid black;"></span>
+                                    <span>@legend.Key</span>
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Table -->
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; border: 1px solid #475569;">
+                        <thead>
+                            <tr style="background-color: #1e293b;">
+                                <th style="border: 1px solid #475569; padding: 0; height: 40px;width: 150px; text-align: center;">機台</th>
+                                <th style="border: 1px solid #475569; padding: 0; position: relative;">
+                                    <div id="hourHeaders" style="display: flex; height: 40px;"></div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="timelineBody">
+                            <!-- 機台行將由 JavaScript 動態生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        Copyright © 2025 Gudeng Industrial Corp. All Rights Reserved.
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        var machineData = {};
+        var selectedDate = '@ViewBag.SelectedDate';
+
+        // 狀態顏色映射
+        var statusColors = {
+            '不用檢驗': '#9ca3af',
+            '應檢未檢': '#ef4444',
+            '已檢驗': '#22c55e',
+            '待檢測': '#ca8a04'
+        };
+
+        var statusDarkColor = '#475569';
+        var transparentColor = 'transparent';
+
+        // 小時到格子的映射（壓縮5-8點和17-20點）
+        var hourToGrid = {
+            0: 0, 1: 1, 2: 2, 3: 3, 4: 4,
+            5: 5, 6: 5, 7: 5,
+            8: 6, 9: 7, 10: 8, 11: 9, 12: 10, 13: 11, 14: 12, 15: 13, 16: 14,
+            17: 15, 18: 15, 19: 15,
+            20: 16, 21: 17, 22: 18, 23: 19
+        };
+
+        // 判斷是否為非排班時間
+        function isNonWorkingHour(hour) {
+            return (hour >= 5 && hour < 8) || (hour >= 17 && hour < 20) || (hour >= 0 && hour < 1 ) || (hour >= 12 && hour < 13);
+        }
+
+        // 計算位置和寬度
+        function calculatePosition(startHour, endHour) {
+            var startGrid = hourToGrid[startHour];
+            var endHour24 = endHour === 24 ? 24 : endHour;
+            var lastHour = endHour24 - 1;
+            var endGrid = (hourToGrid[lastHour] || 19) + 1;
+
+            var leftPos = startGrid * 5;
+            var width = (endGrid - startGrid) * 5;
+
+            return { left: leftPos, width: width };
+        }
+
+        $(document).ready(function () {
+            loadData();
+
+            $('#dateInput').on('change', function () {
+                selectedDate = $(this).val();
+                loadData();
+            });
+        });
+
+        // 載入資料
+        function loadData() {
+            $('#loadingOverlay').show();
+            $('#errorOverlay').hide();
+            $('#mainContent').hide();
+
+            $.ajax({
+                url: '@Url.Action("GetInspectionData", "ActivityChart")',
+                type: 'GET',
+                data: { date: selectedDate },
+                success: function (result) {
+                    if (result.success) {
+                        console.log('獲取到 ' + result.count + ' 筆資料');
+                        machineData = transformData(result.data);
+                        renderTimeline();
+                        $('#loadingOverlay').hide();
+                        $('#mainContent').show();
+                    } else {
+                        showError(result.error || '獲取資料失敗');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    showError('無法連接到伺服器: ' + error);
+                }
+            });
+        }
+
+        function showError(message) {
+            $('#errorMessage').text('錯誤: ' + message);
+            $('#loadingOverlay').hide();
+            $('#errorOverlay').show();
+        }
+
+        function transformData(rawData) {
+            var grouped = {};
+
+            rawData.forEach(function (row) {
+                var machine = row.機台;
+                if (!machine) return;
+
+                if (!grouped[machine]) {
+                    grouped[machine] = [];
+                }
+
+                var timeRange = row.排班時間範圍 || '';
+                var startHour = 0, endHour = 0;
+
+                if (timeRange.includes(':')) {
+                    var parts = timeRange.split('-');
+                    if (parts.length === 2) {
+                        startHour = parseInt(parts[0].split(':')[0], 10);
+                        endHour = parseInt(parts[1].split(':')[0], 10);
+                        timeRange = startHour + '-' + endHour;
+                    }
+                }
+
+                var workOrder = row.工單;
+                if (!workOrder || workOrder === '[NULL]' || workOrder === 'NULL') {
+                    workOrder = null;
+                }
+
+                var inspection = row.檢驗項目;
+                if (!inspection || inspection.trim() === '') {
+                    inspection = null;
+                }
+
+                var startTime = null;
+                var endTime = null;
+                if (row.最後檢驗時間) {
+                    endTime = row.最後檢驗時間;
+                    if (timeRange) {
+                        startTime = startHour + ':00';
+                    }
+                }
+
+                grouped[machine].push({
+                    timeRange: timeRange,
+                    startHour: startHour,
+                    endHour: endHour,
+                    status: row.狀態 || '不用檢驗',
+                    workOrder: workOrder,
+                    operator: row.負責人 || '',
+                    inspection: inspection,
+                    runTime: parseFloat(row.運作工時) || 0,
+                    lastInspection: row.最後檢驗時間,
+                    shouldInspect: row.是否應做檢驗,
+                    startTime: startTime,
+                    endTime: endTime
+                });
+            });
+
+            console.log("grouped", grouped);
+            return grouped;
+        }
+
+        // 建立 Tooltip 內容
+        function buildTooltipContent(machine, cellData) {
+            var html = `<div>
+                <div><strong>機台：</strong>${machine}</div>
+                <div><strong>時段：</strong>${cellData.timeRange}</div>
+                ${cellData.workOrder ? `<div><strong>工單：</strong>${cellData.workOrder}</div>` : ""}
+                ${cellData.inspection ? `<div><strong>檢驗項目：</strong>${cellData.inspection}</div>` : ""}
+                ${cellData.operator ? `<div><strong>負責人：</strong>${cellData.operator}</div>` : ""}
+                ${cellData.runTime !== undefined ? `<div><strong>運作工時：</strong>${cellData.runTime} min</div>` : ""}
+                ${cellData.lastInspection ? `<div><strong>檢驗時間：</strong>${cellData.lastInspection}</div>` : ""}
+              </div>
+            `;
+            return html;
+        }
+
+
+        function renderTimeline() {
+            var date = new Date(selectedDate);
+            var dateDisplay = (date.getMonth() + 1) + '月' + ('0' + date.getDate()).slice(-2) + '日';
+
+            var $hourHeaders = $('#hourHeaders');
+            $hourHeaders.empty();
+
+            var hours = [0, 1, 2, 3, 4, '5-7', 8, 9, 10, 11, 12, 13, 14, 15, 16, '17-19', 20, 21, 22, 23];
+
+            hours.forEach(function(hour) {
+                $hourHeaders.append(
+                    $('<div>')
+                        .css({
+                            'flex': '0 0 5%',
+                            'display': 'flex',
+                            'align-items': 'center',
+                            'justify-content': 'center',
+                            'height': '40px',
+                            'background-color': '#1e293b',
+                            'border-right': '1px solid #475569',
+                            'font-size': '11px',
+                            'color': 'white'
+                        })
+                        .text(hour)
+                );
+            });
+
+            var $timelineBody = $('#timelineBody').empty();
+
+            Object.keys(machineData).forEach(function (machine) {
+                var $tr = $('<tr>').css('height', '40px');
+
+                var $machineTd = $('<td>')
+                    .css({
+                        'border': '1px solid #475569',
+                        'padding': '10px',
+                        'vertical-align': 'middle',
+                        'background-color': '#166534',
+                        'text-align': 'left',
+                        'font-size': '12px',
+                        'height': '40px',
+                        'line-height': '1.2',
+                        'white-space': 'nowrap'
+                    })
+                    .text(machine);
+
+                var $timelineTd = $('<td>')
+                    .css({
+                        'border': '1px solid #475569',
+                        'padding': '0',
+                        'position': 'relative',
+                        'height': '40px'
+                    });
+
+                var $gridContainer = $('<div>')
+                    .css({
+                        'position': 'absolute',
+                        'top': '0',
+                        'left': '0',
+                        'width': '100%',
+                        'height': '40px',
+                        'display': 'flex'
+                    });
+
+                // for (var i = 0; i < 20; i++) {
+                //     var bgColor = statusDarkColor;
+                //     if (i === 5 || i === 15 || i === 0 || i === 10 ) {
+                //         bgColor = transparentColor;
+                //     }
+
+                //     $gridContainer.append(
+                //         $('<div>')
+                //             .css({
+                //                 'flex': '0 0 5%',
+                //                 'height': '40px',
+                //                 'border-right': i < 19 ? '1px solid #475569' : 'none',
+                //                 'background-color': bgColor
+                //             })
+                //     );
+                // }
+
+                var $timelineContainer = $('<div>')
+                    .css({
+                        'position': 'relative',
+                        'height': '40px',
+                        'width': '100%'
+                    });
+
+                var slots = machineData[machine] || [];
+
+                slots.forEach(function (cellData) {
+                    if (!cellData.timeRange) return;
+
+                    var position = calculatePosition(cellData.startHour, cellData.endHour);
+                    var isNonWorking = isNonWorkingHour(cellData.startHour);
+                    var bgColor = isNonWorking ? transparentColor : (statusColors[cellData.status] || statusDarkColor);
+
+                    var $cell = $('<div>')
+                        .css({
+                            'position': 'absolute',
+                            'left': position.left + '%',
+                            'width': position.width + '%',
+                            'top': '0',
+                            'height': '40px',
+                            'border-right': '1px solid black',
+                            'cursor': 'pointer',
+                            'transition': 'all 0.3s',
+                            'font-size': '10px',
+                            'background-color': bgColor,
+                            'display': 'flex',
+                            'flex-direction': 'column',
+                            'align-items': 'center',
+                            'justify-content': 'center',
+                            'overflow': 'hidden',
+                            'padding': '2px'
+                        })
+                        .attr('data-bs-toggle', 'tooltip')
+                        .attr('data-bs-html', 'true')
+                        .attr('data-bs-placement', 'auto')
+                        .attr('data-bs-title', buildTooltipContent(machine, cellData))
+                        .hover(
+                            function () {
+                                if ($(this).css('background-color') !== 'rgba(0, 0, 0, 0)' &&
+                                    $(this).css('background-color') !== 'transparent') {
+                                    $(this).css('filter', 'brightness(1.2)');
+                                }
+                            },
+                            function () {
+                                $(this).css('filter', 'brightness(1)');
+                            }
+                        );
+
+                    if (cellData.inspection && cellData.lastInspection) {
+                        var timeStr = cellData.lastInspection;
+                        var endTime = '';
+
+                        if (timeStr.includes('T')) {
+                            var time = timeStr.split('T')[1];
+                            if (time) {
+                                endTime = time.slice(0, 5);
+                            }
+                        }
+
+                        var startTimeStr = ('0' + cellData.startHour).slice(-2) + ':00';
+
+                        $cell.append(
+                            $('<div>').css({
+                                'color': 'white',
+                                'font-size': '14px',
+                                'line-height': '1.2',
+                                'width': '100%',
+                                'text-align': 'center'
+                                }).
+                                text(startTimeStr + '~' + endTime),
+                            $('<div>').css({
+                                'color': 'white',
+                                'font-size': '9px',
+                                'line-height': '1.3',
+                                'width': '100%',
+                                'text-align': 'center'
+                                }).text(cellData.inspection)
+                            // $('<div>')
+                            //     .css({
+                            //         'color': 'white',
+                            //         'font-size': '9px',
+                            //         'line-height': '1.3',
+                            //         'width': '100%',
+                            //         'text-align': 'center'
+                            //     })
+                            //     .append(
+                            //         $('<div>').text(startTimeStr + '~' + endTime),
+                            //         $('<div>').text(cellData.inspection)
+                            //     )
+                        );
+                    } else if (cellData.status === '應檢未檢') {
+                        $cell.append(
+                            $('<div>')
+                                .css({
+                                    'color': 'white',
+                                    'font-size': '12px',
+                                    'line-height': '1.2',
+                                    'white-space': 'nowrap',
+                                    'overflow': 'hidden',
+                                    'text-overflow': 'ellipsis'
+                                })
+                                .text('應檢未檢')
+                        );
+                    }
+
+                    $timelineContainer.append($cell);
+                });
+
+                $timelineTd.append($gridContainer).append($timelineContainer);
+                $tr.append($machineTd).append($timelineTd);
+                $timelineBody.append($tr);
+            });
+
+
+        // 初始化所有 Bootstrap Tooltips（使用自訂樣式模板）
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                boundary: 'window',
+                container: 'body',
+                html: true,  // 允許 HTML
+                template: `
+                    <div class="tooltip custom-tooltip" role="tooltip">
+                        <div class="tooltip-arrow"></div>
+                        <div class="tooltip-inner text-start"></div>
+                    </div>
+                `
+            });
+        });
+
+        }
+    </script>
+</body>
+</html>
