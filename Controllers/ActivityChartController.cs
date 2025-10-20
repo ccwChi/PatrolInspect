@@ -89,13 +89,48 @@ namespace PatrolInspect.Controllers
                     date = DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd");
                 }
 
-                var data = await _activityChartRepository.GetInspectionDataByDateAsync(date);
+                var rawData = await _activityChartRepository.GetInspectionDataByDateAsync(date);
+
+                // 只處理同一時段多筆檢驗記錄的合併
+                var groupedData = rawData
+                    .GroupBy(d => new { d.DeviceId, d.DeviceName, d.ScheduleRange })
+                    .Select(g =>
+                    {
+                        var first = g.First();
+                        var inspections = g
+                                          .Select(x => new InspectionDetail
+                                          {
+                                              inspectType = x.InspectType,
+                                              inspectStartTime = x.InspectStartTime,
+                                              inspectEndTime = x.InspectEndTime,
+                                              inspectUserName = x.InspectUserName,
+                                              responseUserNames = x.ResponseUserNames,
+                                              responseUserNos = x.ResponseUserNos,
+                                              workOrderNo = x.DeviceStatusWo,
+                                              status = x.Status,
+                                              runTime = x.RunTime.ToString(),
+                                              nonOffTime = x.NonOffTime.ToString(),
+                                          })
+                                          .ToList();
+
+                        return new MachineInspectionData
+                        {
+                            deviceId = first.DeviceId,
+                            deviceName = first.DeviceName, 
+                            area = first.Area,
+                            scheduleRange = first.ScheduleRange,
+                            inspections = inspections,
+                        };
+                    })
+                    .OrderBy(d => d.deviceId)
+                    .ThenBy(d => d.scheduleRange)
+                    .ToList();
 
                 return Json(new
                 {
                     success = true,
-                    data = data,
-                    count = data.Count
+                    data = groupedData,
+                    count = groupedData.Count
                 });
             }
             catch (Exception ex)
@@ -111,17 +146,32 @@ namespace PatrolInspect.Controllers
     }
 
     // DTO
-    public class InspectionData
+    public class MachineInspectionData
     {
-        public string 機台 { get; set; }
-        public string 排班時間範圍 { get; set; }
-        public decimal 運作工時 { get; set; }
-        public string 是否應做檢驗 { get; set; }
-        public string 工單 { get; set; }
-        public string 負責人 { get; set; }
-        public string 檢驗項目 { get; set; }
-        public DateTime? 最後檢驗時間 { get; set; }
-        public string 狀態 { get; set; }
+        public string deviceId { get; set; }
+        public string deviceName { get; set; }
+        public string area { get; set; }
+        public string scheduleRange { get; set; }
+        public decimal runTime { get; set; }
+        public string workOrder { get; set; }
+        public string inspectUserName { get; set; }
+        public List<InspectionDetail> inspections { get; set; }
+        public string status { get; set; }
+    }
+
+    public class InspectionDetail
+    {
+        public string inspectType { get; set; }
+        public DateTime? inspectStartTime { get; set; }
+        public DateTime? inspectEndTime { get; set; }
+        public string inspectUserName { get; set; }
+        public string responseUserNos { get; set; }
+        public string responseUserNames { get; set; }
+        public string workOrderNo { get; set; }
+        public string status { get; set; }
+        public string runTime { get; set; }
+        public string nonOffTime { get; set; }
+
     }
 
 

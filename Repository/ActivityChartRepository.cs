@@ -7,12 +7,13 @@ using System.Data;
 
 namespace PatrolInspect.Repository
 {
-    public class ActivityChartRepository 
+    public class ActivityChartRepository
     {
         private readonly ILogger<ActivityChartRepository> _logger;
         private readonly string _mesConnString;
         private readonly int _envFlag;
-        public ActivityChartRepository(IConfiguration configuration,IOptions<AppSettings> appSettings , ILogger<ActivityChartRepository> logger)
+
+        public ActivityChartRepository(IConfiguration configuration, IOptions<AppSettings> appSettings, ILogger<ActivityChartRepository> logger)
         {
             _logger = logger;
             _envFlag = appSettings.Value.EnvFlag;
@@ -93,9 +94,7 @@ namespace PatrolInspect.Repository
             }
         }
 
-
-
-        public async Task<List<InspectionData>> GetInspectionDataByDateAsync(string date)
+        public async Task<List<InspectionUtilizationData>> GetInspectionDataByDateAsync(string date)
         {
             try
             {
@@ -103,21 +102,31 @@ namespace PatrolInspect.Repository
                 {
                     var sql = @"
                         SELECT 
-                            機台, 
-                            排班時間範圍, 
-                            運作工時, 
-                            是否應做檢驗, 
-                            工單, 
-                            負責人, 
-                            檢驗項目, 
-                            最後檢驗時間, 
-                            狀態
-                        FROM MES.dbo.INSPECTION_SUMMARY_HOURLY WITH (NOLOCK)
-                        WHERE 日期 = @Date
-                        ORDER BY 機台, 排班時間範圍
+                            Area,
+                            DeviceId,
+                            DeviceName,
+                            ScheduleRange,
+                            ScheduleStart,
+                            ScheduleEnd,
+                            RunTime,
+                            NonOffTime,
+                            DeviceStatusWo,
+                            IdleTime,
+                            WorkOrderNo,
+                            InspectType,
+                            InspectStartTime,
+                            InspectEndTime,
+                            InspectUserNo,
+                            InspectUserName,
+                            ResponseUserNames,
+                            ResponseUserNos,
+                            Status
+                        FROM INSPECTION_UTILIZATION_DEVICE WITH (NOLOCK)
+                        WHERE DataDate = @Date
+                        ORDER BY DeviceId, ScheduleStart, InspectStartTime
                     ";
 
-                    var result = await connection.QueryAsync<InspectionData>(sql, new { Date = date });
+                    var result = await connection.QueryAsync<InspectionUtilizationData>(sql, new { Date = date });
                     return result.ToList();
                 }
             }
@@ -127,6 +136,29 @@ namespace PatrolInspect.Repository
                 throw;
             }
         }
+    }
 
+    // DTO
+    public class InspectionUtilizationData
+    {
+        public string Area { get; set; }
+        public string DeviceId { get; set; }
+        public string DeviceName { get; set; }
+        public string ScheduleRange { get; set; }
+        public DateTime ScheduleStart { get; set; }
+        public DateTime ScheduleEnd { get; set; }
+        public string DeviceStatusWo { get; set; }
+        public decimal RunTime { get; set; }
+        public decimal NonOffTime { get; set; }
+        public decimal IdleTime { get; set; }
+        public string WorkOrderNo { get; set; }
+        public string InspectType { get; set; }
+        public DateTime? InspectStartTime { get; set; }
+        public DateTime? InspectEndTime { get; set; }
+        public string InspectUserNo { get; set; }
+        public string InspectUserName { get; set; }
+        public string ResponseUserNos { get; set; }
+        public string ResponseUserNames { get; set; }
+        public string Status { get; set; }
     }
 }

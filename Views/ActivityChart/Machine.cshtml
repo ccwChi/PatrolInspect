@@ -3,11 +3,10 @@
 
     var statusLegends = new Dictionary<string, string>
     {
-        { "RUN < 60 min", "#b2b4b8" },
-        { "OFF", "#9ca3af" },
-        { "應檢未檢", "#ef4444" },
         { "已檢驗", "#22c55e" },
-        { "待檢測", "#ca8a04" }
+        { "待檢驗", "#eab308" },
+        { "應檢未檢", "#ef4444" },
+        { "其他狀態", "#64748b" }
     };
 }
 
@@ -66,7 +65,7 @@
         .custom-tooltip .tooltip-inner {
             text-align: left;
             white-space: normal;
-            max-width: 280px;
+            max-width: 320px;
             background-color: rgba(0, 0, 0, 0.9);
             color: #f8fafc;
             font-size: 13px;
@@ -80,11 +79,81 @@
             background-color: rgba(0, 0, 0, 0.9);
         }
 
+        .query-form {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .query-form input[type="date"] {
+                padding: 5px 10px;
+                background-color: #334155;
+                color: white;
+                border: 1px solid #475569;
+                border-radius: 4px;
+            }
+
+            .query-form button {
+                padding: 6px 20px;
+                background-color: #0071b2;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+
+                .query-form button:hover {
+                    background-color: #005a8f;
+                }
+
+        .no-data-message {
+            background-color: #334155;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+            .no-data-message h4 {
+                color: #94a3b8;
+                margin-bottom: 10px;
+            }
+
+            .no-data-message p {
+                color: #64748b;
+            }
     </style>
 </head>
 <body>
     <main class="content-wrapper container-fluid">
-        <div style="padding: 20px;">
+        <div style="padding: 20px; display:fl.ex">
+            <!-- 標題與查詢表單 -->
+
+            <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content:space-between; gap: 20px;">
+                <div style="display:flex; gap: 20px;">
+                    <h3 style="margin: 0; white-space: nowrap;">機台巡檢紀錄</h3>
+                    <div class="query-form">
+                        <input type="date" id="dateInput" value="@ViewBag.SelectedDate">
+                        <button type="button" onclick="loadData()">查詢</button>
+                    </div>
+                </div>
+                <div style="padding: 15px; display: flex; align-items: center; justify-content: end; width: fit-content;">
+                    <div>
+                        @foreach (var legend in statusLegends)
+                        {
+                            <span style="margin-left: 30px;">
+                                <span style="display: inline-block; width: 20px; height: 20px; background-color: @legend.Value; vertical-align: middle; margin-right: 5px; border: 1px solid black;"></span>
+                                <span>@legend.Key</span>
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+
+
+
             @if (TempData["ErrorMessage"] != null)
             {
                 <div class="alert alert-danger mb-3">
@@ -93,52 +162,41 @@
             }
 
             <!-- Loading -->
-            <div id="loadingOverlay" style="width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #0f172a;">
-                <div style="font-size: 20px;">載入中...</div>
+            <div id="loadingOverlay" style="width: 100%; height: 50vh; display: flex; align-items: center; justify-content: center;">
+                <div style="font-size: 20px; color: #94a3b8;">載入中...</div>
             </div>
 
             <!-- Error -->
-            <div id="errorOverlay" style="width: 100%; height: 100vh; display: none; align-items: center; justify-content: center; background-color: #0f172a;">
-                <div class="text-center">
-                    <div id="errorMessage" class="text-danger mb-3" style="font-size: 20px;"></div>
+            <div id="errorOverlay" style="width: 100%; display: none;">
+                <div class="no-data-message">
+                    <h4>系統錯誤</h4>
+                    <div id="errorMessage" class="text-danger mb-3" style="font-size: 18px;"></div>
                     <button class="btn btn-primary" onclick="loadData()">重新載入</button>
+                </div>
+            </div>
+
+            <!-- No Data -->
+            <div id="noDataOverlay" style="width: 100%; display: none;">
+                <div class="no-data-message">
+                    <h4>該日期無巡檢記錄</h4>
+                    <p>請選擇其他日期查詢</p>
                 </div>
             </div>
 
             <!-- Main Content -->
             <div id="mainContent" style="display: none;">
-                <!-- Header -->
-                <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 20px;">
-                    <h3 style="margin: 0; white-space:nowrap">機台巡檢紀錄</h3>
-                    <input type="date" id="dateInput" class="form-control"
-                           value="@ViewBag.SelectedDate"
-                           style="width: 150px; padding: 5px; background-color: #334155; color: white; border: 1px solid #475569;">
-                    <div style="padding: 15px; display: flex; align-items: center; justify-content: end; width: 100%;">
-                        <div>
-                            @foreach (var legend in statusLegends)
-                            {
-                                <span style="margin-left: 30px;">
-                                    <span style="display: inline-block; width: 20px; height: 20px; background-color: @legend.Value; vertical-align: middle; margin-right: 5px; border: 1px solid black;"></span>
-                                    <span>@legend.Key</span>
-                                </span>
-                            }
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Timeline Table -->
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse; border: 1px solid #475569;">
                         <thead>
                             <tr style="background-color: #1e293b;">
-                                <th style="border: 1px solid #475569; padding: 0; height: 40px;width: 150px; text-align: center;">機台</th>
+                                <th style="border: 1px solid #475569; padding: 0; height: 40px; width: 150px; text-align: center;">機台</th>
                                 <th style="border: 1px solid #475569; padding: 0; position: relative;">
                                     <div id="hourHeaders" style="display: flex; height: 40px;"></div>
                                 </th>
                             </tr>
                         </thead>
                         <tbody id="timelineBody">
-                            <!-- 機台行將由 JavaScript 動態生成 -->
                         </tbody>
                     </table>
                 </div>
@@ -159,16 +217,35 @@
 
         // 狀態顏色映射
         var statusColors = {
-            '不用檢驗': '#9ca3af',
-            '應檢未檢': '#ef4444',
             '已檢驗': '#22c55e',
-            '待檢測': '#ca8a04'
+            '待檢驗': '#eab308',
+            '應檢未檢': '#ef4444',
+            '停機': '#64748b',
+            '調機': '#64748b',
+            '不用檢驗': '#64748b',
+            'RUN < 60 min': '#64748b',
+            'RUN < 60': '#64748b',
+            '非排班時間': '#64748b',
+            '沒有排班': '#64748b',
+            '機台無工單': '#64748b'
         };
 
-        var statusDarkColor = '#475569';
-        var transparentColor = 'transparent';
+        // 狀態優先級
+        var statusPriority = {
+            '應檢未檢': 1,
+            '不用檢驗': 2,
+            '機台無工單': 2,
+            'RUN < 60 min': 2,
+            'RUN < 60': 2,
+            '非排班時間': 2,
+            '調機': 2,
+            '停機': 2,
+            '沒有排班': 3,
+            '待檢驗': 4,
+            '已檢驗': 5
+        };
 
-        // 小時到格子的映射（壓縮5-8點和17-20點）
+        // 小時到格子的映射
         var hourToGrid = {
             0: 0, 1: 1, 2: 2, 3: 3, 4: 4,
             5: 5, 6: 5, 7: 5,
@@ -177,12 +254,6 @@
             20: 16, 21: 17, 22: 18, 23: 19
         };
 
-        // 判斷是否為非排班時間
-        function isNonWorkingHour(hour) {
-            return (hour >= 5 && hour < 8) || (hour >= 17 && hour < 20) || (hour >= 0 && hour < 1 ) || (hour >= 12 && hour < 13);
-        }
-
-        // 計算位置和寬度
         function calculatePosition(startHour, endHour) {
             var startGrid = hourToGrid[startHour];
             var endHour24 = endHour === 24 ? 24 : endHour;
@@ -198,17 +269,21 @@
         $(document).ready(function () {
             loadData();
 
-            $('#dateInput').on('change', function () {
-                selectedDate = $(this).val();
+            // 每15分鐘自動刷新資料
+            setInterval(function() {
+                console.log('自動刷新資料...');
                 loadData();
-            });
+            }, 15 * 60 * 1000);
         });
 
-        // 載入資料
         function loadData() {
+            selectedDate = $('#dateInput').val();
+
             $('#loadingOverlay').show();
             $('#errorOverlay').hide();
+            $('#noDataOverlay').hide();
             $('#mainContent').hide();
+            $('#legendSection').hide();
 
             $.ajax({
                 url: '@Url.Action("GetInspectionData", "ActivityChart")',
@@ -217,9 +292,16 @@
                 success: function (result) {
                     if (result.success) {
                         console.log('獲取到 ' + result.count + ' 筆資料');
+
+                        if (!result.data || result.data.length === 0) {
+                            showNoData();
+                            return;
+                        }
+
                         machineData = transformData(result.data);
                         renderTimeline();
                         $('#loadingOverlay').hide();
+                        $('#legendSection').show();
                         $('#mainContent').show();
                     } else {
                         showError(result.error || '獲取資料失敗');
@@ -232,93 +314,148 @@
         }
 
         function showError(message) {
-            $('#errorMessage').text('錯誤: ' + message);
+            $('#errorMessage').text(message);
             $('#loadingOverlay').hide();
             $('#errorOverlay').show();
+        }
+
+        function showNoData() {
+            $('#loadingOverlay').hide();
+            $('#noDataOverlay').show();
         }
 
         function transformData(rawData) {
             var grouped = {};
 
             rawData.forEach(function (row) {
-                var machine = row.機台;
-                if (!machine) return;
+                var deviceId = row.deviceId;
+                if (!deviceId) return;
 
-                if (!grouped[machine]) {
-                    grouped[machine] = [];
+                if (!grouped[deviceId]) {
+                    grouped[deviceId] = {
+                        deviceId: deviceId,
+                        deviceName: row.deviceName || deviceId,
+                        area: row.area || '',
+                        slots: []
+                    };
                 }
 
-                var timeRange = row.排班時間範圍 || '';
+                var timeRange = row.scheduleRange || '';
                 var startHour = 0, endHour = 0;
 
-                if (timeRange.includes(':')) {
+                if (timeRange && timeRange.includes(':')) {
                     var parts = timeRange.split('-');
                     if (parts.length === 2) {
                         startHour = parseInt(parts[0].split(':')[0], 10);
                         endHour = parseInt(parts[1].split(':')[0], 10);
-                        timeRange = startHour + '-' + endHour;
                     }
                 }
 
-                var workOrder = row.工單;
-                if (!workOrder || workOrder === '[NULL]' || workOrder === 'NULL') {
-                    workOrder = null;
+                var finalStatus = '不用檢驗';
+                var maxPriority = 0;
+
+                if (row.inspections && row.inspections.length > 0) {
+                    row.inspections.forEach(function(insp) {
+                        var currentStatus = insp.status || '不用檢驗';
+                        var currentPriority = statusPriority[currentStatus] || 0;
+                        if (currentPriority > maxPriority) {
+                            maxPriority = currentPriority;
+                            finalStatus = currentStatus;
+                        }
+                    });
                 }
 
-                var inspection = row.檢驗項目;
-                if (!inspection || inspection.trim() === '') {
-                    inspection = null;
+                var totalRunTime = 0;
+                if (row.inspections && row.inspections.length > 0) {
+                    row.inspections.forEach(function(insp) {
+                        totalRunTime += parseFloat(insp.runTime) || 0;
+                    });
                 }
 
-                var startTime = null;
-                var endTime = null;
-                if (row.最後檢驗時間) {
-                    endTime = row.最後檢驗時間;
-                    if (timeRange) {
-                        startTime = startHour + ':00';
-                    }
-                }
-
-                grouped[machine].push({
+                grouped[deviceId].slots.push({
                     timeRange: timeRange,
                     startHour: startHour,
                     endHour: endHour,
-                    status: row.狀態 || '不用檢驗',
-                    workOrder: workOrder,
-                    operator: row.負責人 || '',
-                    inspection: inspection,
-                    runTime: parseFloat(row.運作工時) || 0,
-                    lastInspection: row.最後檢驗時間,
-                    shouldInspect: row.是否應做檢驗,
-                    startTime: startTime,
-                    endTime: endTime
+                    status: finalStatus,
+                    inspections: row.inspections || [],
+                    runTime: totalRunTime
                 });
             });
 
-            console.log("grouped", grouped);
             return grouped;
         }
 
-        // 建立 Tooltip 內容
-        function buildTooltipContent(machine, cellData) {
-            var html = `<div>
-                <div><strong>機台：</strong>${machine}</div>
-                <div><strong>時段：</strong>${cellData.timeRange}</div>
-                ${cellData.workOrder ? `<div><strong>工單：</strong>${cellData.workOrder}</div>` : ""}
-                ${cellData.inspection ? `<div><strong>檢驗項目：</strong>${cellData.inspection}</div>` : ""}
-                ${cellData.operator ? `<div><strong>負責人：</strong>${cellData.operator}</div>` : ""}
-                ${cellData.runTime !== undefined ? `<div><strong>運作工時：</strong>${cellData.runTime} min</div>` : ""}
-                ${cellData.lastInspection ? `<div><strong>檢驗時間：</strong>${cellData.lastInspection}</div>` : ""}
-              </div>
-            `;
+        function buildTooltipContent(displayName, deviceId, cellData) {
+            var html = '<div>';
+            html += '<div><strong>機台：</strong>' + displayName + '</div>';
+            html += '<div style="font-size: 11px; color: #94a3b8;"><strong>ID：</strong>' + deviceId + '</div>';
+
+            if (cellData.runTime > 0) {
+                html += '<div><strong>總運作工時：</strong>' + cellData.runTime.toFixed(1) + ' min</div>';
+            }
+
+            if (cellData.inspections && cellData.inspections.length > 0) {
+                html += '<div style="margin-top: 8px; margin-bottom: 4px;"><strong>檢驗記錄：</strong></div>';
+
+                cellData.inspections.forEach(function(insp, idx) {
+                    var statusColor = (statusColors[insp.status] || '#64748b');
+
+                    if (idx > 0) {
+                        html += '<hr style="margin: 8px 0; border: none; border-top: 1px solid rgba(255,255,255,0.2);">';
+                    }
+
+                    html += '<div style="margin-left: 8px; margin-top: 6px; padding: 8px; background-color: rgba(255,255,255,0.05); border-radius: 4px; border-left: 3px solid ' + statusColor + ';">';
+                    html += '<div style="margin-bottom: 4px;"><strong style="font-size: 13px;">' + (idx + 1) + '. ' + (insp.status || '') + '</strong></div>';
+
+                    var startTime = insp.inspectStartTime ? formatTime(insp.inspectStartTime) : '';
+                    var endTime = insp.inspectEndTime ? formatTime(insp.inspectEndTime) : '';
+
+                    if (startTime || endTime) {
+                        html += '<div style="font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">時間: ' +
+                            (startTime || '-') + ' ~ ' + (endTime || '-') + '</div>';
+                    }
+
+                    if (insp.inspectUserName) {
+                        html += '<div style="font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">檢驗人: ' + insp.inspectUserName + '</div>';
+                    }
+
+                    if (insp.workOrderNo) {
+                        html += '<div style="font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">工單: ' + insp.workOrderNo + '</div>';
+                    }
+
+                    if (insp.responseUserNames) {
+                        html += '<div style="font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">排班人員: ' + insp.responseUserNames + '</div>';
+                    }
+
+                    if (insp.runTime && parseFloat(insp.runTime) >= 0) {
+                        html += '<div style="font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">運作時間: ' + insp.runTime + ' min</div>';
+                    }
+
+                    if (insp.status) {
+                        html += '<div style="font-size: 11px; margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.1);">' +
+                            '<span style="display: inline-block; width: 10px; height: 10px; background-color: ' + statusColor + '; border-radius: 50%; margin-right: 6px; vertical-align: middle;"></span>' +
+                            '<strong>狀態: ' + insp.status + '</strong></div>';
+                    }
+
+                    html += '</div>';
+                });
+            } else {
+                html += '<div style="margin-top: 8px; color: #94a3b8;">無檢驗記錄</div>';
+            }
+
+            html += '</div>';
             return html;
         }
 
+        function formatTime(dateStr) {
+            if (!dateStr) return '';
+            var d = new Date(dateStr);
+            var h = ('0' + d.getHours()).slice(-2);
+            var m = ('0' + d.getMinutes()).slice(-2);
+            return h + ':' + m;
+        }
 
         function renderTimeline() {
-            var date = new Date(selectedDate);
-            var dateDisplay = (date.getMonth() + 1) + '月' + ('0' + date.getDate()).slice(-2) + '日';
-
             var $hourHeaders = $('#hourHeaders');
             $hourHeaders.empty();
 
@@ -344,7 +481,11 @@
 
             var $timelineBody = $('#timelineBody').empty();
 
-            Object.keys(machineData).forEach(function (machine) {
+            Object.keys(machineData).forEach(function (deviceId) {
+                var machineInfo = machineData[deviceId];
+                var displayName = machineInfo.deviceName || deviceId;
+                var slots = machineInfo.slots || [];
+
                 var $tr = $('<tr>').css('height', '40px');
 
                 var $machineTd = $('<td>')
@@ -359,7 +500,7 @@
                         'line-height': '1.2',
                         'white-space': 'nowrap'
                     })
-                    .text(machine);
+                    .text(displayName);
 
                 var $timelineTd = $('<td>')
                     .css({
@@ -369,33 +510,6 @@
                         'height': '40px'
                     });
 
-                var $gridContainer = $('<div>')
-                    .css({
-                        'position': 'absolute',
-                        'top': '0',
-                        'left': '0',
-                        'width': '100%',
-                        'height': '40px',
-                        'display': 'flex'
-                    });
-
-                // for (var i = 0; i < 20; i++) {
-                //     var bgColor = statusDarkColor;
-                //     if (i === 5 || i === 15 || i === 0 || i === 10 ) {
-                //         bgColor = transparentColor;
-                //     }
-
-                //     $gridContainer.append(
-                //         $('<div>')
-                //             .css({
-                //                 'flex': '0 0 5%',
-                //                 'height': '40px',
-                //                 'border-right': i < 19 ? '1px solid #475569' : 'none',
-                //                 'background-color': bgColor
-                //             })
-                //     );
-                // }
-
                 var $timelineContainer = $('<div>')
                     .css({
                         'position': 'relative',
@@ -403,14 +517,13 @@
                         'width': '100%'
                     });
 
-                var slots = machineData[machine] || [];
-
                 slots.forEach(function (cellData) {
-                    if (!cellData.timeRange) return;
+                    if (!cellData.timeRange || cellData.status === '非排班時間') {
+                        return;
+                    }
 
                     var position = calculatePosition(cellData.startHour, cellData.endHour);
-                    var isNonWorking = isNonWorkingHour(cellData.startHour);
-                    var bgColor = isNonWorking ? transparentColor : (statusColors[cellData.status] || statusDarkColor);
+                    var bgColor = statusColors[cellData.status] || '#64748b';
 
                     var $cell = $('<div>')
                         .css({
@@ -434,101 +547,134 @@
                         .attr('data-bs-toggle', 'tooltip')
                         .attr('data-bs-html', 'true')
                         .attr('data-bs-placement', 'auto')
-                        .attr('data-bs-title', buildTooltipContent(machine, cellData))
+                        .attr('data-bs-title', buildTooltipContent(displayName, deviceId, cellData))
                         .hover(
-                            function () {
-                                if ($(this).css('background-color') !== 'rgba(0, 0, 0, 0)' &&
-                                    $(this).css('background-color') !== 'transparent') {
-                                    $(this).css('filter', 'brightness(1.2)');
-                                }
-                            },
-                            function () {
-                                $(this).css('filter', 'brightness(1)');
-                            }
+                            function () { $(this).css('filter', 'brightness(1.2)'); },
+                            function () { $(this).css('filter', 'brightness(1)'); }
                         );
 
-                    if (cellData.inspection && cellData.lastInspection) {
-                        var timeStr = cellData.lastInspection;
-                        var endTime = '';
+                    if (cellData.inspections && cellData.inspections.length > 0) {
+                        var actualInspections = cellData.inspections.filter(function(insp) {
+                            return insp.inspectType && insp.inspectType.trim() !== '';
+                        });
 
-                        if (timeStr.includes('T')) {
-                            var time = timeStr.split('T')[1];
-                            if (time) {
-                                endTime = time.slice(0, 5);
+                        if (actualInspections.length > 0) {
+                            actualInspections.slice(0, 2).forEach(function(insp) {
+                                var startTime = formatTime(insp.inspectStartTime);
+                                var endTime = formatTime(insp.inspectEndTime);
+                                var timeText = (startTime && endTime) ? (startTime + '~' + endTime) : '';
+                                var displayText = timeText ? (timeText + ' ' + (insp.inspectType || '')) : (insp.inspectType || '');
+
+                                $cell.append(
+                                    $('<div>').css({
+                                        'color': 'white',
+                                        'font-size': '10px',
+                                        'line-height': '1.2',
+                                        'width': '100%',
+                                        'text-align': 'center',
+                                        'white-space': 'nowrap',
+                                        'overflow': 'hidden',
+                                        'text-overflow': 'ellipsis'
+                                    }).text(displayText)
+                                );
+                            });
+                        } else {
+                            $cell.append(
+                                $('<div>')
+                                    .css({
+                                        'color': 'white',
+                                        'font-size': '12px',
+                                        'line-height': '1.2'
+                                    })
+                                    .text(formatStatusText(cellData.status) || '不用檢驗')
+                            );
+
+                            if (cellData.status === '應檢未檢' && cellData.inspections.length > 0) {
+                                var uniqueWorkOrders = cellData.inspections
+                                    .map(function(insp) { return insp.workOrderNo; })
+                                    .filter(function(wo, idx, arr) { return wo && arr.indexOf(wo) === idx; });
+
+                                if (uniqueWorkOrders.length > 0) {
+                                    var displayWorkOrders = uniqueWorkOrders.length < 3
+                                        ? uniqueWorkOrders
+                                        : uniqueWorkOrders.slice(0, 2).concat(['...']);
+
+                                    var $workOrderContainer = $('<div>').css({
+                                        'color': '#ffffff',
+                                        'font-size': '10px',
+                                        'line-height': '1.2',
+                                        'margin-top': '2px',
+                                        'font-weight': 'bold',
+                                        'text-align': 'center'
+                                    });
+
+                                    displayWorkOrders.forEach(function(wo) {
+                                        $workOrderContainer.append(
+                                            $('<div>').css({
+                                                'color': '#ffffff',
+                                                'font-size': '10px',
+                                                'line-height': '1.1',
+                                                'margin-top': '1px',
+                                                'font-weight': 'bold',
+                                                'text-align': 'center'
+                                            }).text(wo === '...' ? '...' : wo)
+                                        );
+                                    });
+
+                                    $cell.append($workOrderContainer);
+                                }
+                            } else if (cellData.inspections.length === 1) {
+                                var firstInsp = cellData.inspections[0];
+                                if (firstInsp.workOrderNo) {
+                                    $cell.append(
+                                        $('<div>').css({
+                                            'color': '#ffffff',
+                                            'font-size': '10px',
+                                            'line-height': '1.2',
+                                            'margin-top': '2px',
+                                            'font-weight': 'bold'
+                                        }).text(firstInsp.workOrderNo)
+                                    );
+                                }
                             }
                         }
-
-                        var startTimeStr = ('0' + cellData.startHour).slice(-2) + ':00';
-
-                        $cell.append(
-                            $('<div>').css({
-                                'color': 'white',
-                                'font-size': '14px',
-                                'line-height': '1.2',
-                                'width': '100%',
-                                'text-align': 'center'
-                                }).
-                                text(startTimeStr + '~' + endTime),
-                            $('<div>').css({
-                                'color': 'white',
-                                'font-size': '9px',
-                                'line-height': '1.3',
-                                'width': '100%',
-                                'text-align': 'center'
-                                }).text(cellData.inspection)
-                            // $('<div>')
-                            //     .css({
-                            //         'color': 'white',
-                            //         'font-size': '9px',
-                            //         'line-height': '1.3',
-                            //         'width': '100%',
-                            //         'text-align': 'center'
-                            //     })
-                            //     .append(
-                            //         $('<div>').text(startTimeStr + '~' + endTime),
-                            //         $('<div>').text(cellData.inspection)
-                            //     )
-                        );
-                    } else if (cellData.status === '應檢未檢') {
+                    } else {
                         $cell.append(
                             $('<div>')
                                 .css({
                                     'color': 'white',
                                     'font-size': '12px',
-                                    'line-height': '1.2',
-                                    'white-space': 'nowrap',
-                                    'overflow': 'hidden',
-                                    'text-overflow': 'ellipsis'
+                                    'line-height': '1.2'
                                 })
-                                .text('應檢未檢')
+                                .text(formatStatusText(cellData.status) || '不用檢驗')
                         );
                     }
 
                     $timelineContainer.append($cell);
                 });
 
-                $timelineTd.append($gridContainer).append($timelineContainer);
+                $timelineTd.append($timelineContainer);
                 $tr.append($machineTd).append($timelineTd);
                 $timelineBody.append($tr);
             });
 
-
-        // 初始化所有 Bootstrap Tooltips（使用自訂樣式模板）
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl, {
-                boundary: 'window',
-                container: 'body',
-                html: true,  // 允許 HTML
-                template: `
-                    <div class="tooltip custom-tooltip" role="tooltip">
-                        <div class="tooltip-arrow"></div>
-                        <div class="tooltip-inner text-start"></div>
-                    </div>
-                `
+            // 初始化 Bootstrap Tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    boundary: 'window',
+                    container: 'body',
+                    html: true,
+                    template: '<div class="tooltip custom-tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner text-start"></div></div>'
+                });
             });
-        });
+        }
 
+        function formatStatusText(status) {
+            if (status === 'RUN < 60') {
+                return 'RUN < 60 min';
+            }
+            return status;
         }
     </script>
 </body>
