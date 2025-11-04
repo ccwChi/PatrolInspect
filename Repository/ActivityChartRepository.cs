@@ -32,22 +32,46 @@ namespace PatrolInspect.Repository
         {
             using var connection = CreateMesConnection();
             var sql = @"
-                SELECT 
-                    RecordId,
-                    CardId,
-                    Area,
-                    DeviceId,
-                    UserNo,
-                    UserName,
-                    InspectType,
-                    InspectWo,
-                    ArriveAt,
-                    SubmitDataAt,
-                    Source
-                FROM INSPECTION_QC_RECORD                
-                WHERE CAST(ArriveAt AS DATE) = @Date
-                AND InspectType <> 'CANCEL'
-                ORDER BY UserNo, ArriveAt";
+            SELECT 
+                RecordId,
+                CardId,
+                Area,
+                DeviceId,
+                UserNo,
+                UserName,
+                InspectType,
+                InspectWo,
+                ArriveAt,
+                SubmitDataAt,
+                Source,
+                InspectItemOkNo,
+                InspectItemNgNo
+            FROM INSPECTION_QC_RECORD                
+            WHERE CAST(ArriveAt AS DATE) = @Date
+              AND InspectType <> 'CANCEL'
+
+            UNION ALL
+
+            SELECT 
+                NULL AS RecordId,              
+                ''   AS CardId,
+                ''   AS Area,
+                ''   AS DeviceId,
+                a.UserNo,
+                a.UserName,
+                SUBSTRING(b.StatusName_TW, 4, LEN(b.StatusName_TW)) AS InspectType,
+                '' AS InspectWo,
+                a.StartTime AS ArriveAt,
+                a.EndTime AS SubmitDataAt,
+                'ABC報工' AS Source,
+                null AS InspectItemOkNo,       
+                null AS InspectItemNgNo
+            FROM [MES].[dbo].[ABC_USER_WH] a
+            LEFT JOIN ABC_BAS_STATUS b ON b.StatusNo = a.StatusNo
+            WHERE a.UserNo IN ('G03078', 'G01629', 'G01824', 'G02449', 'G01813')
+              AND a.StatusNo IN ('0007','0008','0005')
+              AND CAST(StartTime AS DATE) = @Date
+            ORDER BY UserNo, ArriveAt;";
 
             try
             {
@@ -76,7 +100,9 @@ namespace PatrolInspect.Repository
                     InspectWo,
                     ArriveAt,
                     SubmitDataAt,
-                    Source
+                    Source,
+                    InspectItemOkNo,
+                    InspectItemNgNo
                 FROM INSPECTION_QC_RECORD
                 WHERE UserNo = @UserNo 
                 AND CAST(ArriveAt AS DATE) = @Date
@@ -120,7 +146,9 @@ namespace PatrolInspect.Repository
                             InspectUserName,
                             ResponseUserNames,
                             ResponseUserNos,
-                            Status
+                            Status,
+                            ProdNo,
+                            ProdDesc
                         FROM INSPECTION_UTILIZATION_DEVICE WITH (NOLOCK)
                         WHERE DataDate = @Date
                         ORDER BY DeviceId, ScheduleStart, InspectStartTime
@@ -139,26 +167,5 @@ namespace PatrolInspect.Repository
     }
 
     // DTO
-    public class InspectionUtilizationData
-    {
-        public string Area { get; set; }
-        public string DeviceId { get; set; }
-        public string DeviceName { get; set; }
-        public string ScheduleRange { get; set; }
-        public DateTime ScheduleStart { get; set; }
-        public DateTime ScheduleEnd { get; set; }
-        public string DeviceStatusWo { get; set; }
-        public decimal RunTime { get; set; }
-        public decimal NonOffTime { get; set; }
-        public decimal IdleTime { get; set; }
-        public string WorkOrderNo { get; set; }
-        public string InspectType { get; set; }
-        public DateTime? InspectStartTime { get; set; }
-        public DateTime? InspectEndTime { get; set; }
-        public string InspectUserNo { get; set; }
-        public string InspectUserName { get; set; }
-        public string ResponseUserNos { get; set; }
-        public string ResponseUserNames { get; set; }
-        public string Status { get; set; }
-    }
+  
 }

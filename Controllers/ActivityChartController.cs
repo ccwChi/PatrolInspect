@@ -66,16 +66,79 @@ namespace PatrolInspect.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> DownloadUserCsv(DateTime? date)
+        {
+            var selectedDate = date ?? DateTime.Today;
+
+            try
+            {
+                var activities = await _activityChartRepository.GetActivitiesByDateAsync(selectedDate);
+
+                if (activities == null || !activities.Any())
+                {
+                    return Content("查無資料，無法下載。");
+                }
+
+                // 1. 依人員分組
+                var grouped = activities
+                    .GroupBy(a => new { a.UserNo, a.UserName })
+                    .OrderBy(g => g.Key.UserNo);
+
+                // 2. 建立 CSV 內容
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("人員,員工編號,檢驗類型,區域,設備,工單,開始時間,結束時間,時長(分),OK數,NG數");
+
+                foreach (var user in grouped)
+                {
+                    foreach (var a in user)
+                    {
+                        var duration = a.SubmitDataAt.HasValue
+                            ? (a.SubmitDataAt.Value - a.ArriveAt).TotalMinutes.ToString("F0")
+                            : "-";
+
+                        sb.AppendLine(
+                            $"{user.Key.UserName}," +
+                            $"{user.Key.UserNo}," +
+                            $"{a.InspectType}," +
+                            $"{a.Area}," +
+                            $"{a.DeviceId}," +
+                            $"{a.InspectWo}," +
+                            $"{a.ArriveAt:HH:mm:ss}," +
+                            $"{(a.SubmitDataAt?.ToString("HH:mm:ss") ?? "進行中")}," +
+                            $"{duration}," +
+                            $"{a.InspectItemOkNo}," +
+                            $"{a.InspectItemNgNo}"
+                        );
+                    }
+                }
+
+                // 3. 轉 Big5 編碼 → Excel 可以正常打開
+                var big5 = System.Text.Encoding.GetEncoding(950);
+                var bytes = big5.GetBytes(sb.ToString());
+
+                var fileName = $"巡檢稼動表_{selectedDate:yyyyMMdd}.csv";
+                return File(bytes, "text/csv", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "匯出 CSV 發生錯誤");
+                return Content("匯出失敗：" + ex.Message);
+            }
+        }
+
+
 
         [HttpGet]
-        public IActionResult Machine()
+        public async Task<IActionResult> Machine(DateTime? date)
         {
             ViewBag.UserName = HttpContext.Session.GetString("UserName");
             ViewBag.DepartmentName = HttpContext.Session.GetString("DepartmentName");
             ViewBag.TitleName = HttpContext.Session.GetString("TitleName");
             ViewBag.CurrentTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            ViewBag.SelectedDate = DateTime.Now.ToString("yyyy-MM-dd");
 
+            var selectedDate = date ?? DateTime.Today;
+            ViewBag.SelectedDate = selectedDate.ToString("yyyy-MM-dd");
             return View();
         }
 
@@ -110,6 +173,8 @@ namespace PatrolInspect.Controllers
                                               status = x.Status,
                                               runTime = x.RunTime.ToString(),
                                               nonOffTime = x.NonOffTime.ToString(),
+                                              prodNo = x.ProdNo,
+                                              prodDesc = x.ProdDesc
                                           })
                                           .ToList();
 
@@ -144,37 +209,4 @@ namespace PatrolInspect.Controllers
             }
         }
     }
-
-    // DTO
-    public class MachineInspectionData
-    {
-        public string deviceId { get; set; }
-        public string deviceName { get; set; }
-        public string area { get; set; }
-        public string scheduleRange { get; set; }
-        public decimal runTime { get; set; }
-        public string workOrder { get; set; }
-        public string inspectUserName { get; set; }
-        public List<InspectionDetail> inspections { get; set; }
-        public string status { get; set; }
-    }
-
-    public class InspectionDetail
-    {
-        public string inspectType { get; set; }
-        public DateTime? inspectStartTime { get; set; }
-        public DateTime? inspectEndTime { get; set; }
-        public string inspectUserName { get; set; }
-        public string responseUserNos { get; set; }
-        public string responseUserNames { get; set; }
-        public string workOrderNo { get; set; }
-        public string status { get; set; }
-        public string runTime { get; set; }
-        public string nonOffTime { get; set; }
-
-    }
-
-
-
-
 }

@@ -92,6 +92,8 @@ namespace PatrolInspect.Models
         public DateTime ArriveAt { get; set; }
         public DateTime? SubmitDataAt { get; set; }
         public string Source { get; set; } = string.Empty;
+        public int InspectItemOkNo { get; set; } 
+        public int InspectItemNgNo { get; set; } 
 
         // 計算屬性
         public double StartHour => ArriveAt.Hour + ArriveAt.Minute / 60.0;
@@ -110,9 +112,4 @@ namespace PatrolInspect.Models
         public List<InspectionActivity> Activities { get; set; } = new();
     }
 
-    public class ActivityChartViewModel
-    {
-        public DateTime SelectedDate { get; set; } = DateTime.Today;
-        public List<UserActivityViewModel> UserActivities { get; set; } = new();
-    }
 }

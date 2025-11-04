@@ -7,6 +7,11 @@
         { "製一巡檢", "#3b82f6" },
         { "機邊檢驗", "#10b981" },
         { "入庫檢驗", "#f59e0b" },
+        { "會議、主管交派", "#a855f7" },
+        { "支援其他部門", "#ef4444" },
+        { "基恩斯、三次元量測", "#6366f1" },
+        { "全檢", "#14b8a6" },
+        { "限樣", "#94a3b8" },
     };
 }
 
@@ -23,7 +28,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-size: 16px;
+            font-size: clamp(14px, 1vw, 20px);
         }
 
         html, body {
@@ -49,8 +54,17 @@
 
         .content-wrapper {
             flex: 1;
-            padding: 20px 5px;
+            padding: 20px 20px;
         }
+
+        .tooltip-inner {
+            text-align: left !important; /* 讓內容靠左 */
+            white-space: pre-line;       /* 保留換行（讓 <br> 或多行文字正常顯示） */
+            font-size: 14px;             /* 可自行調整字體大小 */
+            line-height: 1.4;            /* 行距 */
+            padding: 8px 10px;           /* 內距 */
+        }
+
 
         footer {
             text-align: center;
@@ -62,7 +76,7 @@
     </style>
 </head>
 <body>
-    <main class="content-wrapper container">
+    <main class="content-wrapper">
         <div style="display:flex; flex-direction:column; padding:20px">
             @if (TempData["ErrorMessage"] != null)
             {
@@ -79,6 +93,10 @@
                            style="padding: 5px; margin-right: 10px;" />
                     <button type="submit" style="padding: 5px 15px; background-color: #0071b2; color: white; border: none; cursor: pointer;">查詢</button>
                 </form>
+                @* <button id="btnDownloadCsv"
+                        style="padding: 5px 15px; background-color: #198754; color: white; border: none; cursor: pointer;">
+                    下載報表
+                </button> *@
             </div>
 
             <div style="padding: 15px; display:flex; align-items:center; justify-content:end; width:100%;">
@@ -108,7 +126,7 @@
             }
             else
             {
-                <div style="overflow-x: auto;">
+                <div style="">
                     <table style="width: 100%; border-collapse: collapse; border: 1px solid #999;">
                         <thead>
                             <tr style="background-color: #e0e0e0;">
@@ -141,15 +159,16 @@
                                                 var tooltipText = $"<strong>{activity.InspectType}</strong><br>區域: {activity.Area}<br>設備: {activity.DeviceId}<br>工單: {activity.InspectWo}<br>開始: {activity.ArriveAt:HH:mm:ss}<br>結束: {(activity.SubmitDataAt?.ToString("HH:mm:ss") ?? "進行中")}<br>時長: {duration} 分";
 
                                                 <div style="position: absolute;
-                                                                        left: @activity.LeftPosition.ToString("F2")%;
-                                                                        width: @width.ToString("F2")%;
-                                                                        top: 15px;
-                                                                        height: 30px;
-                                                                        background-color: @bgColor;
-                                                                        cursor: pointer;"
+                                                    left: @activity.LeftPosition.ToString("F2")%;
+                                                    width: @width.ToString("F2")%;
+                                                    top: 15px;
+                                                    height: 30px;
+                                                    background-color: @bgColor;
+                                                    cursor: pointer;"
+                                                     class="tooltip-activity"
                                                      data-bs-toggle="tooltip"
-                                                     data-bs-placement="auto"
                                                      data-bs-html="true"
+                                                     data-bs-placement="auto"
                                                      data-bs-title="@tooltipText">
                                                 </div>
                                             }
@@ -175,6 +194,8 @@
                                     <th style="border: 1px solid #999; padding: 8px;">開始時間</th>
                                     <th style="border: 1px solid #999; padding: 8px;">結束時間</th>
                                     <th style="border: 1px solid #999; padding: 8px;">時長(分)</th>
+                                    <th style="border: 1px solid #999; padding: 8px;">檢驗OK數</th>
+                                    <th style="border: 1px solid #999; padding: 8px;">檢驗NG數</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -196,8 +217,10 @@
                                             <td style="border: 1px solid #999; padding: 8px;">@activity.DeviceId</td>
                                             <td style="border: 1px solid #999; padding: 8px;">@activity.InspectWo</td>
                                             <td style="border: 1px solid #999; padding: 8px;">@activity.ArriveAt.ToString("HH:mm:ss")</td>
-                                            <td style="border: 1px solid #999; padding: 8px;">@(activity.SubmitDataAt?.ToString("HH:mm:ss") ?? "-")</td>
+                                            <td style="border: 1px solid #999; padding: 8px;">@(activity.SubmitDataAt?.ToString("HH:mm:ss") ?? "進行中")</td>
                                             <td style="border: 1px solid #999; padding: 8px;">@(duration > 0 ? duration.ToString("F0") : "-")</td>
+                                            <td style="border: 1px solid #999; padding: 8px;">@(activity.InspectItemOkNo )</td>
+                                            <td style="border: 1px solid #999; padding: 8px;">@(activity.InspectItemNgNo )</td>
                                         </tr>
                                     }
                                 }
@@ -215,20 +238,107 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // 初始化 Bootstrap Tooltip
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl, {
-                boundary: 'window',
-                placement: 'auto'
-            });
+
+    <script src="https://cdn.jsdelivr.net/npm/encoding-japanese@2.0.0/encoding.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // 初始化 tooltip
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipMap = new Map();
+
+    tooltipTriggerList.forEach(function (el) {
+        const tooltip = new bootstrap.Tooltip(el, {
+            trigger: 'manual', // 改為手動控制
+            html: true,
+            boundary: 'window',
+            placement: 'auto'
+        });
+        tooltipMap.set(el, tooltip);
+
+        let hoverTimeout = null;
+
+        // ===  Hover 功能 ===
+        el.addEventListener('mouseenter', function () {
+            // 只有在未被 click 鎖定時才顯示 hover tooltip
+            if (!el.classList.contains('tooltip-locked')) {
+                hoverTimeout = setTimeout(() => tooltip.show(), 100);
+            }
         });
 
-        // 每15分鐘自動刷新頁面 (900000毫秒)
-        setInterval(function() {
-            location.reload();
-        }, 5 * 60 * 1000);
-    </script>
+        el.addEventListener('mouseleave', function () {
+            clearTimeout(hoverTimeout);
+            // 只有未被鎖定的才關閉
+            if (!el.classList.contains('tooltip-locked')) {
+                tooltip.hide();
+            }
+        });
+
+        // ===  Click 鎖定開關 ===
+        el.addEventListener('click', function (e) {
+            e.stopPropagation(); // 防止冒泡
+
+            // 先關閉其他 tooltip
+            tooltipMap.forEach((t, elem) => {
+                if (elem !== el) {
+                    t.hide();
+                    elem.classList.remove('tooltip-locked');
+                }
+            });
+
+            // 切換當前 tooltip 鎖定狀態
+            if (el.classList.contains('tooltip-locked')) {
+                el.classList.remove('tooltip-locked');
+                tooltip.hide();
+            } else {
+                el.classList.add('tooltip-locked');
+                tooltip.show();
+            }
+        });
+    });
+
+    // ===  點擊背景區域時關閉所有 tooltip ===
+    document.addEventListener('click', function () {
+        tooltipMap.forEach((t, elem) => {
+            t.hide();
+            elem.classList.remove('tooltip-locked');
+        });
+    });
+
+    // === 自動刷新（5分鐘）===
+    setInterval(function() {
+        location.reload();
+    }, 5 * 60 * 1000);
+});
+
+
+        $('#btnDownloadCsv').on('click', function () {
+            const date = $('input[name="date"]').val();
+
+            $.ajax({
+                url:'@Url.Action("DownloadUserCsv", "ActivityChart")',
+                method: 'GET',
+                data: { date: date },      // 傳 Query String
+                xhrFields: {
+                    responseType: 'blob'   // 讓回傳內容是二進位檔 (Blob)
+                },
+                success: function (blob) {
+                    // 創建網址並下載
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `巡檢稼動表_${date}.csv`;   // 檔案名稱
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                },
+                error: function (xhr, status, error) {
+                    alert("下載失敗：" + error);
+                }
+            });
+        });
+</script>
+
+
 </body>
 </html>

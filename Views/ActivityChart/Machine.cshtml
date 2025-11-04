@@ -23,7 +23,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-size: 16px;
+            font-size: clamp(14px, 1vw, 20px);
         }
 
         html, body {
@@ -63,9 +63,13 @@
         }
 
         .custom-tooltip .tooltip-inner {
+            overflow-y:auto;
             text-align: left;
             white-space: normal;
-            max-width: 320px;
+            width: fit-content; /* 改這行 */
+            max-width: 500px; /* 加這行，設定最大寬度 */
+            min-width: 300px;
+            max-height:100vh;
             background-color: rgba(0, 0, 0, 0.9);
             color: #f8fafc;
             font-size: 13px;
@@ -131,12 +135,13 @@
             <!-- 標題與查詢表單 -->
 
             <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content:space-between; gap: 20px;">
-                <div style="display:flex; gap: 20px;">
+                <div style="display:flex; align-items:end; gap: 20px;">
                     <h3 style="margin: 0; white-space: nowrap;">機台巡檢紀錄</h3>
                     <div class="query-form">
                         <input type="date" id="dateInput" value="@ViewBag.SelectedDate">
                         <button type="button" onclick="loadData()">查詢</button>
                     </div>
+                    <span style="color:floralwhite">* 點擊格子即可固定懸浮視窗</span>
                 </div>
                 <div style="padding: 15px; display: flex; align-items: center; justify-content: end; width: fit-content;">
                     <div>
@@ -212,10 +217,6 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        var machineData = {};
-        var selectedDate = '@ViewBag.SelectedDate';
-
-        // 狀態顏色映射
         var statusColors = {
             '已檢驗': '#22c55e',
             '待檢驗': '#eab308',
@@ -266,19 +267,38 @@
             return { left: leftPos, width: width };
         }
 
+
+        var machineData = {};
+        var selectedDate = '@ViewBag.SelectedDate';
+        console.log("selectedDate",selectedDate)
+        // 狀態顏色映射
+
         $(document).ready(function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const dateParam = urlParams.get('date');
+            console.log("dateParam",dateParam)
+            if (dateParam) {
+                selectedDate = dateParam;
+            } else {
+                selectedDate = '@ViewBag.SelectedDate';
+                const newUrl = window.location.pathname + '?date=' + selectedDate;
+                window.history.replaceState(null, '', newUrl);
+            }
+            console.log("selectedDateB",selectedDate)
+            $('#dateInput').val(selectedDate);
             loadData();
 
-            // 每15分鐘自動刷新資料
             setInterval(function() {
-                console.log('自動刷新資料...');
                 loadData();
             }, 15 * 60 * 1000);
         });
 
+
         function loadData() {
             selectedDate = $('#dateInput').val();
 
+            const newUrl = window.location.pathname + '?date=' + selectedDate;
+            window.history.replaceState(null, '', newUrl);
             $('#loadingOverlay').show();
             $('#errorOverlay').hide();
             $('#noDataOverlay').hide();
@@ -388,7 +408,7 @@
         function buildTooltipContent(displayName, deviceId, cellData) {
             var html = '<div>';
             html += '<div><strong>機台：</strong>' + displayName + '</div>';
-            html += '<div style="font-size: 11px; color: #94a3b8;"><strong>ID：</strong>' + deviceId + '</div>';
+            html += '<div><strong>ID：</strong>' + deviceId + '</div>';
 
             if (cellData.runTime > 0) {
                 html += '<div><strong>總運作工時：</strong>' + cellData.runTime.toFixed(1) + ' min</div>';
@@ -421,6 +441,8 @@
 
                     if (insp.workOrderNo) {
                         html += '<div style="font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">工單: ' + insp.workOrderNo + '</div>';
+                        html += '<div style="font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">料號: ' + insp.prodNo + '</div>';
+                        html += '<div style="font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">料號: ' + insp.prodDesc + '</div>';
                     }
 
                     if (insp.responseUserNames) {
@@ -428,7 +450,7 @@
                     }
 
                     if (insp.runTime && parseFloat(insp.runTime) >= 0) {
-                        html += '<div style="font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">運作時間: ' + insp.runTime + ' min</div>';
+                        html += '<div style="font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">RunTime 時間: ' + insp.runTime + ' min</div>';
                     }
 
                     if (insp.status) {
@@ -494,8 +516,7 @@
                         'padding': '10px',
                         'vertical-align': 'middle',
                         'background-color': '#166534',
-                        'text-align': 'left',
-                        'font-size': '12px',
+                        'text-align': 'left',           
                         'height': '40px',
                         'line-height': '1.2',
                         'white-space': 'nowrap'
@@ -525,6 +546,7 @@
                     var position = calculatePosition(cellData.startHour, cellData.endHour);
                     var bgColor = statusColors[cellData.status] || '#64748b';
 
+                    // 這邊是時間軸 x 機台的每個小區塊
                     var $cell = $('<div>')
                         .css({
                             'position': 'absolute',
@@ -535,7 +557,7 @@
                             'border-right': '1px solid black',
                             'cursor': 'pointer',
                             'transition': 'all 0.3s',
-                            'font-size': '10px',
+                            'font-size': 'clamp(12px,0.8vw, 18px)',
                             'background-color': bgColor,
                             'display': 'flex',
                             'flex-direction': 'column',
@@ -568,7 +590,7 @@
                                 $cell.append(
                                     $('<div>').css({
                                         'color': 'white',
-                                        'font-size': '10px',
+                                        'font-size': 'clamp(10px, 0.8vw, 18px)',
                                         'line-height': '1.2',
                                         'width': '100%',
                                         'text-align': 'center',
@@ -583,7 +605,8 @@
                                 $('<div>')
                                     .css({
                                         'color': 'white',
-                                        'font-size': '12px',
+                                         'white-space': 'nowrap',
+                                        'font-size': 'clamp(12px, 0.8vw, 18px)',
                                         'line-height': '1.2'
                                     })
                                     .text(formatStatusText(cellData.status) || '不用檢驗')
@@ -601,7 +624,7 @@
 
                                     var $workOrderContainer = $('<div>').css({
                                         'color': '#ffffff',
-                                        'font-size': '10px',
+                                        'font-size': 'clamp(12px, 0.8vw, 18px)',
                                         'line-height': '1.2',
                                         'margin-top': '2px',
                                         'font-weight': 'bold',
@@ -612,7 +635,7 @@
                                         $workOrderContainer.append(
                                             $('<div>').css({
                                                 'color': '#ffffff',
-                                                'font-size': '10px',
+                                                'font-size': 'clamp(12px, 0.8vw, 18px)',
                                                 'line-height': '1.1',
                                                 'margin-top': '1px',
                                                 'font-weight': 'bold',
@@ -629,7 +652,7 @@
                                     $cell.append(
                                         $('<div>').css({
                                             'color': '#ffffff',
-                                            'font-size': '10px',
+                                            'font-size': 'clamp(12px,0.8vw, 18px)',
                                             'line-height': '1.2',
                                             'margin-top': '2px',
                                             'font-weight': 'bold'
@@ -643,7 +666,7 @@
                             $('<div>')
                                 .css({
                                     'color': 'white',
-                                    'font-size': '12px',
+                                    'font-size': 'clamp(12px,0.8vw, 18px)',
                                     'line-height': '1.2'
                                 })
                                 .text(formatStatusText(cellData.status) || '不用檢驗')
@@ -659,23 +682,74 @@
             });
 
             // 初始化 Bootstrap Tooltips
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl, {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            const tooltipMap = new Map();
+
+            tooltipTriggerList.forEach(function (el) {
+                const tooltip = new bootstrap.Tooltip(el, {
+                    trigger: 'manual',
                     boundary: 'window',
                     container: 'body',
                     html: true,
                     template: '<div class="tooltip custom-tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner text-start"></div></div>'
+                });
+                tooltipMap.set(el, tooltip);
+
+                let hoverTimeout = null;
+
+                // Hover 功能
+                el.addEventListener('mouseenter', function () {
+                    if (!el.classList.contains('tooltip-locked')) {
+                        hoverTimeout = setTimeout(() => tooltip.show(), 100);
+                    }
+                });
+
+                el.addEventListener('mouseleave', function () {
+                    clearTimeout(hoverTimeout);
+                    if (!el.classList.contains('tooltip-locked')) {
+                        tooltip.hide();
+                    }
+                });
+
+                // Click 鎖定開關
+                el.addEventListener('click', function (e) {
+                    e.stopPropagation();
+
+                    tooltipMap.forEach((t, elem) => {
+                        if (elem !== el) {
+                            t.hide();
+                            elem.classList.remove('tooltip-locked');
+                        }
+                    });
+
+                    if (el.classList.contains('tooltip-locked')) {
+                        el.classList.remove('tooltip-locked');
+                        tooltip.hide();
+                    } else {
+                        el.classList.add('tooltip-locked');
+                        tooltip.show();
+                    }
+                });
+            });
+
+            // 點擊背景關閉所有 tooltip
+            document.addEventListener('click', function () {
+                tooltipMap.forEach((t, elem) => {
+                    t.hide();
+                    elem.classList.remove('tooltip-locked');
                 });
             });
         }
 
         function formatStatusText(status) {
             if (status === 'RUN < 60') {
-                return 'RUN < 60 min';
+                return 'Run < 60 min';
             }
             return status;
         }
+
+
+
     </script>
 </body>
 </html>

@@ -120,9 +120,10 @@
                             <li><a class="dropdown-item" href="@Url.Action("Index", "Inspection")">巡檢系統</a></li>
                             <li><a class="dropdown-item" href="@Url.Action("Edit", "Schedule")">班表建立</a></li>
                             <li><a class="dropdown-item" href="@Url.Action("Index", "ItemManage")">項目建立</a></li>
-                            <li><a class="dropdown-item" href="@Url.Action("User", "ActivityChart")">稼動管理</a></li>
                             @if (@ViewBag.UserNo == "G02828") 
                             {<li><a class="dropdown-item" href="@Url.Action("Index", "NFCManage")">NFC管理</a></li>
+                            <li><a class="dropdown-item" href="@Url.Action("User", "ActivityChart")">人員稼動</a></li>
+                            <li><a class="dropdown-item" href="@Url.Action("Machine", "ActivityChart")">機台稼動</a></li>
                             }
                         </ul>
                     </li>

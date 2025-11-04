@@ -262,9 +262,9 @@ namespace PatrolInspect.Repository
         {
             using var connection = CreateMesConnection();
             var sql = @"
-                SELECT DeviceId, DeviceName 
-                FROM INSPECTION_DEVICE_AREA_MAPPING 
-                WHERE IsActive = 1";
+                    SELECT DeviceId, DeviceName 
+                    FROM INSPECTION_DEVICE_AREA_MAPPING 
+                    WHERE IsActive = 1 and (ISNULL(DeviceId, '') <> '') and(ISNULL(DeviceName, '') <>'')";
 
             try
             {
