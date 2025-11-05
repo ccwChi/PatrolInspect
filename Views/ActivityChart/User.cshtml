@@ -7,9 +7,9 @@
         { "製一巡檢", "#3b82f6" },
         { "機邊檢驗", "#10b981" },
         { "入庫檢驗", "#f59e0b" },
-        { "會議、主管交派", "#a855f7" },
-        { "支援其他部門", "#ef4444" },
-        { "基恩斯、三次元量測", "#6366f1" },
+        { "會議", "#a855f7" },
+        { "支援其他單位", "#ef4444" },
+        { "基恩斯量測", "#6366f1" },
         { "全檢", "#14b8a6" },
         { "限樣", "#94a3b8" },
     };
@@ -58,11 +58,20 @@
         }
 
         .tooltip-inner {
-            text-align: left !important; /* 讓內容靠左 */
-            white-space: pre-line;       /* 保留換行（讓 <br> 或多行文字正常顯示） */
-            font-size: 14px;             /* 可自行調整字體大小 */
-            line-height: 1.4;            /* 行距 */
-            padding: 8px 10px;           /* 內距 */
+            overflow-y: auto;
+            text-align: left;
+            white-space: normal;
+            width: fit-content; /* 改這行 */
+            max-width: 500px; /* 加這行，設定最大寬度 */
+            min-width: 280px;
+            max-height: 100vh;
+            background-color: rgba(0, 0, 0, 0.9);
+            color: #f8fafc;
+            font-size: clamp(14px, 1vw, 20px);
+            line-height: 1.6;
+            padding: 10px 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
 
 
@@ -105,7 +114,13 @@
                     {
                         <span style="margin-left: 30px;">
                             <span style="display: inline-block; width: 20px; height: 20px; background-color: @item.Value; vertical-align: middle; margin-right: 5px;"></span>
-                            <span>@item.Key</span>
+                                 @(item.Key switch {
+                                    "會議" => "會議、主管交派",
+                                    "支援其他單位" => "支援其他單位",
+                                    "基恩斯量測" => "基恩斯、三次元量測",
+                                    "三次元量測" => "基恩斯、三次元量測",
+                                    _ => item.Key
+                                })
                         </span>
                     }
                 </div>

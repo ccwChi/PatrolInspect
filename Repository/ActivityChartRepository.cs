@@ -66,7 +66,7 @@ namespace PatrolInspect.Repository
                 'ABC報工' AS Source,
                 null AS InspectItemOkNo,       
                 null AS InspectItemNgNo
-            FROM [MES].[dbo].[ABC_USER_WH] a
+            FROM [ABC_USER_WH] a
             LEFT JOIN ABC_BAS_STATUS b ON b.StatusNo = a.StatusNo
             WHERE a.UserNo IN ('G03078', 'G01629', 'G01824', 'G02449', 'G01813')
               AND a.StatusNo IN ('0007','0008','0005')

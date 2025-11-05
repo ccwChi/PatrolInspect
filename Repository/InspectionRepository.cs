@@ -381,19 +381,12 @@ namespace PatrolInspect.Repository
         }
 
 
-
-
-
         private static string FormatInspectionTime(DateTime arriveAt, DateTime? submitDataAt)
         {
             var arriveTime = arriveAt.ToString("HH:mm");
-            var submitTime = submitDataAt?.ToString("HH:mm") ?? "檢驗中";
+            var submitTime = submitDataAt?.ToString("HH:mm") ?? "作業中";
             return $"{arriveTime} - {submitTime}";
         }
-
-
-
-
 
 
         public async Task<object> UpdateInspectionQuantityAsync(int recordId, int okQuantity, int ngQuantity, string updatedBy)

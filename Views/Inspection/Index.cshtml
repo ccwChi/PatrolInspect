@@ -411,19 +411,24 @@
 
 <div class="container">
     <!-- 使用者資訊 -->
-    <div class="header">
-        <div class="">
+    <div class="header" style="position:relative">
+        <div class="" >
             <strong>@ViewBag.UserName (@ViewBag.UserNo)</strong>
             <div style="color: #666;" onclick="showNFCTestModal('@ViewBag.UserNo')">@ViewBag.DepartmentName - @ViewBag.TitleName</div>
             <div class="current-time" id="currentTime">@ViewBag.CurrentTime</div>
+            <div>開始卡控"製一巡檢"跟"機邊檢驗"</div>
+            <div>"製一巡檢"=>用機邊電腦提交品管巡檢"</div>
+            <div>"機邊檢驗"=>會填入檢驗數量</div>
         </div>
-        <div class="control-buttons">
+        <div class="control-buttons" style="position:absolute; top:5px; right:5px">
             <button onclick="loadTodayInspection()">刷新資料</button>
         </div>
+
     </div>
-    <button class=" mb-2 w-100">
+    <button class="btn btn-outline-secondary mb-2 w-100" style="padding:2px; color:black;">
         <div class="section-content" onclick="showMachineIdInputModal()">點選並掃描機台 QRcode 開始檢驗</div>
     </button>
+
     <!-- 統計資訊 -->
     <div class="section">
         <div class="section-content">
@@ -481,13 +486,10 @@
             <p><strong id="modalDevice">-</strong></p>
             <p id="modalTime">-</p>
             <p>巡檢請在機邊電腦完成資料上傳，其他非使用射出檢驗系統的檢驗，請點選檢驗時間明細送出檢驗數量</p>
-            @* <p style="color: #666;">
-            <span id="countdown">10</span> 秒後自動關閉
-        </p> *@
             <button onclick="closeInspectionModal()">確定</button>
         </div>
     </div>
-    <!-- 檢驗數量輸入Modal -->
+    <!--機邊檢驗 檢驗數量輸入Modal -->
     <div id="quantityInputModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
                                          background: rgba(0,0,0,0.5); z-index: 1002; align-items: center; justify-content: center;">
         <div style="background: white; padding: 30px; border-radius: 8px; max-width: 450px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
@@ -953,7 +955,7 @@
                         const now = new Date();
                         let endTimeStr = lastRecord.time.split('-').pop().trim();
            
-                        if (endTimeStr.includes('檢驗中')) {
+                        if (endTimeStr.includes('作業中')) {
                             // 還在進行中，不算警告
                         } else {
                             const dateStr = now.toISOString().split('T')[0]; // yyyy-mm-dd
@@ -979,7 +981,7 @@
        
                 inspectionsHtml += `<ul class="inspection-list">`;
                 item.inspectionList.forEach(rec => {
-                    const isProgressing = rec.time.includes("檢驗中")
+                    const isProgressing = rec.time.includes("作業中")
                     const progressClass = isProgressing ? "in-progress" : "";
                     const clickableClass = isProgressing ? "inspection-in-progress" : "inspection-clickable";
                     const cursor = isProgressing ? "not-allowed" : "pointer";
@@ -1025,7 +1027,7 @@
         }
 
         function handleInspectionClick(recordId, time, inspectWo, inspector, InspectorId, inspectType, isInProgress, deviceId) {
-            if (inspectType === '入庫檢驗' || inspectType.includes('入庫')) {
+            if (inspectType === '入庫檢驗' || inspectType.includes('入庫') || inspectType.includes('全檢')) {
                 showWarehouseOrderModal(recordId, time, inspectWo, inspector, InspectorId, inspectType, deviceId);
             } else {
                 showQuantityInputModal(recordId, time, inspectWo, inspector, InspectorId, inspectType, deviceId);
@@ -1037,9 +1039,11 @@
             if (InspectorId !== userNo){
                 return
             }
-            if (!time.includes("檢驗")){
-                alert("如要填寫數量，請選擇檢驗中項目，提交後會將該筆檢驗中項目作為紀錄為檢驗結束")
-                return
+                        console.log("time",time)
+                                console.log("inspectTypeA",inspectTypeA)
+                if (!(time.includes("作業") || time.includes("檢驗"))){
+            alert("如要填寫數量，請選擇作業中項目，提交後會將該筆作業中項目作為紀錄為檢驗結束")
+            return
             }
 
             document.getElementById('quantityRecordId').value = recordId;
@@ -1079,10 +1083,10 @@
                 return;
             }
 
-            if (okQuantity === 0 && ngQuantity === 0) {
-                alert('OK數量和NG數量不能都為0');
-                return;
-            }
+            // if (okQuantity === 0 && ngQuantity === 0) {
+            //     alert('OK數量和NG數量不能都為0');
+            //     return;
+            // }
 
             // 顯示載入狀態
             const submitBtn = document.querySelector('#quantityInputModal .btn-primary');
@@ -1176,7 +1180,7 @@
             }
 
             if (!time.includes("檢驗")) {
-                alert("如要填寫數量，請選擇檢驗中項目，提交後會將該筆檢驗中項目作為紀錄為檢驗結束");
+                alert("如要填寫數量，請選擇作業中項目，提交後會將該筆作業中項目作為紀錄為檢驗結束");
                 return;
             }
 
@@ -1416,6 +1420,7 @@
         }
 
         function executeMachineId(){
+            
             const machineId = document.getElementById('machineIdInput').value
                         
             handleNFCCard(machineId, "")
@@ -1536,8 +1541,13 @@
         function confirmInspectType (){
             const selectInspectType = document.getElementById("inspectTypeOptions").value;
             if (!selectInspectType) {
-            alert('請選擇檢驗項目');
+                alert('請選擇檢驗項目');
             return;
+            }
+
+            let shortTerm = ["入庫檢驗","基恩斯量測","手持式三次元量測","全檢(EUV區)","全檢(CNC區)","全檢(成型區)","全檢(三樓緩衝)",'全檢(二樓倉庫)','限樣(限樣室)','限樣(一樓放置區)','全檢','限樣']
+            if (shortTerm.includes(selectInspectType)){
+                pendingNFCId = selectInspectType
             }
 
             let workOrderNo = "";
@@ -1652,6 +1662,7 @@
 
     </script>
     <script>
+        // 只有G02828能用的快速輸入資料
         const nfcTestCards = [
             // 射出一區
             { area: '一樓中央走道', deviceId: 'CLF_2200T-01', nfcCardId: '04:7a:86:12:64:6b:80' },

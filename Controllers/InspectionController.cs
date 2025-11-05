@@ -197,7 +197,7 @@ namespace PatrolInspect.Controllers
                         {
                             success = true,
                             needConfirmation = true,
-                            message = $"您在 {firstPendingRecord.InspectType}, {workOrders} 還有未完成的巡檢記錄",
+                            message = $"您在 {firstPendingRecord.DeviceId}, {workOrders} 還有未完成的巡檢記錄",
                             pendingDeviceId = firstNfcInfo.DeviceId,
                             newDeviceId = firstNfcInfo.DeviceId,
                             pendingRecordId = firstPendingRecord.RecordId,
@@ -209,7 +209,7 @@ namespace PatrolInspect.Controllers
                     {
                         success = true,
                         needConfirmation = true,
-                        message = $"您在 {firstNfcInfo.DeviceId} 機台 {workOrders} 還有未完成的巡檢記錄",
+                        message = $"您在 {firstPendingRecord.DeviceId}  {workOrders} 還有未完成的巡檢記錄",
                         pendingDeviceId = firstNfcInfo.DeviceId,
                         newDeviceId = firstNfcInfo.DeviceId,
                         pendingRecordId = firstPendingRecord.RecordId,
