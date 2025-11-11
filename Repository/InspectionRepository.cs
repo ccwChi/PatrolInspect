@@ -8,10 +8,11 @@ using PatrolInspect.Repositories.Interfaces;
 using System.Data;
 using System.Linq;
 using static PatrolInspect.Controllers.InspectionController;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace PatrolInspect.Repository
 {
-    public class InspectionRepository : IInspectionRepository
+    public class InspectionRepository
     {
         private readonly string _mesConnString;
         private readonly string _fnReportConnString;
@@ -60,41 +61,146 @@ namespace PatrolInspect.Repository
             }
         }
 
+        //public async Task<UserTodayInspection> GetTodayInspectionAsync(string userNo, string userName, string department)
+        //{
+        //    var today = DateTime.Now;
+        //    var today0800 = today.Date.AddHours(8);
+
+        //    DateTime startDateTime;
+        //    DateTime endDateTime;
+
+        //    if (today < today0800)
+        //    {
+        //        startDateTime = today0800.AddDays(-1);
+        //        endDateTime = today0800;
+        //    }
+        //    else
+        //    {
+        //        startDateTime = today0800;
+        //        endDateTime = today0800.AddDays(1); 
+        //    }
+
+        //    try
+        //    {
+        //        // 1. 取得使用者今天的時段排班
+        //        ///  string StartTime; string EndTime; DateTime StartDateTime ; DateTime EndDateTime; List<string> Areas ; 
+        //        ///  string EventType ; string EventDetail ; bool IsCurrent; bool IsPast ; List<DeviceInspectionInfo> DevicesToInspect ; List<DeviceInspectionInfo> ExtraTask
+        //        var timePeriods = await GetProcessedTimePeriodsAsync(userNo, today, startDateTime, endDateTime);
+
+        //        // 2. 取得今天所有的巡檢紀錄 (不限使用者)
+        //        var allTodayRecords = await GetAllTodayInspectionRecordsAsync(today, startDateTime, endDateTime);
+
+        //        // 3. 取得裝置名稱對應表
+        //        var deviceNameMapping = await GetDeviceNameMappingAsync();
+
+        //        // 4. 為每個時段處理機台資料
+        //        foreach (var period in timePeriods)
+        //        {
+        //            //if (!period.Areas.Any())
+        //            //    continue;
+
+        //            // 取得該時段負責區域的機台狀態和巡檢紀錄
+        //            var periodDeviceData = await GetDeviceInspectionDataAsync(period.Areas, today);
+
+        //            // 分析並組織資料
+        //            var (devicesToInspect, extraTasks) = ProcessDeviceInspectionData(
+        //                periodDeviceData,
+        //                allTodayRecords,
+        //                deviceNameMapping,
+        //                userNo,
+        //                period.Areas
+        //            );
+
+        //            period.DevicesToInspect = devicesToInspect;
+        //            period.ExtraTask = extraTasks;
+        //        }
+
+        //        return new UserTodayInspection
+        //        {
+        //            UserNo = userNo,
+        //            UserName = userName,
+        //            Department = department,
+        //            TimePeriods = timePeriods
+        //        };
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error getting user today inspection for {UserNo}", userNo);
+        //        throw;
+        //    }
+        //}
+
+
+
         public async Task<UserTodayInspection> GetTodayInspectionAsync(string userNo, string userName, string department)
         {
-            var today = DateTime.Now.Date;
+            var today = DateTime.Now;
+            var today0800 = today.Date.AddHours(8);
+
+            DateTime startDateTime;
+            DateTime endDateTime;
+
+            if (today < today0800)
+            {
+                startDateTime = today0800.AddDays(-1);
+                endDateTime = today0800;
+            }
+            else
+            {
+                startDateTime = today0800;
+                endDateTime = today0800.AddDays(1);
+            }
 
             try
             {
                 // 1. 取得使用者今天的時段排班
-                var timePeriods = await GetProcessedTimePeriodsAsync(userNo, today);
+                var timePeriods = await GetProcessedTimePeriodsAsync(userNo, today, startDateTime, endDateTime);
 
-                // 2. 取得今天所有的巡檢紀錄 (不限使用者)
-                var allTodayRecords = await GetAllTodayInspectionRecordsAsync(today);
+                // 2. 取得今天所有的巡檢紀錄
+                var allTodayRecords = await GetAllTodayInspectionRecordsAsync(today, startDateTime, endDateTime);
 
-                // 3. 取得裝置名稱對應表
+                // 3. 取得當前用戶的記錄
+                var userRecords = allTodayRecords.Where(r => r.UserNo == userNo).ToList();
+
+                // 4. 取得裝置名稱對應表
                 var deviceNameMapping = await GetDeviceNameMappingAsync();
 
-                // 4. 為每個時段處理機台資料
+                // 5. 追蹤已處理的記錄ID
+                var processedRecordIds = new HashSet<int>();
+
+                // 6. 處理有排班的時段
                 foreach (var period in timePeriods)
                 {
-                    //if (!period.Areas.Any())
-                    //    continue;
+                    var periodDeviceData = await GetDeviceInspectionDataForPeriodAsync(period.Areas, today, startDateTime, endDateTime);
 
-                    // 取得該時段負責區域的機台狀態和巡檢紀錄
-                    var periodDeviceData = await GetDeviceInspectionDataAsync(period.Areas, today);
-
-                    // 分析並組織資料
-                    var (devicesToInspect, extraTasks) = ProcessDeviceInspectionData(
+                    var (devicesToInspect, processedIds) = ProcessPeriodDeviceData(
                         periodDeviceData,
+                        userRecords,
                         allTodayRecords,
                         deviceNameMapping,
-                        userNo,
                         period.Areas
                     );
 
                     period.DevicesToInspect = devicesToInspect;
-                    period.ExtraTask = extraTasks;
+
+                    foreach (var id in processedIds)
+                    {
+                        processedRecordIds.Add(id);
+                    }
+                }
+
+                // 7. 處理未涵蓋的記錄
+                var unprocessedRecords = userRecords
+                    .Where(r => !processedRecordIds.Contains(r.RecordId))
+                    .ToList();
+
+                if (unprocessedRecords.Any())
+                {
+                    var otherWorkPeriod = CreateOtherWorkPeriod(
+                        unprocessedRecords,
+                        deviceNameMapping
+                    );
+                    timePeriods.Add(otherWorkPeriod);
                 }
 
                 return new UserTodayInspection
@@ -112,7 +218,186 @@ namespace PatrolInspect.Repository
             }
         }
 
-        private async Task<List<TimePeriod>> GetProcessedTimePeriodsAsync(string userNo, DateTime date)
+        // 新的查詢方法 - 分開抓機台狀態和記錄
+        private async Task<(List<FnDeviceStatus> deviceStatuses, List<InspectionQcRecord> records)>
+            GetDeviceInspectionDataForPeriodAsync(List<string> areas, DateTime date, DateTime startDateTime, DateTime endDateTime)
+        {
+            if (!areas.Any())
+                return (new List<FnDeviceStatus>(), new List<InspectionQcRecord>());
+
+            var dbname = _envFlag.ToString() == "1" ? "TNCIMDB01.MES" : "TNCIMDEV01.MES_DEV";
+
+            using var connection = CreateFineReportConnection();
+
+            // 1. 抓機台狀態
+            var deviceSql = $@"
+                SELECT DISTINCT
+                    d.DeviceId,
+                    d.DeviceName,
+                    fne.DeviceStatus as Status,
+                    fnr.WO_ID,
+                    fne.StartTime,
+                    fne.CreateTime,
+                    fne.BPM_NO
+                FROM {dbname}.dbo.INSPECTION_DEVICE_AREA_MAPPING d
+                LEFT JOIN FineReport.dbo.FN_ORDER_RUNTIME fnr ON d.DeviceId = fnr.DeviceID
+                LEFT JOIN FineReport.dbo.FN_EQPSTATUS fne ON d.DeviceId = fne.DeviceID
+                WHERE d.Area IN @Areas AND d.IsActive = 1";
+
+                    // 2. 抓檢驗記錄
+              var recordSql = $@"
+                SELECT iqc.*
+                FROM {dbname}.dbo.INSPECTION_QC_RECORD iqc
+                INNER JOIN {dbname}.dbo.INSPECTION_DEVICE_AREA_MAPPING dam 
+                    ON iqc.DeviceId = dam.DeviceId
+                WHERE dam.Area IN @Areas 
+                  AND dam.IsActive = 1
+                  AND iqc.ArriveAt >= @StartDateTime
+                  AND iqc.ArriveAt < @EndDateTime
+                  AND (iqc.InspectType <> 'CANCEL' OR iqc.InspectType IS NULL)
+                ORDER BY iqc.ArriveAt DESC";
+
+            try
+            {
+                var deviceStatuses = (await connection.QueryAsync<FnDeviceStatus>(
+                    deviceSql,
+                    new { Areas = areas }
+                )).ToList();
+
+                var records = (await connection.QueryAsync<InspectionQcRecord>(
+                    recordSql,
+                    new { Areas = areas, StartDateTime = startDateTime, EndDateTime = endDateTime }
+                )).ToList();
+
+                return (deviceStatuses, records);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting device inspection data for areas: {Areas}", string.Join(",", areas));
+                throw;
+            }
+        }
+
+        // 新的處理方法
+        private (List<DeviceInspectionInfo> devices, HashSet<int> processedRecordIds) ProcessPeriodDeviceData(
+            (List<FnDeviceStatus> deviceStatuses, List<InspectionQcRecord> records) data,
+            List<InspectionQcRecord> userRecords,
+            List<InspectionQcRecord> allRecords,
+            Dictionary<string, string> deviceNameMapping,
+            List<string> periodAreas)
+        {
+            var devices = new List<DeviceInspectionInfo>();
+            var processedIds = new HashSet<int>();
+
+            // 按機台分組
+            var deviceGroups = data.deviceStatuses.GroupBy(d => d.DeviceID);
+
+            foreach (var group in deviceGroups)
+            {
+                var deviceId = group.Key;
+                var statusInfo = group.First();
+
+                // 找出該機台的所有記錄
+                var deviceRecords = data.records
+                    .Where(r => r.DeviceId == deviceId)
+                    .OrderByDescending(r => r.ArriveAt)
+                    .ToList();
+
+                // 標記為已處理
+                foreach (var record in deviceRecords)
+                {
+                    processedIds.Add(record.RecordId);
+                }
+
+                var deviceStatus = new DeviceStatus
+                {
+                    DeviceID = deviceId,
+                    DeviceName = deviceNameMapping.GetValueOrDefault(deviceId, statusInfo.DeviceName ?? deviceId),
+                    Status = statusInfo.Status ?? "PMC資料缺漏",
+                    StartTime = statusInfo.StartTime,
+                    CreateTime = statusInfo.CreateTime,
+                    WO_ID = statusInfo.WO_ID ?? string.Empty,
+                    BPM_NO = statusInfo.BPM_NO ?? string.Empty
+                };
+
+                var inspectionRecords = deviceRecords.Select(r => new InspectionRecord
+                {
+                    RecordId = r.RecordId,
+                    Time = FormatInspectionTime(r.ArriveAt, r.SubmitDataAt),
+                    Inspector = r.UserName,
+                    InspectorId = r.UserNo,
+                    InspectWo = r.InspectWo ?? "",
+                    InspectType = r.InspectType
+                }).ToList();
+
+                devices.Add(new DeviceInspectionInfo
+                {
+                    DeviceStatus = deviceStatus,
+                    InspectionList = inspectionRecords
+                });
+            }
+
+            return (devices, processedIds);
+        }
+
+        // 創建"其他作業"時段
+        private TimePeriod CreateOtherWorkPeriod(
+            List<InspectionQcRecord> records,
+            Dictionary<string, string> deviceNameMapping)
+        {
+            var period = new TimePeriod
+            {
+                StartTime = "00:00",
+                EndTime = "23:59",
+                StartDateTime = DateTime.Today,
+                EndDateTime = DateTime.Today.AddDays(1),
+                Areas = new List<string>(),
+                EventType = "今日其他作業",
+                EventDetail = "非排班時段的檢驗記錄",
+                IsCurrent = true,
+                IsPast = false,
+                DevicesToInspect = new List<DeviceInspectionInfo>()
+            };
+
+            // 按 DeviceId 分組
+            var deviceGroups = records.GroupBy(r => r.DeviceId);
+
+            foreach (var group in deviceGroups)
+            {
+                var deviceId = group.Key;
+                var deviceRecords = group.OrderByDescending(r => r.ArriveAt).ToList();
+
+                var deviceStatus = new DeviceStatus
+                {
+                    DeviceID = deviceId,
+                    DeviceName = deviceNameMapping.GetValueOrDefault(deviceId, deviceId),
+                    Status = "---",
+                    WO_ID = string.Join(",", deviceRecords.Select(r => r.InspectWo).Where(w => !string.IsNullOrEmpty(w)).Distinct())
+                };
+
+                var inspectionRecords = deviceRecords.Select(r => new InspectionRecord
+                {
+                    RecordId = r.RecordId,
+                    Time = FormatInspectionTime(r.ArriveAt, r.SubmitDataAt),
+                    Inspector = r.UserName,
+                    InspectorId = r.UserNo,
+                    InspectWo = r.InspectWo ?? "",
+                    InspectType = r.InspectType
+                }).ToList();
+
+                period.DevicesToInspect.Add(new DeviceInspectionInfo
+                {
+                    DeviceStatus = deviceStatus,
+                    InspectionList = inspectionRecords
+                });
+            }
+
+            return period;
+        }
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        private async Task<List<TimePeriod>> GetProcessedTimePeriodsAsync(string userNo, DateTime date, DateTime startDateTime, DateTime endDateTime)
         {
             using var connection = CreateMesConnection();
 
@@ -126,9 +411,10 @@ namespace PatrolInspect.Repository
                         STRING_AGG(Area, ',') AS Areas
                     FROM INSPECTION_SCHEDULE_EVENT 
                     WHERE UserNo = @UserNo 
-                      AND CAST(StartDateTime AS DATE) = @Date
-                    GROUP BY StartDateTime, EndDateTime, EventType, EventDetail
-                )
+                      AND StartDateTime >= @StartDateTime
+                      AND StartDateTime < @EndDateTime                    
+                GROUP BY StartDateTime, EndDateTime, EventType, EventDetail
+                ) 
                 SELECT 
                     StartDateTime,
                     EndDateTime,
@@ -150,7 +436,7 @@ namespace PatrolInspect.Repository
 
             try
             {
-                var results = await connection.QueryAsync(sql, new { UserNo = userNo, Date = date.Date });
+                var results = await connection.QueryAsync(sql, new { UserNo = userNo, startDateTime , endDateTime });
 
                 return results.Select(r => new TimePeriod
                 {
@@ -177,6 +463,8 @@ namespace PatrolInspect.Repository
             }
         }
 
+
+        // 下面的語法只有在有排班的時候才有用。
         private async Task<List<DeviceInspectionRawData>> GetDeviceInspectionDataAsync(List<string> areas, DateTime date)
         {
             if (!areas.Any()) return new List<DeviceInspectionRawData>();
@@ -234,7 +522,7 @@ namespace PatrolInspect.Repository
             }
         }
 
-        private async Task<List<InspectionQcRecord>> GetAllTodayInspectionRecordsAsync(DateTime date)
+        private async Task<List<InspectionQcRecord>> GetAllTodayInspectionRecordsAsync(DateTime date, DateTime StartDateTime, DateTime EndDateTime)
         {
             using var connection = CreateMesConnection();
             var sql = @"
@@ -242,13 +530,13 @@ namespace PatrolInspect.Repository
                        ArriveAt, SubmitDataAt, Source, CreateDate,
                        InspectItemOkNo, InspectItemNgNo
                 FROM INSPECTION_QC_RECORD 
-                WHERE CAST(ArriveAt AS DATE) = @Date
+                WHERE ArriveAt >= @StartDateTime
                   AND InspectType <> 'CANCEL'
                 ORDER BY ArriveAt DESC";
 
             try
             {
-                var records = await connection.QueryAsync<InspectionQcRecord>(sql, new { Date = date.Date });
+                var records = await connection.QueryAsync<InspectionQcRecord>(sql, new { StartDateTime });
                 return records.ToList();
             }
             catch (Exception ex)
@@ -389,7 +677,7 @@ namespace PatrolInspect.Repository
         }
 
 
-        public async Task<object> UpdateInspectionQuantityAsync(int recordId, int okQuantity, int ngQuantity, string updatedBy)
+        public async Task<object> UpdateInspectionQuantityAsync(int recordId, int okQuantity, int ngQuantity, string remarkQuantity, string updatedBy)
         {
             using var connection = CreateMesConnection();
 
@@ -397,8 +685,7 @@ namespace PatrolInspect.Repository
             {
                 // 1. 檢查記錄是否存在且可以更新
                 var checkSql = @"
-                    SELECT RecordId, UserNo, DeviceId, InspectWo, ArriveAt, SubmitDataAt, 
-                           InspectItemOkNo, InspectItemNgNo
+                    SELECT 1
                     FROM INSPECTION_QC_RECORD 
                     WHERE RecordId = @RecordId
                     AND SubmitDataAt is NULL";
@@ -419,7 +706,8 @@ namespace PatrolInspect.Repository
                         UPDATE INSPECTION_QC_RECORD 
                         SET InspectItemOkNo = @OkQuantity,
                             InspectItemNgNo = @NgQuantity,
-                            SubmitDataAt = GETDATE()
+                            SubmitDataAt = GETDATE(),
+                            Remark = @remarkQuantity
                         WHERE RecordId = @RecordId
                         AND SubmitDataAt is null";
 
@@ -429,7 +717,8 @@ namespace PatrolInspect.Repository
                     {
                         RecordId = recordId,
                         OkQuantity = okQuantity.ToString(),
-                        NgQuantity = ngQuantity.ToString()
+                        NgQuantity = ngQuantity.ToString(),
+                        remarkQuantity 
                     }
                 );
 
@@ -468,63 +757,49 @@ namespace PatrolInspect.Repository
                 (@CardId, @DeviceId, @UserNo, @UserName,@Area, @InspectType, @InspectWo, @ArriveAt, @SubmitDataAt, @Source, @CreateDate);
                 SELECT CAST(SCOPE_IDENTITY() as int)";
 
-            if (!string.IsNullOrWhiteSpace(record.UserInputWorkOrderNo))
-            {
-                record.InspectWo = record.UserInputWorkOrderNo ?? "";
-            }
-
             try
             {
                 record.CreateDate = DateTime.Now;
                 var recordId = await connection.QuerySingleAsync<int>(sql, record);
 
-                _logger.LogInformation("Created inspection record: {RecordId} for device: {DeviceId} by user: {UserNo}",
-                    recordId, record.DeviceId, record.UserNo);
-
                 return recordId;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating inspection record for device: {DeviceId} by user: {UserNo}",
-                    record.DeviceId, record.UserNo);
                 throw;
             }
         }
 
-        public async Task<bool> UpdateInspectionRecordAsync(int recordId, string  deviceId, string userNo)
+        public async Task<bool> UpdateInspectionRecordAsync(int recordId, string userNo, string userName)
         {
             using var connection = CreateMesConnection();
             var sql = @"
                 UPDATE INSPECTION_QC_RECORD 
                 SET InspectType = 'CANCEL', 
                     SubmitDataAt = GETDATE()
-                WHERE DeviceId <> @deviceId 
-                  AND UserNo = @UserNo 
+                WHERE recordId = @RecordId 
                   AND SubmitDataAt IS NULL"; 
 
             try
             {
-                var rowsAffected = await connection.ExecuteAsync(sql, new { DeviceId = deviceId, UserNo = userNo });
+                var rowsAffected = await connection.ExecuteAsync(sql, new { RecordId = recordId});
 
                 if (rowsAffected > 0)
                 {
-                    _logger.LogInformation("Deleted pending inspection record: {RecordId} for user: {UserNo}", recordId, userNo);
                     return true;
                 }
                 else
                 {
-                    _logger.LogWarning("Failed to delete inspection record: {RecordId} for user: {UserNo} (record not found or already completed)", recordId, userNo);
                     return false;
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting inspection record: {RecordId} for user: {UserNo}", recordId, userNo);
                 throw;
             }
         }
 
-        public async Task<List<InspectionDeviceAreaMappingDto>> FindNFCcard(string nfcId)
+        public async Task<InspectionDeviceAreaMappingDto> FindNFCcard(string nfcId)
         {
             using var connection = CreateFineReportConnection();
 
@@ -532,7 +807,7 @@ namespace PatrolInspect.Repository
 
             var sql = $@"
                         with nfcInfo as (
-                        SELECT Area, DeviceId, DeviceName, NfcCardId from {dbname}.dbo.INSPECTION_DEVICE_AREA_MAPPING 
+                        SELECT Area, DeviceId, DeviceName, NfcCardId, InspectType from {dbname}.dbo.INSPECTION_DEVICE_AREA_MAPPING 
                         where 1=1 and NfcCardId = @nfcId and IsActive = 1
                     	)
                         Select d.*, fnr.WO_ID as InspectWo from nfcInfo d
@@ -542,9 +817,9 @@ namespace PatrolInspect.Repository
 
             try
             {
-                var nfcInfo = await connection.QueryAsync<InspectionDeviceAreaMappingDto>(sql, new {nfcId});
+                var nfcInfo = await connection.QueryFirstOrDefaultAsync<InspectionDeviceAreaMappingDto>(sql, new {nfcId});
 
-                return nfcInfo.ToList();
+                return nfcInfo;
             }
             catch (Exception ex)
             {
@@ -572,7 +847,6 @@ namespace PatrolInspect.Repository
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting pending inspection for user: {UserNo}", userNo);
                 throw;
             }
         }
@@ -603,7 +877,6 @@ namespace PatrolInspect.Repository
 
                 // 3. 更新原始記錄為第一筆工單
                 var firstOrder = orders.First();
-                await UpdateOriginalRecordAsync(connection, transaction, originalRecordId, firstOrder);
 
                 // 4. 為其餘工單創建新記錄
                 if (orders.Count > 1)
@@ -617,16 +890,11 @@ namespace PatrolInspect.Repository
 
                 transaction.Commit();
 
-                _logger.LogInformation(
-                    "入庫檢驗提交成功: RecordId={RecordId}, OrderCount={OrderCount}, UserNo={UserNo}",
-                    originalRecordId, orders.Count, userNo);
-
                 return (true, "入庫檢驗提交成功");
             }
             catch (Exception ex)
             {
                 transaction.Rollback();
-                _logger.LogError(ex, "提交入庫檢驗時發生錯誤: RecordId={RecordId}", originalRecordId);
                 throw;
             }
         }
@@ -656,7 +924,8 @@ namespace PatrolInspect.Repository
                 SET InspectWo = @WorkOrder,
                     InspectItemOkNo = @OkQuantity,
                     InspectItemNgNo = @NgQuantity,
-                    SubmitDataAt = GETDATE()
+                    SubmitDataAt = GETDATE(),
+                    Remark = @Remark
                 WHERE RecordId = @RecordId";
 
             await connection.ExecuteAsync(updateSql, new
@@ -664,7 +933,8 @@ namespace PatrolInspect.Repository
                 RecordId = recordId,
                 WorkOrder = orderInfo.WorkOrder,
                 OkQuantity = orderInfo.OkQuantity.ToString(),
-                NgQuantity = orderInfo.NgQuantity.ToString()
+                NgQuantity = orderInfo.NgQuantity.ToString(),
+                Remark = orderInfo.Remark
             }, transaction);
         }
 
@@ -677,10 +947,10 @@ namespace PatrolInspect.Repository
             var insertSql = @"
                 INSERT INTO INSPECTION_QC_RECORD 
                 (CardId, DeviceId, UserNo, UserName, Area, InspectType, InspectWo, 
-                 ArriveAt, SubmitDataAt, Source, CreateDate, InspectItemOkNo, InspectItemNgNo)
+                 ArriveAt, SubmitDataAt, Source, CreateDate, InspectItemOkNo, InspectItemNgNo, Remark)
                 VALUES 
                 (@CardId, @DeviceId, @UserNo, @UserName, @Area, @InspectType, @InspectWo, 
-                 @ArriveAt, @SubmitDataAt, @Source, @CreateDate, @InspectItemOkNo, @InspectItemNgNo)";
+                 @ArriveAt, @SubmitDataAt, @Source, @CreateDate, @InspectItemOkNo, @InspectItemNgNo, @Remark)";
 
             foreach (var order in orders)
             {
@@ -699,6 +969,7 @@ namespace PatrolInspect.Repository
                     CreateDate = DateTime.Now,
                     InspectItemOkNo = order.OkQuantity.ToString(),
                     InspectItemNgNo = order.NgQuantity.ToString(),
+                    Remark = order.Remark
                 };
 
                 await connection.ExecuteAsync(insertSql, newRecord, transaction);

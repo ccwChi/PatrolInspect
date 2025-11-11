@@ -8,10 +8,10 @@ namespace PatrolInspect.Controllers
 {
     public class InspectionController : Controller
     {
-        private readonly IInspectionRepository _inspectionRepository;
+        private readonly InspectionRepository _inspectionRepository;
         private readonly ILogger<InspectionController> _logger;
 
-        public InspectionController(IInspectionRepository inspectionRepository, ILogger<InspectionController> logger)
+        public InspectionController(InspectionRepository inspectionRepository, ILogger<InspectionController> logger)
         {
             _inspectionRepository = inspectionRepository;
             _logger = logger;
@@ -77,12 +77,7 @@ namespace PatrolInspect.Controllers
                 return Json(new { success = false, message = "載入基礎資料失敗" });
             }
         }
-        //[HttpPost]
-        //public IActionResult Logout()
-        //{
-        //    HttpContext.Session.Clear();
-        //    return RedirectToAction("Login", "Account");
-        //}
+
 
         // API: 取得使用者今天的巡檢任務
         [HttpGet]
@@ -138,8 +133,8 @@ namespace PatrolInspect.Controllers
                     });
                 }
 
-                var nfcList = await _inspectionRepository.FindNFCcard(request.NfcId);
-                if (nfcList == null || !nfcList.Any())
+                var nfcData = await _inspectionRepository.FindNFCcard(request.NfcId);
+                if (nfcData == null )
                 {
                     return Json(new
                     {
@@ -149,22 +144,21 @@ namespace PatrolInspect.Controllers
                     });
                 }
 
-                var firstNfcInfo = nfcList.First();
+                //var firstNfcInfo = nfcData.First();
 
-                // 步驟2：處理替換確認
+                //// 步驟2：處理替換確認
                 if (request.ConfirmReplace && request.OldRecordId.HasValue)
                 {
                     // 用戶已確認替換，更新舊記錄並建立新記錄
-                    await _inspectionRepository.UpdateInspectionRecordAsync(request.OldRecordId.Value, firstNfcInfo.DeviceId , userNo);
+                    await _inspectionRepository.UpdateInspectionRecordAsync(request.OldRecordId.Value, userNo, userName);
 
-                    var firstArriveTime = await CreateNewInspectionRecord(request, nfcList, request.WorkOrderNo, userNo, userName);
+                    var firstArriveTime = await CreateNewInspectionRecord(request, nfcData, userNo, userName);
 
                     return Json(new
                     {
                         success = true,
-                        message = $"目前已在 {firstNfcInfo.DeviceId} 機台開始檢驗",
-                        arriveTime =firstArriveTime ,
-                        deviceId = firstNfcInfo.DeviceId,
+                        message = $"目前已在 {nfcData.Area} {nfcData.DeviceId ?? ""} 開始檢驗",
+                        arriveTime = firstArriveTime,
                         isExisting = false
                     });
                 }
@@ -178,54 +172,38 @@ namespace PatrolInspect.Controllers
                     var recordIds = string.Join(",", pendingRecord.Select(x => x.RecordId));
                     var workOrders = string.Join(",", pendingRecord.Select(x => x.InspectWo));
                     // 如果是同一台機台，直接返回現有記錄
-                    if (firstPendingRecord.DeviceId == firstNfcInfo.DeviceId)
+                    if (firstPendingRecord.CardId == nfcData.NfcCardId)
                     {
                         return Json(new
                         {
                             success = true,
                             message = $"目前已在 {firstPendingRecord.DeviceId} 檢驗",
                             arriveTime = firstPendingRecord.ArriveAt.ToString("HH:mm:ss"),
-                            deviceId = firstNfcInfo.DeviceId,
                             workOrders,
                             isExisting = true
                         });
                     }
 
-                    if (string.IsNullOrWhiteSpace(firstPendingRecord.DeviceId))
-                    {
-                        return Json(new
-                        {
-                            success = true,
-                            needConfirmation = true,
-                            message = $"您在 {firstPendingRecord.DeviceId}, {workOrders} 還有未完成的巡檢記錄",
-                            pendingDeviceId = firstNfcInfo.DeviceId,
-                            newDeviceId = firstNfcInfo.DeviceId,
-                            pendingRecordId = firstPendingRecord.RecordId,
-                            nfcId = request.NfcId // 保留 NFC ID 供確認時使用
-                        });
-                    }
                     // 如果是不同機台，請求用戶確認
                     return Json(new
                     {
                         success = true,
                         needConfirmation = true,
-                        message = $"您在 {firstPendingRecord.DeviceId}  {workOrders} 還有未完成的巡檢記錄",
-                        pendingDeviceId = firstNfcInfo.DeviceId,
-                        newDeviceId = firstNfcInfo.DeviceId,
+                        message = $"您在 {firstPendingRecord.Area}  {firstPendingRecord.DeviceId ?? ""}還有未完成的巡檢記錄",
+                        // pendingRecordId, nfcId前端要用的資訊
                         pendingRecordId = firstPendingRecord.RecordId,
-                        nfcId = request.NfcId // 保留 NFC ID 供確認時使用
+                        nfcId = request.NfcId 
                     });
                 }
 
                 // 步驟4：建立新的巡檢記錄
-                var result = await CreateNewInspectionRecord(request, nfcList, request.WorkOrderNo, userNo, userName);
+                var result = await CreateNewInspectionRecord(request, nfcData, userNo, userName);
 
                 return Json(new
                 {
                     success = true,
-                    message = $"目前已在 {firstNfcInfo.DeviceId} 機台開始檢驗",
+                    message = $"目前已在 {nfcData.Area} {nfcData.DeviceName ?? ""} 開始檢驗",
                     arriveTime = result,
-                    deviceId = firstNfcInfo.DeviceId,
                     isExisting = false
                 });
             }
@@ -243,41 +221,52 @@ namespace PatrolInspect.Controllers
         }
 
 
-        private async Task<string> CreateNewInspectionRecord(ProcessNFCRequest request, List<InspectionDeviceAreaMappingDto> nfcInfo,
-            string userInputWorkOrderNo, string userNo, string userName)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="request">ProcessNFCRequest</param>
+        /// <param name="nfcInfo">List<InspectionDeviceAreaMappingDto></param>
+        /// <param name="userInputWorkOrderNo">string</param>
+        /// <param name="userNo">string</param>
+        /// <param name="userName">string</param>
+        /// <returns></returns>
+        private async Task<string> CreateNewInspectionRecord(ProcessNFCRequest request, InspectionDeviceAreaMappingDto nfcInfo,
+            string userNo, string userName)
         {
             string? firstArriveTime = null;
 
-            foreach (var item in nfcInfo)
+
+            var record = new InspectionQcRecord
             {
-                var record = new InspectionQcRecord
-                {
-                    CardId = request.NfcId,
-                    DeviceId = item.DeviceId,
-                    UserNo = userNo,
-                    UserName = userName ?? "",
-                    Area = item.Area,
-                    InspectType = request.InspectType,
-                    InspectWo = item.InspectWo,
-                    ArriveAt = DateTime.Now,
-                    Source = request.Source,
-                    UserInputWorkOrderNo = userInputWorkOrderNo
-                };
+                CardId = nfcInfo.NfcCardId,
+                DeviceId = nfcInfo.DeviceId,
+                UserNo = userNo,
+                UserName = userName ?? "",
+                Area = nfcInfo.Area,
+                InspectType = nfcInfo.InspectType,
+                InspectWo = nfcInfo.InspectWo,
+                ArriveAt = DateTime.Now,
+                Source = request.Source
+            };
 
-                await _inspectionRepository.CreateInspectionRecordAsync(record);
+            await _inspectionRepository.CreateInspectionRecordAsync(record);
 
-                // 記錄第一筆的時間
-                if (firstArriveTime == null)
-                {
-                    firstArriveTime = record.ArriveAt.ToString("HH:mm:ss");
-                }
+            // 記錄第一筆的時間
+            if (firstArriveTime == null)
+            {
+                firstArriveTime = record.ArriveAt.ToString("HH:mm:ss");
             }
+            
 
             return firstArriveTime ?? DateTime.Now.ToString("HH:mm:ss");
         }
 
 
-
+        /// <summary>
+        /// 提交機邊巡檢，只需要輸入ok ng數量，函數會自動抓取工單
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         [HttpPost]
         public async Task<IActionResult> UpdateInspectionQuantity([FromBody] UpdateQuantityRequest request)
         {
@@ -307,6 +296,7 @@ namespace PatrolInspect.Controllers
                     request.RecordId,
                     request.OkQuantity,
                     request.NgQuantity,
+                    request.RemarkQuantity,
                     userNo
                 );
 
@@ -339,6 +329,11 @@ namespace PatrolInspect.Controllers
             }
         }
 
+        /// <summary>
+        /// 提交需要有工單跟數量的，如全檢、入庫
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         [HttpPost]
         public async Task<IActionResult> SubmitWarehouseInspection([FromBody] SubmitWarehouseRequest request)
         {

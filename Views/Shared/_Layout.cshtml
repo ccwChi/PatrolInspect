@@ -83,17 +83,14 @@
                             <span>@ViewContext.HttpContext.Session.GetString("UserName")</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="mobileUserDropdown">
-                            @* <li>
-                                <a class="dropdown-item" href="@Url.Action("CheckLoginStatus", "Account")">
-                                    <i class="fa-solid fa-user me-2"></i>個人資料
-                                </a>
-                            </li> *@
+                            @if (@ViewBag.UserNo == "G02828")
+                            {
+                                <li><a class="dropdown-item" href="@Url.Action("Index", "NFCManage")">NFC管理</a></li>
+                                <li><a class="dropdown-item" href="@Url.Action("User", "ActivityChart")">人員稼動</a></li>
+                                <li><a class="dropdown-item" href="@Url.Action("Machine", "ActivityChart")">機台稼動</a></li>
+                            }
                             @* <li><hr class="dropdown-divider"></li> *@
-                            <li>
-                                <a class="dropdown-item" href="@Url.Action("Logout", "Account")">
-                                    <i class="fa-solid fa-right-from-bracket me-2"></i>登出
-                                </a>
-                            </li>
+                            <li><a class="dropdown-item" href="@Url.Action("Logout", "Account")">登出</a></li>
                         </ul>
                     </div>
                 }

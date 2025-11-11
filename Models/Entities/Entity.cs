@@ -72,6 +72,7 @@ namespace PatrolInspect.Models.Entities
         public string? DeviceName { get; set; }
         public string? NfcCardId { get; set; }
         public string? InspectWo { get; set; }
+        public string InspectType { get; set; } = string.Empty;
 
     }
     /// <summary>
@@ -89,6 +90,7 @@ namespace PatrolInspect.Models.Entities
         public string? EternetStatus { get; set; }
         public string? BPM_NO { get; set; }
         public string? DeviceSchedulingStatus { get; set; }
+        public string? DeviceName { get; internal set; }
     }
 
     public class ScheduleBaseInfo
@@ -309,6 +311,7 @@ namespace PatrolInspect.Models.Entities
         public int RecordId { get; set; }
         public int OkQuantity { get; set; }
         public int NgQuantity { get; set; }
+        public string RemarkQuantity { get; set; }
     }
 
 
@@ -345,6 +348,7 @@ namespace PatrolInspect.Models.Entities
     {
         public int RecordId { get; set; }
         public List<WarehouseOrderInfo> Orders { get; set; } = new();
+        public string Remark { get; set; } = string.Empty; 
     }
 
     public class WarehouseOrderInfo
@@ -352,6 +356,7 @@ namespace PatrolInspect.Models.Entities
         public string WorkOrder { get; set; } = string.Empty;
         public int OkQuantity { get; set; }
         public int NgQuantity { get; set; }
+        public string Remark { get; set; } = string.Empty;
     }
 
     public class WarehouseInspectionLog
