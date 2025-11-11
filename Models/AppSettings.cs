@@ -27,6 +27,7 @@
             };
         }
 
+
         public static string GetFnReportConnectionStringKey(int envFlag)
         {
             return envFlag switch
@@ -34,6 +35,15 @@
                 0 => "FnReportConn",
                 1 => "FnReportConn",
                 _ => "FnReportConn",
+            };
+        }
+        public static string GetSpcConnectionStringKey(int envFlag)
+        {
+            return envFlag switch
+            {
+                0 => "Spc_DevConn",
+                1 => "SpcConn",
+                _ => "Spc_DevConn"
             };
         }
 

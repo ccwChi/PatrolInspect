@@ -208,5 +208,52 @@ namespace PatrolInspect.Controllers
                 });
             }
         }
+
+        public async Task<IActionResult> InjectOOS(string eqpNO,DateTime? date)
+        {
+            ViewBag.UserName = HttpContext.Session.GetString("UserName");
+            ViewBag.DepartmentName = HttpContext.Session.GetString("DepartmentName");
+            ViewBag.TitleName = HttpContext.Session.GetString("TitleName");
+            ViewBag.CurrentTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            
+
+            var selectedDate = date ?? DateTime.Today;
+
+            var selectedeqpNO = eqpNO ?? "";
+            var viewModel = new ActivityChartViewModel
+            {
+                SelectedDate = selectedDate,
+                EqpOOSActivities = new List<EqpOOSActivityViewModel>()
+            };
+
+            try
+            {
+                var activities = await _activityChartRepository.GetEQPOOSActivitiesByDateAsync(selectedeqpNO,selectedDate);
+
+                if (activities != null && activities.Any())
+                {
+                    var EqpOOSActivities = activities
+                        .GroupBy(a => new { a.EqpName, a.InspectWo })
+                        .Select(g => new EqpOOSActivityViewModel
+                        {
+                            EqpName = g.Key.EqpName,
+                            InspectWo = g.Key.InspectWo,
+                            Activities = g.OrderBy(a => a.ArriveAt).ToList()
+                        })
+                        .OrderBy(u => u.InspectWo)
+                        .ToList();
+
+                    viewModel.EqpOOSActivities = EqpOOSActivities;
+                }
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading activity chart for date: {Date}", selectedDate);
+                TempData["ErrorMessage"] = $"載入稼動表時發生錯誤: {ex.Message}";
+                return View(viewModel);
+            }
+        }
     }
 }
