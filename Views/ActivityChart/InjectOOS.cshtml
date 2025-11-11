@@ -1,0 +1,250 @@
+﻿@model PatrolInspect.Models.ActivityChartViewModel
+
+@{
+    Layout = null;
+    var colorMap = new Dictionary<string, string>
+    {
+        { "無OOS/OOC", "#10b981" },
+        { "OOS", "#ff0000" },
+        { "OOC", "#f59e0b" },
+    };
+}
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>射出機OOS/OOC監控</title>
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: "Microsoft JhengHei", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        }
+
+        p {
+            margin: 0;
+            padding: 2px 0;
+        }
+
+        ol, ul {
+            margin: 0;
+            padding-left: 1.25rem;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            background-color: #f8f9fa;
+        }
+
+        .content-wrapper {
+            flex: 1;
+            padding: 20px 5px;
+        }
+
+        footer {
+            text-align: center;
+            font-size: small;
+            padding: 10px;
+            background: #eee;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <main class="content-wrapper container">
+        <div style="display:flex; flex-direction:column; padding:20px">
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div style="background-color: #ffcccc; border: 1px solid #ff0000; padding: 10px; margin-bottom: 10px;">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            <div style="margin-bottom: 20px; display:flex; align-items:center; gap:20px">
+                <h3 style="margin:0">射出機OOS/OOC監控</h3>
+                <form method="get" style="">
+                    <input type="date" name="date"
+                           value="@(Model?.SelectedDate.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd"))"
+                           style="padding: 5px; margin-right: 10px;" />
+                    <input type="string" name="eqpNO"
+                           value="@(Model?.SelectedEQP.ToString() ?? "")"
+                           style="padding: 5px; margin-right: 10px;" />
+                    <button type="submit" style="padding: 5px 15px; background-color: #0071b2; color: white; border: none; cursor: pointer;">查詢</button>
+                </form>
+            </div>
+
+            <div style="padding: 15px; display:flex; align-items:center; justify-content:end; width:100%;">
+                <div>
+                    @foreach (var item in colorMap)
+                    {
+                        <span style="margin-left: 30px;">
+                            <span style="display: inline-block; width: 20px; height: 20px; background-color: @item.Value; vertical-align: middle; margin-right: 5px;"></span>
+                            <span>@item.Key</span>
+                        </span>
+                    }
+                </div>
+            </div>
+
+            @if (Model == null)
+            {
+                <div style="background-color: #ffcccc; border: 1px solid #ff0000; padding: 10px;">
+                    系統發生錯誤，無法載入資料
+                </div>
+            }
+
+            else if (Model.EqpOOSActivities == null || Model.EqpOOSActivities.Count == 0)
+            {
+                <div style="background-color: #ffffcc; border: 1px solid #cccc00; padding: 10px;">
+                    該日期無OOS記錄
+                </div>
+            }
+            else
+            {
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; border: 1px solid #999;">
+                        <thead>
+                            <tr style="background-color: #e0e0e0;">
+                                <th style="border: 1px solid #999; padding: 10px; width: 150px; text-align: left;">工單</th>
+                                <th style="border: 1px solid #999; padding: 10px; text-align: left;">時間軸</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var eqp in Model.EqpOOSActivities)
+                            {
+                                <tr>
+                                    <td style="border: 1px solid #999; padding: 10px; vertical-align: middle;">
+                                        <strong>@eqp.EqpName</strong><br />
+                                        <span style="color: #666; font-size: 12px;">@eqp.InspectWo</span>
+                                    </td>
+                                    <td style="border: 1px solid #999; padding: 0; position: relative;">
+                                        <div style="position: relative; height: 60px; background-color: #f8f8f8;">
+                                            @for (int i = 0; i <= 24; i += 3)
+                                            {
+                                                <div style="position: absolute; left: @((i / 24.0 * 100))%; top: 0; bottom: 0; width: 1px; background-color: #ccc;">
+                                                    <span style="position: absolute; top: -20px; left: -10px; font-size: 11px; color: #666;">@i:00</span>
+                                                </div>
+                                            }
+
+                                            @foreach (var activity in eqp.Activities)
+                                            {
+                                                var bgColor = colorMap.ContainsKey(activity.InspectType) ? colorMap[activity.InspectType] : "#808080";
+                                                var width = Math.Max(activity.Width, 0.5);
+                                                @* var duration = activity.SubmitDataAt.HasValue ? (DateTime.Now - activity.ArriveAt).TotalMinutes.ToString("F0") : "-"; *@
+                                                @* var duration = (DateTime.Now - activity.ArriveAt).TotalMinutes.ToString("F0"); *@
+                                                var duration = (activity.SubmitDataAt.Value - activity.ArriveAt).TotalMinutes.ToString("F0");
+                                                var tooltipText = $"<strong>{activity.InspectType}</strong><br>廠區: {activity.Fab}<br>機台名稱: {activity.EqpName}<br>工單: {activity.InspectWo}<br>進站日期: {activity.ArriveAt:HH:mm:ss}<br>出站日期: {(activity.SubmitDataAt?.ToString("HH:mm:ss") ?? "進行中")}<br>時長: {duration} 分 ";
+
+                                                <div style="position: absolute;
+                                                                        left: @activity.LeftPosition.ToString("F2")%;
+                                                                        width: @width.ToString("F2")%;
+                                                                        top: 15px;
+                                                                        height: 30px;
+                                                                        background-color: @bgColor;
+                                                                        cursor: pointer;"
+                                                     data-bs-toggle="tooltip"
+                                                     data-bs-placement="auto"
+                                                     data-bs-html="true"
+                                                     data-bs-title="@tooltipText">
+                                                </div>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top: 40px;">
+                    <h5>詳細記錄</h5>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; border: 1px solid #999;">
+                            <thead>
+                                <tr style="background-color: #e0e0e0;">
+                                    <th style="border: 1px solid #999; padding: 8px;">機台名稱</th>
+                                    <th style="border: 1px solid #999; padding: 8px;">機台編號</th>
+                                    <th style="border: 1px solid #999; padding: 8px;">OOS/OOC</th>
+                                    <th style="border: 1px solid #999; padding: 8px;">廠區</th>
+                                    <th style="border: 1px solid #999; padding: 8px;">工單</th>
+                                    <th style="border: 1px solid #999; padding: 8px;">料號</th>
+                                    <th style="border: 1px solid #999; padding: 8px;">工單進站時間</th>
+                                    <th style="border: 1px solid #999; padding: 8px;">檢驗項目</th>
+                                    <th style="border: 1px solid #999; padding: 8px;">OOS/OOC異常時間</th>
+                                    <th style="border: 1px solid #999; padding: 8px;">OOS/OOC異常處置</th>
+                                    <th style="border: 1px solid #999; padding: 8px;">ChartID</th>
+                                    <th style="border: 1px solid #999; padding: 8px;">工單時長(分)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var eqp in Model.EqpOOSActivities)
+                                {
+                                    foreach (var activity in eqp.Activities)
+                                    {
+                                        @* var duration = activity.SubmitDataAt.HasValue ? (activity.SubmitDataAt.Value - activity.ArriveAt).TotalMinutes : 0; *@
+                                        var duration = (DateTime.Now - activity.WoCheckInAt.Value).TotalMinutes;
+                                        var bgColor = colorMap.ContainsKey(activity.InspectType) ? colorMap[activity.InspectType] : "#808080";
+                                        var chartUrl = "http://tnspc.gudeng.com:8088/spc/spc_logonPage.do?LINK_SOURCE=VIEW_SPC_CHART_BIGCHART&recordCount=100&latestDay=3&chartId=" + activity.Param_Index + "&date=" + DateTime.Now.ToString("yyyyMMdd") + "&time=" + DateTime.Now.ToString("HHmm");
+                                <tr>
+                                    <td style="border: 1px solid #999; padding: 8px;">@eqp.EqpName</td>
+                                    <td style="border: 1px solid #999; padding: 8px;">@activity.EqpNo</td>
+                                    <td style="border: 1px solid #999; padding: 8px;">
+                                        <span style="background-color: @bgColor; color: #fff; padding: 4px 8px; font-size: 12px; display: inline-block;">
+                                            @activity.InspectType
+                                        </span>
+                                    </td>
+                                    <td style="border: 1px solid #999; padding: 8px;">@activity.Fab</td>
+                                    <td style="border: 1px solid #999; padding: 8px;">@activity.InspectWo</td>
+                                    <td style="border: 1px solid #999; padding: 8px;">@activity.PartNo</td>
+                                    <td style="border: 1px solid #999; padding: 8px;">@activity.WoCheckInAt.ToString()</td>
+                                    <td style="border: 1px solid #999; padding: 8px;">@activity.Param_Name4</td>
+                                    @*<td style="border: 1px solid #999; padding: 8px;">@activity.ArriveAt.ToString("HH:mm:ss")</td>*@
+                                    <td style="border: 1px solid #999; padding: 8px;">@(activity.Param_Name4 == "" ? (string)null : activity.ArriveAt.ToString("HH:mm:ss"))</td>
+                                    <td style="border: 1px solid #999; padding: 8px;">@activity.CommentsDataAt</td>
+                                    <td style="border: 1px solid #999; padding: 8px;"><a href="@chartUrl" target="_blank">@activity.Param_Index</a></td>
+                                    @*<td style="border: 1px solid #999; padding: 8px;">@(activity.SubmitDataAt?.ToString("HH:mm:ss") ?? "-")</td> *@
+                                    <td style="border: 1px solid #999; padding: 8px;">@(duration > 0 ? duration.ToString("F0") : "-")</td>
+                                </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    </main>
+
+    <footer>
+        Copyright © 2025 Gudeng Industrial Corp. All Rights Reserved.
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 初始化 Bootstrap Tooltip
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                boundary: 'window',
+                placement: 'auto'
+            });
+        });
+
+        // 每15分鐘自動刷新頁面 (900000毫秒)
+        setInterval(function() {
+            location.reload();
+        }, 5 * 60 * 1000);
+    </script>
+</body>
+</html>
