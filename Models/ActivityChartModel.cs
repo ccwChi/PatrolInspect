@@ -6,6 +6,8 @@ namespace PatrolInspect.Models
     {
         public DateTime SelectedDate { get; set; } = DateTime.Today;
         public List<UserActivityViewModel> UserActivities { get; set; } = new();
+        public String SelectedEQP { get; set; } = string.Empty;
+        public List<EqpOOSActivityViewModel> EqpOOSActivities { get; set; } = new();
     }
 
     public class MachineInspectionData
@@ -87,7 +89,13 @@ namespace PatrolInspect.Models
         public string ProdNo { get; set; }
         public string ProdDesc { get; set; }
     }
-    
 
-
+    public class UserActivityViewModel
+    {
+        public string UserNo { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public List<InspectionActivity> Activities { get; set; } = new();
+        public double ValidWorkingMinutes { get; set; } // 新增有效工時（分鐘）
+        public double TotalWorkingMinutes { get; set; } = 480; // 新增總工時
+    }
 }

@@ -117,7 +117,7 @@ namespace PatrolInspect.Controllers
             }
         }
 
-       
+
         #region　 //////　　為了計算有效工時，要減去非上班時間的邏輯　　///////
 
         public class BreakTimeRange
@@ -129,12 +129,12 @@ namespace PatrolInspect.Controllers
         // 在 Controller 開頭定義休息時段
         private readonly List<BreakTimeRange> _breakTimes = new List<BreakTimeRange>
         {
-            new BreakTimeRange { Start = new TimeSpan(05, 00, 0), End = new TimeSpan(08, 00, 0) },  
-            new BreakTimeRange { Start = new TimeSpan(10, 00, 0), End = new TimeSpan(10, 10, 0) }, 
-            new BreakTimeRange { Start = new TimeSpan(12, 0, 0), End = new TimeSpan(13, 0, 0) },  
-            new BreakTimeRange { Start = new TimeSpan(15, 0, 0), End = new TimeSpan(15, 10, 0) },  
-            new BreakTimeRange { Start = new TimeSpan(17, 00, 0), End = new TimeSpan(20, 00, 0) },  
-            new BreakTimeRange { Start = new TimeSpan(12, 00, 0), End = new TimeSpan(13, 00, 0) }  
+            new BreakTimeRange { Start = new TimeSpan(05, 00, 0), End = new TimeSpan(08, 00, 0) },
+            new BreakTimeRange { Start = new TimeSpan(10, 00, 0), End = new TimeSpan(10, 10, 0) },
+            new BreakTimeRange { Start = new TimeSpan(12, 0, 0), End = new TimeSpan(13, 0, 0) },
+            new BreakTimeRange { Start = new TimeSpan(15, 0, 0), End = new TimeSpan(15, 10, 0) },
+            new BreakTimeRange { Start = new TimeSpan(17, 00, 0), End = new TimeSpan(20, 00, 0) },
+            new BreakTimeRange { Start = new TimeSpan(12, 00, 0), End = new TimeSpan(13, 00, 0) }
         };
 
         // 計算扣除休息時間後的實際工時
@@ -191,16 +191,15 @@ namespace PatrolInspect.Controllers
 
         #endregion
 
-
-
         [HttpGet]
         public async Task<IActionResult> DownloadUserCsv(DateTime? date)
         {
             var selectedDate = date ?? DateTime.Today;
 
-            var workdayStart = selectedDate.Date.AddHours(0);
+            var workdayStart = selectedDate.Date;
             var workdayEnd = selectedDate.Date.AddDays(1);
-
+            var displayStart = selectedDate.Date.AddHours(7);
+            var displayEnd = workdayEnd;
 
             try
             {
@@ -340,10 +339,51 @@ namespace PatrolInspect.Controllers
             }
         }
 
+        public async Task<IActionResult> InjectOOS(string eqpNO,DateTime? date)
+        {
+            ViewBag.UserName = HttpContext.Session.GetString("UserName");
+            ViewBag.DepartmentName = HttpContext.Session.GetString("DepartmentName");
+            ViewBag.TitleName = HttpContext.Session.GetString("TitleName");
+            ViewBag.CurrentTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            
 
+            var selectedDate = date ?? DateTime.Today;
 
+            var selectedeqpNO = eqpNO ?? "";
+            var viewModel = new ActivityChartViewModel
+            {
+                SelectedDate = selectedDate,
+                EqpOOSActivities = new List<EqpOOSActivityViewModel>()
+            };
 
+            try
+            {
+                var activities = await _activityChartRepository.GetEQPOOSActivitiesByDateAsync(selectedeqpNO,selectedDate);
 
+                if (activities != null && activities.Any())
+                {
+                    var EqpOOSActivities = activities
+                        .GroupBy(a => new { a.EqpName, a.InspectWo })
+                        .Select(g => new EqpOOSActivityViewModel
+                        {
+                            EqpName = g.Key.EqpName,
+                            InspectWo = g.Key.InspectWo,
+                            Activities = g.OrderBy(a => a.ArriveAt).ToList()
+                        })
+                        .OrderBy(u => u.InspectWo)
+                        .ToList();
 
+                    viewModel.EqpOOSActivities = EqpOOSActivities;
+                }
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading activity chart for date: {Date}", selectedDate);
+                TempData["ErrorMessage"] = $"載入稼動表時發生錯誤: {ex.Message}";
+                return View(viewModel);
+            }
+        }
     }
 }

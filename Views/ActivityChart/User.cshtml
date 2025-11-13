@@ -1,5 +1,4 @@
 ﻿@model PatrolInspect.Models.ActivityChartViewModel
-
 @{
     Layout = null;
     var colorMap = new Dictionary<string, string>
@@ -17,13 +16,12 @@
     var validTypes = ViewBag.ValidWorkingHoursTypes as List<string> ?? new List<string>();
     
     // 顯示範圍：7:00 ~ 8:00（25小時）
-    var displayStart = (DateTime)ViewBag.DisplayStart;
-    var displayEnd = (DateTime)ViewBag.DisplayEnd;
-    var totalDisplayMinutes = (displayEnd - displayStart).TotalMinutes; // 1500分鐘
+    var displayStart = ViewBag.DisplayStart as DateTime? ?? DateTime.Today.AddHours(7);
+    var displayEnd = ViewBag.DisplayEnd as DateTime? ?? DateTime.Today.AddDays(1).AddHours(8);
+    var totalDisplayMinutes = (displayEnd - displayStart).TotalMinutes;
     
-    // 工作日範圍：8:00 ~ 8:00（用於有效工時計算）
-    var workdayStart = (DateTime)ViewBag.WorkdayStart;
-    var workdayEnd = (DateTime)ViewBag.WorkdayEnd;
+    var workdayStart = ViewBag.WorkdayStart as DateTime? ?? DateTime.Today.AddHours(8);
+    var workdayEnd = ViewBag.WorkdayEnd as DateTime? ?? DateTime.Today.AddDays(1).AddHours(8);
     
     var nextDay = displayStart.AddDays(1);
 }
@@ -160,7 +158,7 @@
                     <table style="width: 100%; border-collapse: collapse; border: 1px solid #999;">
                         <thead>
                             <tr style="background-color: #e0e0e0;">
-                                <th style="border: 1px solid #999; padding: 10px; width: 150px; text-align: left;">人員</th>
+                                <th style="border: 1px solid #999; padding: 10px; width: 170px; text-align: left;">人員</th>
                                 <th style="border: 1px solid #999; padding: 10px; text-align: left;">
                                     時間軸 (@displayStart.ToString("MM/dd HH:mm") ~ @displayEnd.ToString("MM/dd HH:mm"))
                                 </th>
@@ -171,11 +169,14 @@
                             {
                                 <tr>
                                     <td style="border: 1px solid #999; padding: 10px; vertical-align: middle;">
-                                        <strong>@user.UserName</strong><br />
-                                        <span style="color: #666; font-size: 12px;">@user.UserNo</span><br />
+                                        <strong>@user.UserName</strong>
+                                        <span style="color: #666; font-size: 12px;"> (@user.UserNo)</span><br />
                                         @*<span style="color: @(user.ValidWorkingMinutes >= 480 ? "#10b981" : user.ValidWorkingMinutes >= 360 ? "#f59e0b" : "#ef4444"); font-size: 13px; font-weight: bold;">*@
                                         <span style="color: black; font-size: 13px; font-weight: bold;">
-                                            @user.ValidWorkingMinutes.ToString("F0") / @user.TotalWorkingMinutes 分
+                                            有效工時: @user.ValidWorkingMinutes.ToString("F0") / @user.TotalWorkingMinutes 分鐘
+                                        </span>
+                                        <span style="color: black; font-size: 13px; font-weight: bold;">
+                                            人員效率: @((user.TotalWorkingMinutes == 0 ? 0 : user.ValidWorkingMinutes / user.TotalWorkingMinutes * 100).ToString("F2")) %
                                         </span>
                                     </td>
                                     <td style="border: 1px solid #999; padding: 0; position: relative;">

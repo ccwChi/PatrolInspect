@@ -416,9 +416,6 @@
             <strong>@ViewBag.UserName (@ViewBag.UserNo)</strong>
             <div style="color: #666;" onclick="showNFCTestModal('@ViewBag.UserNo')">@ViewBag.DepartmentName - @ViewBag.TitleName</div>
             <div class="current-time" id="currentTime">@ViewBag.CurrentTime</div>
-            <div>開始卡控"製一巡檢"跟"機邊檢驗"</div>
-            <div>"製一巡檢"=>用機邊電腦提交品管巡檢"</div>
-            <div>"機邊檢驗"=>會填入檢驗數量</div>
         </div>
         <div class="control-buttons" style="position:absolute; top:5px; right:5px">
             <button onclick="loadTodayInspection()">刷新資料</button>
@@ -1001,7 +998,6 @@
                 inspectionsHtml = `<div class="no-inspection">無檢驗紀錄</div>`;
             }
 
-
             return `
                 <div class="device-card ${cardClass}">
                     <div class="device-info">${extraBadge}</div>
@@ -1014,7 +1010,7 @@
                         ${device.deviceID || '-'}
                     </div>` : 
                     `<div class="device-id">
-                    ${item.inspectionList[0].inspectType}
+                        ${item.inspectionList[0].inspectType}
                     </div>` 
                     }
                     <div class="device-info">工單: ${workOrderNo}</div>
@@ -1039,11 +1035,11 @@
             if (InspectorId !== userNo){
                 return
             }
-                        console.log("time",time)
-                                console.log("inspectTypeA",inspectTypeA)
-                if (!(time.includes("作業") || time.includes("檢驗"))){
-            alert("如要填寫數量，請選擇作業中項目，提交後會將該筆作業中項目作為紀錄為檢驗結束")
-            return
+            console.log("time",time)
+            console.log("inspectTypeA",inspectTypeA)
+            if (!(time.includes("作業") || time.includes("檢驗"))){
+                alert("如要填寫數量，請選擇作業中項目，提交後會將該筆作業中項目作為紀錄為檢驗結束")
+                return
             }
 
             document.getElementById('quantityRecordId').value = recordId;
@@ -1179,7 +1175,7 @@
                 return;
             }
 
-            if (!time.includes("檢驗")) {
+            if (!(time.includes("作業") || time.includes("檢驗"))){
                 alert("如要填寫數量，請選擇作業中項目，提交後會將該筆作業中項目作為紀錄為檢驗結束");
                 return;
             }
@@ -1545,7 +1541,7 @@
             return;
             }
 
-            let shortTerm = ["入庫檢驗","基恩斯量測","手持式三次元量測","全檢(EUV區)","全檢(CNC區)","全檢(成型區)","全檢(三樓緩衝)",'全檢(二樓倉庫)','限樣(限樣室)','限樣(一樓放置區)','全檢','限樣']
+            let shortTerm = ["基恩斯量測","手持式三次元量測","全檢(EUV區)","全檢(CNC區)","全檢(成型區)","全檢(三樓緩衝)",'全檢(二樓倉庫)','限樣(限樣室)','限樣(一樓放置區)','全檢','限樣']
             if (shortTerm.includes(selectInspectType)){
                 pendingNFCId = selectInspectType
             }
