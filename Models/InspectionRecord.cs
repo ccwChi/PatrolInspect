@@ -105,20 +105,7 @@ namespace PatrolInspect.Models
         public double Width => (Duration / 24.0) * 100; // 百分比
     }
 
-    public class UserActivityViewModel
-    {
-        public string UserNo { get; set; } = string.Empty;
-        public string UserName { get; set; } = string.Empty;
-        public List<InspectionActivity> Activities { get; set; } = new();
-    }
 
-    public class ActivityChartViewModel
-    {
-        public DateTime SelectedDate { get; set; } = DateTime.Today;
-        public List<UserActivityViewModel> UserActivities { get; set; } = new();
-        public String SelectedEQP { get; set; } = string.Empty;
-        public List<EqpOOSActivityViewModel> EqpOOSActivities { get; set; } = new();
-    }
     
     public class EqpOOSActivityViewModel
     {
