@@ -368,4 +368,14 @@ namespace PatrolInspect.Models.Entities
         public DateTime ProcessTime { get; set; }
         public string OrderDetails { get; set; } = string.Empty;
     }
+
+    public class InspectionValidWorkType
+    {
+        public int Id { get; set; }
+        public string InspectType { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public int DisplayOrder { get; set; }
+        public DateTime CreateDate { get; set; }
+        public DateTime UpdateDate { get; set; }
+    }
 }

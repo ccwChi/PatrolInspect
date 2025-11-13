@@ -13,6 +13,19 @@
         { "全檢", "#14b8a6" },
         { "限樣", "#94a3b8" },
     };
+
+    var validTypes = ViewBag.ValidWorkingHoursTypes as List<string> ?? new List<string>();
+    
+    // 顯示範圍：7:00 ~ 8:00（25小時）
+    var displayStart = (DateTime)ViewBag.DisplayStart;
+    var displayEnd = (DateTime)ViewBag.DisplayEnd;
+    var totalDisplayMinutes = (displayEnd - displayStart).TotalMinutes; // 1500分鐘
+    
+    // 工作日範圍：8:00 ~ 8:00（用於有效工時計算）
+    var workdayStart = (DateTime)ViewBag.WorkdayStart;
+    var workdayEnd = (DateTime)ViewBag.WorkdayEnd;
+    
+    var nextDay = displayStart.AddDays(1);
 }
 
 <!DOCTYPE html>
@@ -102,25 +115,28 @@
                            style="padding: 5px; margin-right: 10px;" />
                     <button type="submit" style="padding: 5px 15px; background-color: #0071b2; color: white; border: none; cursor: pointer;">查詢</button>
                 </form>
-                @* <button id="btnDownloadCsv"
-                        style="padding: 5px 15px; background-color: #198754; color: white; border: none; cursor: pointer;">
-                    下載報表
-                </button> *@
             </div>
 
-            <div style="padding: 15px; display:flex; align-items:center; justify-content:end; width:100%;">
+            <div style="padding: 15px; display:flex; align-items:center; justify-content:space-between; width:100%;">
+                <div>
+                    <strong>有效工時統計項目：</strong>
+                    @foreach (var type in validTypes)
+                    {
+                        <span style="margin-left: 10px; color: #0071b2;">@type</span>
+                    }
+                </div>
                 <div>
                     @foreach (var item in colorMap)
                     {
                         <span style="margin-left: 30px;">
                             <span style="display: inline-block; width: 20px; height: 20px; background-color: @item.Value; vertical-align: middle; margin-right: 5px;"></span>
-                                 @(item.Key switch {
-                                    "會議" => "會議、主管交派",
-                                    "支援其他單位" => "支援其他單位",
-                                    "基恩斯量測" => "基恩斯、三次元量測",
-                                    "三次元量測" => "基恩斯、三次元量測",
-                                    _ => item.Key
-                                })
+                            @(item.Key switch {
+                                "會議" => "會議、主管交派",
+                                "支援其他單位" => "支援其他單位",
+                                "基恩斯量測" => "基恩斯、三次元量測",
+                                "三次元量測" => "基恩斯、三次元量測",
+                                _ => item.Key
+                            })
                         </span>
                     }
                 </div>
@@ -132,7 +148,6 @@
                     系統發生錯誤，無法載入資料
                 </div>
             }
-
             else if (Model.UserActivities == null || Model.UserActivities.Count == 0)
             {
                 <div style="background-color: #ffffcc; border: 1px solid #cccc00; padding: 10px;">
@@ -146,7 +161,9 @@
                         <thead>
                             <tr style="background-color: #e0e0e0;">
                                 <th style="border: 1px solid #999; padding: 10px; width: 150px; text-align: left;">人員</th>
-                                <th style="border: 1px solid #999; padding: 10px; text-align: left;">時間軸</th>
+                                <th style="border: 1px solid #999; padding: 10px; text-align: left;">
+                                    時間軸 (@displayStart.ToString("MM/dd HH:mm") ~ @displayEnd.ToString("MM/dd HH:mm"))
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -155,28 +172,66 @@
                                 <tr>
                                     <td style="border: 1px solid #999; padding: 10px; vertical-align: middle;">
                                         <strong>@user.UserName</strong><br />
-                                        <span style="color: #666; font-size: 12px;">@user.UserNo</span>
+                                        <span style="color: #666; font-size: 12px;">@user.UserNo</span><br />
+                                        @*<span style="color: @(user.ValidWorkingMinutes >= 480 ? "#10b981" : user.ValidWorkingMinutes >= 360 ? "#f59e0b" : "#ef4444"); font-size: 13px; font-weight: bold;">*@
+                                        <span style="color: black; font-size: 13px; font-weight: bold;">
+                                            @user.ValidWorkingMinutes.ToString("F0") / @user.TotalWorkingMinutes 分
+                                        </span>
                                     </td>
                                     <td style="border: 1px solid #999; padding: 0; position: relative;">
-                                        <div style="position: relative; height: 60px; background-color: #f8f8f8;">
-                                            @for (int i = 0; i <= 24; i += 3)
-                                            {
-                                                <div style="position: absolute; left: @((i / 24.0 * 100))%; top: 0; bottom: 0; width: 1px; background-color: #ccc;">
-                                                    <span style="position: absolute; top: -20px; left: -10px; font-size: 11px; color: #666;">@i:00</span>
-                                                </div>
+                                        <div style="position: relative; height: 80px; background-color: #f8f8f8; padding-top: 20px;">
+                                            
+                                            @* 日期標籤 *@
+                                            @*<div style="position: absolute; left: 0%; top: 0; font-size: 12px; font-weight: bold; color: #333; background: #fff; padding: 2px 5px; border: 1px solid #999;">
+                                                @displayStart.ToString("MM/dd")
+                                            </div>*@
+                                            <div style="position: absolute; left: 68%; top: 0; font-size: 12px; font-weight: bold; color: #333; background: #fff; padding: 2px 5px; border: 1px solid #999;">
+                                                @nextDay.ToString("MM/dd")
+                                            </div>
+
+                                            @* 時間刻度：8, 11, 14, 17, 20, 23, 2, 5, 8（從8點開始，但位置從7點算起）*@
+                                            @{
+                                                var timeMarks = new[] { 8, 11, 14, 17, 20, 23, 2, 5, 8 };
+                                                var timePositions = new[] { 1, 4, 7, 10, 13, 16, 19, 22, 25 }; // 相對於7:00的小時數
+    
+                                                for (int i = 0; i < timeMarks.Length; i++)
+                                                {
+                                                    var hour = timeMarks[i];
+                                                    var position = (timePositions[i] / 25.0 * 100); // 25小時
+        
+                                                    <div style="position: absolute; left: @position.ToString("F2")%; top: 20px; bottom: 0; width: 1px; background-color: #ccc;">
+                                                        <span style="position: absolute; top: -18px; left: -10px; font-size: 11px; color: #666;">@hour:00</span>
+                                                    </div>
+                                                }
                                             }
 
+                                            @* 活動條 *@
                                             @foreach (var activity in user.Activities)
                                             {
+                                                // 截斷活動到顯示範圍
+                                                var activityStart = activity.ArriveAt < displayStart ? displayStart : activity.ArriveAt;
+                                                var activityEnd = activity.SubmitDataAt.HasValue 
+                                                    ? (activity.SubmitDataAt.Value > displayEnd ? displayEnd : activity.SubmitDataAt.Value)
+                                                    : DateTime.Now;
+                                                
+                                                if (activityEnd > displayEnd) activityEnd = displayEnd;
+                                                if (activityStart >= displayEnd) continue; // 完全超出範圍的不顯示
+                                                
+                                                // 計算相對於顯示起點(7:00)的位置
+                                                var totalMinutesFromStart = (activityStart - displayStart).TotalMinutes;
+                                                var leftPosition = (totalMinutesFromStart / totalDisplayMinutes) * 100;
+                                                
+                                                var durationMinutes = (activityEnd - activityStart).TotalMinutes;
+                                                var width = Math.Max((durationMinutes / totalDisplayMinutes) * 100, 0.5);
+                                                
                                                 var bgColor = colorMap.ContainsKey(activity.InspectType) ? colorMap[activity.InspectType] : "#808080";
-                                                var width = Math.Max(activity.Width, 0.5);
-                                                var duration = activity.SubmitDataAt.HasValue ? (activity.SubmitDataAt.Value - activity.ArriveAt).TotalMinutes.ToString("F0") : "-";
-                                                var tooltipText = $"<strong>{activity.InspectType}</strong><br>區域: {activity.Area}<br>設備: {activity.DeviceId}<br>工單: {activity.InspectWo}<br>開始: {activity.ArriveAt:HH:mm:ss}<br>結束: {(activity.SubmitDataAt?.ToString("HH:mm:ss") ?? "進行中")}<br>時長: {duration} 分";
+                                                var originalDuration = activity.SubmitDataAt.HasValue ? (activity.SubmitDataAt.Value - activity.ArriveAt).TotalMinutes.ToString("F0") : "-";
+                                                var tooltipText = $"<strong>{activity.InspectType}</strong><br>區域: {activity.Area}<br>設備: {activity.DeviceId}<br>工單: {activity.InspectWo}<br>開始: {activity.ArriveAt:MM/dd HH:mm:ss}<br>結束: {(activity.SubmitDataAt?.ToString("MM/dd HH:mm:ss") ?? "進行中")}<br>時長: {originalDuration} 分";
 
                                                 <div style="position: absolute;
-                                                    left: @activity.LeftPosition.ToString("F2")%;
+                                                    left: @leftPosition.ToString("F2")%;
                                                     width: @width.ToString("F2")%;
-                                                    top: 15px;
+                                                    top: 35px;
                                                     height: 30px;
                                                     background-color: @bgColor;
                                                     cursor: pointer;"
@@ -231,11 +286,11 @@
                                             <td style="border: 1px solid #999; padding: 8px;">@activity.Area</td>
                                             <td style="border: 1px solid #999; padding: 8px;">@activity.DeviceId</td>
                                             <td style="border: 1px solid #999; padding: 8px;">@activity.InspectWo</td>
-                                            <td style="border: 1px solid #999; padding: 8px;">@activity.ArriveAt.ToString("HH:mm:ss")</td>
-                                            <td style="border: 1px solid #999; padding: 8px;">@(activity.SubmitDataAt?.ToString("HH:mm:ss") ?? "進行中")</td>
+                                            <td style="border: 1px solid #999; padding: 8px;">@activity.ArriveAt.ToString("MM/dd HH:mm:ss")</td>
+                                            <td style="border: 1px solid #999; padding: 8px;">@(activity.SubmitDataAt?.ToString("MM/dd HH:mm:ss") ?? "進行中")</td>
                                             <td style="border: 1px solid #999; padding: 8px;">@(duration > 0 ? duration.ToString("F0") : "-")</td>
-                                            <td style="border: 1px solid #999; padding: 8px;">@(activity.InspectItemOkNo )</td>
-                                            <td style="border: 1px solid #999; padding: 8px;">@(activity.InspectItemNgNo )</td>
+                                            <td style="border: 1px solid #999; padding: 8px;">@(activity.InspectItemOkNo)</td>
+                                            <td style="border: 1px solid #999; padding: 8px;">@(activity.InspectItemNgNo)</td>
                                         </tr>
                                     }
                                 }

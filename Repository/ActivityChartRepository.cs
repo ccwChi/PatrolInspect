@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
 using PatrolInspect.Controllers;
 using PatrolInspect.Models;
+using PatrolInspect.Models.Entities;
 using System.Data;
 
 namespace PatrolInspect.Repository
@@ -28,7 +29,7 @@ namespace PatrolInspect.Repository
             return new SqlConnection(_mesConnString);
         }
 
-        public async Task<List<InspectionActivity>> GetActivitiesByDateAsync(DateTime date)
+        public async Task<List<InspectionActivity>> GetActivitiesByDateRangeAsync(DateTime startDateTime, DateTime endDateTime)
         {
             using var connection = CreateMesConnection();
             var sql = @"
@@ -47,8 +48,9 @@ namespace PatrolInspect.Repository
                 InspectItemOkNo,
                 InspectItemNgNo
             FROM INSPECTION_QC_RECORD                
-            WHERE CAST(ArriveAt AS DATE) = @Date
-              AND InspectType <> 'CANCEL'
+            WHERE ArriveAt >= @StartDateTime 
+              AND ArriveAt < @EndDateTime
+            AND InspectType <> 'CANCEL'
 
             UNION ALL
 
@@ -70,17 +72,21 @@ namespace PatrolInspect.Repository
             LEFT JOIN ABC_BAS_STATUS b ON b.StatusNo = a.StatusNo
             WHERE a.UserNo IN ('G03078', 'G01629', 'G01824', 'G02449', 'G01813')
               AND a.StatusNo IN ('0007','0008','0005')
-              AND CAST(StartTime AS DATE) = @Date
+            AND a.StartTime >= @StartDateTime 
+            AND a.StartTime < @EndDateTime
             ORDER BY UserNo, ArriveAt;";
 
             try
             {
-                var activities = await connection.QueryAsync<InspectionActivity>(sql, new { Date = date.Date });
+                var activities = await connection.QueryAsync<InspectionActivity>(sql, new
+                {
+                    StartDateTime = startDateTime,
+                    EndDateTime = endDateTime
+                });
                 return activities.ToList();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting activities by date: {Date}", date);
                 throw;
             }
         }
@@ -115,7 +121,6 @@ namespace PatrolInspect.Repository
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting user activities: {UserNo}, {Date}", userNo, date);
                 throw;
             }
         }
@@ -164,8 +169,69 @@ namespace PatrolInspect.Repository
                 throw;
             }
         }
+
+        public async Task<List<string>> GetActiveValidWorkTypesAsync()
+        {
+            using var connection = CreateMesConnection();
+            var sql = @"
+                SELECT InspectType 
+                FROM INSPECTION_VALID_WORKTYPE 
+                WHERE IsActive = 1 
+                ORDER BY DisplayOrder";
+
+            try
+            {
+                var types = await connection.QueryAsync<string>(sql);
+                return types.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting active valid work types");
+                throw;
+            }
+        }
+
+        public async Task<List<InspectionValidWorkType>> GetAllWorkTypesAsync()
+        {
+            using var connection = CreateMesConnection();
+            var sql = @"
+                SELECT Id, InspectType, IsActive, DisplayOrder, CreateDate, UpdateDate
+                FROM INSPECTION_VALID_WORKTYPE 
+                ORDER BY DisplayOrder";
+
+            try
+            {
+                var types = await connection.QueryAsync<InspectionValidWorkType>(sql);
+                return types.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting all work types");
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateWorkTypeStatusAsync(int id, bool isActive)
+        {
+            using var connection = CreateMesConnection();
+            var sql = @"
+                UPDATE INSPECTION_VALID_WORKTYPE 
+                SET IsActive = @IsActive, UpdateDate = GETDATE()
+                WHERE Id = @Id";
+
+            try
+            {
+                var result = await connection.ExecuteAsync(sql, new { Id = id, IsActive = isActive });
+                return result > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating work type status: {Id}", id);
+                throw;
+            }
+        }
     }
 
     // DTO
-  
+
 }

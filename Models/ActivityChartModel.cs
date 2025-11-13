@@ -1,4 +1,6 @@
-﻿namespace PatrolInspect.Models
+﻿using PatrolInspect.Models.Entities;
+
+namespace PatrolInspect.Models
 {
     public class ActivityChartViewModel
     {
@@ -85,4 +87,7 @@
         public string ProdNo { get; set; }
         public string ProdDesc { get; set; }
     }
+    
+
+
 }

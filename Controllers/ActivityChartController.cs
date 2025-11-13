@@ -30,6 +30,11 @@ namespace PatrolInspect.Controllers
 
             var selectedDate = date ?? DateTime.Today;
 
+            var workdayStart = selectedDate.Date.AddHours(7);
+            var workdayEnd = selectedDate.Date.AddDays(1).AddHours(8);
+            var displayStart = selectedDate.Date.AddHours(7);
+            var displayEnd = workdayEnd;
+
             var viewModel = new ActivityChartViewModel
             {
                 SelectedDate = selectedDate,
@@ -38,21 +43,67 @@ namespace PatrolInspect.Controllers
 
             try
             {
-                var activities = await _activityChartRepository.GetActivitiesByDateAsync(selectedDate);
+                var validWorkingHoursTypes = await _activityChartRepository.GetActiveValidWorkTypesAsync();
+                ViewBag.ValidWorkingHoursTypes = validWorkingHoursTypes;
+
+                var activities = await _activityChartRepository.GetActivitiesByDateRangeAsync(workdayStart, workdayEnd);
+
 
                 if (activities != null && activities.Any())
                 {
                     var userActivities = activities
                         .GroupBy(a => new { a.UserNo, a.UserName })
-                        .Select(g => new UserActivityViewModel
+                        .Select(g =>
                         {
-                            UserNo = g.Key.UserNo,
-                            UserName = g.Key.UserName,
-                            Activities = g.OrderBy(a => a.ArriveAt).ToList()
+                            var timeGroups = g
+                                .Where(a => a.SubmitDataAt.HasValue)
+                                .GroupBy(a => new { a.ArriveAt, a.SubmitDataAt })
+                                .ToList();
+
+                            var userActivity = new UserActivityViewModel
+                            {
+                                UserNo = g.Key.UserNo,
+                                UserName = g.Key.UserName,
+                                Activities = g.OrderBy(a => a.ArriveAt).ToList(),
+                                TotalWorkingMinutes = 460
+                            };
+
+                            // 計算有效工時 - 先按時間段分組，再檢查該時間段是否有有效工時類型
+                            // 在計算有效工時時使用
+                            var validRecords = g.Where(a =>
+                                a.SubmitDataAt.HasValue &&
+                                validWorkingHoursTypes.Contains(a.InspectType)
+                            ).ToList();
+
+                            // 需要去重的類型（入庫檢驗、全檢）
+                            var dedupeTypes = new[] { "入庫檢驗" };
+                            var needDedupeRecords = validRecords
+                                .Where(a => dedupeTypes.Contains(a.InspectType) || a.InspectType.Contains("全檢"))
+                                .GroupBy(a => new DateTime(a.ArriveAt.Year, a.ArriveAt.Month, a.ArriveAt.Day,
+                                                          a.ArriveAt.Hour, a.ArriveAt.Minute, a.ArriveAt.Second))
+                                .Select(group => group.First())
+                                .ToList();
+
+                            // 不需要去重的類型
+                            var normalRecords = validRecords
+                                .Where(a => !dedupeTypes.Contains(a.InspectType) && !a.InspectType.Contains("全檢"))
+                                .ToList();
+
+                            // 計算有效工時（扣除休息時間）
+                            userActivity.ValidWorkingMinutes =
+                                needDedupeRecords.Sum(a => CalculateWorkingMinutesExcludingBreaks(a.ArriveAt, a.SubmitDataAt!.Value)) +
+                                normalRecords.Sum(a => CalculateWorkingMinutesExcludingBreaks(a.ArriveAt, a.SubmitDataAt!.Value));
+
+
+                            return userActivity;
                         })
                         .OrderBy(u => u.UserNo)
                         .ToList();
 
+                    ViewBag.DisplayStart = displayStart;
+                    ViewBag.DisplayEnd = displayEnd;
+                    ViewBag.WorkdayStart = workdayStart;
+                    ViewBag.WorkdayEnd = workdayEnd;
                     viewModel.UserActivities = userActivities;
                 }
 
@@ -66,14 +117,94 @@ namespace PatrolInspect.Controllers
             }
         }
 
+       
+        #region　 //////　　為了計算有效工時，要減去非上班時間的邏輯　　///////
+
+        public class BreakTimeRange
+        {
+            public TimeSpan Start { get; set; }
+            public TimeSpan End { get; set; }
+        }
+
+        // 在 Controller 開頭定義休息時段
+        private readonly List<BreakTimeRange> _breakTimes = new List<BreakTimeRange>
+        {
+            new BreakTimeRange { Start = new TimeSpan(05, 00, 0), End = new TimeSpan(08, 00, 0) },  
+            new BreakTimeRange { Start = new TimeSpan(10, 00, 0), End = new TimeSpan(10, 10, 0) }, 
+            new BreakTimeRange { Start = new TimeSpan(12, 0, 0), End = new TimeSpan(13, 0, 0) },  
+            new BreakTimeRange { Start = new TimeSpan(15, 0, 0), End = new TimeSpan(15, 10, 0) },  
+            new BreakTimeRange { Start = new TimeSpan(17, 00, 0), End = new TimeSpan(20, 00, 0) },  
+            new BreakTimeRange { Start = new TimeSpan(12, 00, 0), End = new TimeSpan(13, 00, 0) }  
+        };
+
+        // 計算扣除休息時間後的實際工時
+        private double CalculateWorkingMinutesExcludingBreaks(DateTime arriveAt, DateTime submitDataAt)
+        {
+            var totalMinutes = (submitDataAt - arriveAt).TotalMinutes;
+            var breakMinutes = 0.0;
+
+            foreach (var breakTime in _breakTimes)
+            {
+                // 將 DateTime 轉為當天的 TimeSpan
+                var recordStart = arriveAt.TimeOfDay;
+                var recordEnd = submitDataAt.TimeOfDay;
+
+                // 如果跨日，submitDataAt 的 TimeOfDay 可能比 arriveAt 小，需特殊處理
+                if (recordEnd < recordStart)
+                {
+                    // 跨日情況：分段計算
+                    var overlapMinutes1 = CalculateOverlapMinutes(recordStart, new TimeSpan(24, 0, 0), breakTime.Start, breakTime.End);
+                    var overlapMinutes2 = CalculateOverlapMinutes(new TimeSpan(0, 0, 0), recordEnd, breakTime.Start, breakTime.End);
+                    breakMinutes += overlapMinutes1 + overlapMinutes2;
+                    //// 第一段：arriveAt 到當日結束
+                    //var overlapMinutes1 = CalculateOverlapMinutes(recordStart, new TimeSpan(24, 0, 0), breakTime.Start, breakTime.End);
+                    //// 第二段：隔日開始到 submitDataAt
+                    //var overlapMinutes2 = CalculateOverlapMinutes(new TimeSpan(0, 0, 0), recordEnd, breakTime.Start, breakTime.End);
+                    //breakMinutes += overlapMinutes1 + overlapMinutes2;
+                }
+                else
+                {
+                    // 正常情況：同一天內
+                    var overlapMinutes = CalculateOverlapMinutes(recordStart, recordEnd, breakTime.Start, breakTime.End);
+                    breakMinutes += overlapMinutes;
+                }
+            }
+
+            return Math.Max(0, totalMinutes - breakMinutes);
+        }
+
+        // 計算兩個時段的重疊分鐘數
+        private double CalculateOverlapMinutes(TimeSpan recordStart, TimeSpan recordEnd, TimeSpan breakStart, TimeSpan breakEnd)
+        {
+            // 計算重疊區間
+            var overlapStart = recordStart > breakStart ? recordStart : breakStart;
+            var overlapEnd = recordEnd < breakEnd ? recordEnd : breakEnd;
+
+            // 如果有重疊
+            if (overlapStart < overlapEnd)
+            {
+                return (overlapEnd - overlapStart).TotalMinutes;
+            }
+
+            return 0;
+        }
+
+        #endregion
+
+
+
         [HttpGet]
         public async Task<IActionResult> DownloadUserCsv(DateTime? date)
         {
             var selectedDate = date ?? DateTime.Today;
 
+            var workdayStart = selectedDate.Date.AddHours(0);
+            var workdayEnd = selectedDate.Date.AddDays(1);
+
+
             try
             {
-                var activities = await _activityChartRepository.GetActivitiesByDateAsync(selectedDate);
+                var activities = await _activityChartRepository.GetActivitiesByDateRangeAsync(workdayStart, workdayEnd);
 
                 if (activities == null || !activities.Any())
                 {
@@ -208,5 +339,11 @@ namespace PatrolInspect.Controllers
                 });
             }
         }
+
+
+
+
+
+
     }
 }
