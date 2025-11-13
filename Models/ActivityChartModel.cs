@@ -96,6 +96,7 @@ namespace PatrolInspect.Models
         public string UserName { get; set; } = string.Empty;
         public List<InspectionActivity> Activities { get; set; } = new();
         public double ValidWorkingMinutes { get; set; } // 新增有效工時（分鐘）
-        public double TotalWorkingMinutes { get; set; } = 480; // 新增總工時
+        public double TotalWorkingMinutes { get; set; } // 人員稼動用 (全部的工作時數)
+        public double OneDayWorkingMinutes { get; set; } = 480; // 一天應有幾分鐘 
     }
 }
