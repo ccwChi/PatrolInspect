@@ -198,9 +198,13 @@ namespace PatrolInspect.Controllers
         {
             var selectedDate = date ?? DateTime.Today;
 
+            var workdayStart = selectedDate.Date.AddHours(0);
+            var workdayEnd = selectedDate.Date.AddDays(1);
+
+
             try
             {
-                var activities = await _activityChartRepository.GetActivitiesByDateAsync(selectedDate);
+                var activities = await _activityChartRepository.GetActivitiesByDateRangeAsync(workdayStart, workdayEnd);
 
                 if (activities == null || !activities.Any())
                 {
