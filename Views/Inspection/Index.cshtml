@@ -6,720 +6,298 @@
 }
 
 @section css {
-    <style>
-        .header {
-            padding: 10px;
-            border: 1px solid #ccc;
-            margin-bottom: 10px;
-            background: #f5f5f5;
-            display: flex;
-            justify-content:space-between
-        }
 
-        .current-time {
-            font-size:12px;
-            font-weight: bold;
-            color: #666;
-        }
-
-        .section {
-            border: 1px solid #ccc;
-            margin-bottom: 10px;
-            background: #fff;
-        }
-
-        .section-title {
-            background: #e0e0e0;
-            padding: 8px 10px;
-            margin: 0;
-            font-weight: bold;
-            border-bottom: 1px solid #ccc;
-            font-size:16px;
-        }
-
-        .section-content {
-            padding: 10px;
-        }
-
-        .stats-grid {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-
-        .stat-box {
-            flex:1;
-            text-align: center;
-            padding: 8px;
-            border: 1px solid #ddd;
-            background: #f9f9f9;
-        }
-
-        .stat-number {
-            font-weight: bold;
-            margin-bottom: 3px;
-        }
-
-        .stat-label {
-            color: #666;
-        }
-
-        /* .control-buttons {
-            margin-bottom: 10px;
-        } */
-
-            .control-buttons button {
-                padding: 6px 10px;
-                margin-right: 5px;
-                margin-bottom: 5px;
-                border: 1px solid #ccc;
-                background: #f0f0f0;
-                cursor: pointer;
-            }
-
-                .control-buttons button:hover {
-                    background: #e0e0e0;
-                }
-
-        .nfc-status {
-            padding: 8px;
-            margin: 8px 0;
-            border: 1px solid #ccc;
-            display: none;
-        }
-
-        .nfc-success {
-            background: #d4edda;
-            border-color: #c3e6cb;
-        }
-
-        .nfc-error {
-            background: #f8d7da;
-            border-color: #f5c6cb;
-        }
-
-        .nfc-warning {
-            background: #fff3cd;
-            border-color: #ffeaa7;
-        }
-
-        .nfc-info {
-            background: #d1ecf1;
-            border-color: #bee5eb;
-        }
-
-        .nfc-log {
-            background: #f8f8f8;
-            border: 1px solid #ccc;
-            padding: 8px;
-            height: 120px;
-            overflow-y: auto;
-            font-family: monospace;
-        }
-
-        .log-entry {
-            margin-bottom: 2px;
-            word-break: break-all;
-        }
-
-        /* 時段 Accordion 樣式 */
-        .time-periods {
-            margin-bottom: 10px;
-        }
-
-        .time-period {
-            border: 1px solid #ddd;
-            margin-bottom: 3px;
-            background: #fff;
-        }
-
-            .time-period.inactive {
-                background: #f8f8f8;
-                opacity: 0.7;
-            }
-
-            .time-period.current {
-                border: 2px solid #0071b2;
-                background: #f8fff8;
-            }
-
-        .period-header {
-            padding: 10px;
-            cursor: pointer;
-            border-bottom: 1px solid #ddd;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-
-        }
-
-            .period-header:hover {
-                background: #f0f0f0;
-            }
-
-        .period-time {
-            font-weight: bold;
-        }
-
-        .period-areas {
-            color: #666;
-        }
-
-        .period-status {
-            padding: 2px 6px;
-            border-radius: 3px;
-        }
-
-        .status-current {
-            background: #28a745;
-            color: white;
-        }
-
-        .status-upcoming {
-            background: #ffc107;
-            color: black;
-        }
-
-        .status-completed {
-            background: #6c757d;
-            color: white;
-        }
-
-        .accordion-icon {
-            transition: transform 0.3s ease;
-        }
-
-            .accordion-icon.expanded {
-                transform: rotate(180deg);
-            }
-
-        .period-content {
-            display: none;
-            padding: 10px;
-            background: #fff;
-        }
-
-            .period-content.expanded {
-                display: block;
-            }
-
-        .period-info {
-            background: #f0f8ff;
-            border: 1px solid #ccc;
-            padding: 8px;
-            margin-bottom: 10px;
-        }
-
-        .device-card {
-            border: 1px solid #ddd;
-            margin-bottom: 8px;
-            padding: 8px;
-            background: #fff;
-        }
-
-            .device-card.needs-inspection {
-                border-left: 3px solid #dc3545;
-                background: #ffeeee;
-            }
-
-            .device-card.completed {
-                border-left: 3px solid #28a745;
-                background: #eeffee;
-            }
-
-            .device-card.not-running {
-                border-left: 3px solid #6c757d;
-                background: #f5f5f5;
-                color: #666;
-            }
-
-        .device-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-
-        .device-id {
-            font-weight: bold;
-        }
-
-        .device-status {
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-weight: bold;
-        }
-
-        .status-run {
-            background: #d3ffd3;
-  
-        }
-
-        .status-idle {
-            background: #fffbce;
-  
-        }
-
-        .status-alarm {
-            background: #eedadb;
-   
-        }
-
-        .status-inspecting {
-            background: #e2efd9;
-
-        }
-
-        .status-overtime {
-            background: #f7cbac;
-
-        }
-
-        .status-off {
-            background: #e4e4e4;
-
-        }
-
-        .device-name {
-            color: #777;
-            margin-bottom: 4px;
-        }
-
-        .device-info {
-            color: #666;
-            margin-bottom: 2px;
-        }
-
-        .inspection-badge {
-            display: inline-block;
-            padding: 3px 6px;
-            border-radius: 3px;
-            font-weight: bold;
-            margin-top: 5px;
-        }
-
-        .needs-inspection-badge {
-            background: #dc3545;
-            color: white;
-        }
-
-        .completed-badge {
-            background: #28a745;
-            color: white;
-        }
-
-        .not-required-badge {
-            background: #e9ecef;
-            color: #6c757d;
-        }
-
-        .no-devices {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            display: none;
-
-        }
-
-        .error {
-            color: red;
-            padding: 10px;
-            background: #ffe8e8;
-            border: 1px solid red;
-            display: none;
-        }
-
-        /* Modal 樣式 */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 20px;
-            border: 2px solid #333;
-            max-width: 300px;
-            text-align: center;
-            margin: 10px;
-        }
-
-            .modal-content h3 {
-                margin-bottom: 10px;
-                color: #333;
-
-            }
-
-            .modal-content p {
-                margin-bottom: 8px;
-
-            }
-
-            .modal-content button {
-                padding: 8px 15px;
-                background: #333;
-                color: white;
-                border: none;
-                cursor: pointer;
-                margin-top: 10px;
-            }
-
-
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: none; /* 預設隱藏 */
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-            .modal.show {
-                display: flex; /* 顯示時置中 */
-            }
-
-        .modal-content {
-            background: white;
-            padding: 20px;
-            border: 2px solid #333;
-            border-radius: 8px;
-            max-width: 300px;
-            width: 90%;
-            text-align: center;
-        }
-
-    </style>
 }
 
 <div class="container">
+    <!-- Toast 容器 (用於 NFC 狀態提示) -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+        <div id="nfcToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
     <!-- 使用者資訊 -->
-    <div class="header" style="position:relative">
-        <div class="" >
+    <div class="border rounded p-2 mb-2 bg-light d-flex justify-content-between position-relative">
+        <div>
             <strong>@ViewBag.UserName (@ViewBag.UserNo)</strong>
             <div style="color: #666;" onclick="showNFCTestModal('@ViewBag.UserNo')">@ViewBag.DepartmentName - @ViewBag.TitleName</div>
-            <div class="current-time" id="currentTime">@ViewBag.CurrentTime</div>
+            <div class="fw-bold" style="font-size:12px; color: #666;" id="currentTime">@ViewBag.CurrentTime</div>
         </div>
-        <div class="control-buttons" style="position:absolute; top:5px; right:5px">
-            <button onclick="loadTodayInspection()">刷新資料</button>
+        <div class="position-absolute" style="top:5px; right:5px">
+            <button class="btn btn-sm btn-light border" onclick="loadTodayInspection()">刷新資料</button>
         </div>
-
     </div>
+
     <button class="btn btn-outline-secondary mb-2 w-100" style="padding:2px; color:black;">
-        <div class="section-content" onclick="showMachineIdInputModal()">點選並掃描機台 QRcode 開始檢驗</div>
+        <div class="p-2" onclick="showMachineIdInputModal()">點選並掃描機台 QRcode 開始檢驗</div>
     </button>
 
     <!-- 統計資訊 -->
-    <div class="section">
-        <div class="section-content">
-            <div class="d-flex flex-wrap  gap-2">
+    <div class="border rounded mb-2 bg-white">
+        <div class="p-2">
+            <div class="d-flex flex-wrap gap-2">
                 <div class="d-flex gap-2 align-items-center">
-                    <div style="height:20px; width:20px; border-radius:100%" class="status-run"></div><span style="font-size:12px">機台 RUN</span>
+                    <div class="rounded-circle" style="height:20px; width:20px; background: #d3ffd3;"></div>
+                    <span style="font-size:12px">機台 RUN</span>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
-                    <div style="height:20px; width:20px; border-radius:100%" class="status-idle"></div><span style="font-size:12px">機台 IDLE</span>
+                    <div class="rounded-circle" style="height:20px; width:20px; background: #fffbce;"></div>
+                    <span style="font-size:12px">機台 IDLE</span>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
-                    <div style="height:20px; width:20px; border-radius:100%" class="status-off"></div><span style="font-size:12px">機台 OFF</span>
+                    <div class="rounded-circle" style="height:20px; width:20px; background: #e4e4e4;"></div>
+                    <span style="font-size:12px">機台 OFF</span>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
-                    <div style="height:20px; width:20px; border-radius:100%" class="status-alarm"></div><span style="font-size:12px">機台 ALARM</span>
+                    <div class="rounded-circle" style="height:20px; width:20px; background: #eedadb;"></div>
+                    <span style="font-size:12px">機台 ALARM</span>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
-                    <div style="height:20px; width:20px; border-radius:100%" class="status-overtime"></div><span style="font-size:12px">距上次檢測超過2小時</span>
+                    <div class="rounded-circle" style="height:20px; width:20px; background: #f7cbac;"></div>
+                    <span style="font-size:12px">距上次檢測超過2小時</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 載入/錯誤狀態 -->
-    <div id="loading" class="loading">載入中...</div>
-    <div id="error" class="error"></div>
+    <!-- 載入 Spinner (Bootstrap) -->
+    <div id="loading" class="text-center my-3 d-none">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">載入中...</span>
+        </div>
+    </div>
+
+    <!-- 錯誤訊息 Alert (Bootstrap) -->
+    <div id="errorAlert" class="alert alert-danger alert-dismissible fade show d-none" role="alert">
+        <span id="errorMessage"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 
     <!-- 時段排程 Accordion -->
-    <div id="timePeriodsSection" class="section" style="display: block;">
-        <h3 class="section-title">今日排程</h3>
-        <div class="section-content">
-            <div id="timePeriods" class="time-periods"></div>
+    <div id="timePeriodsSection" class="border rounded mb-2 bg-white">
+        <h3 class="bg-light border-bottom p-2 m-0 fw-bold" style="font-size:16px">今日排程</h3>
+        <div class="p-2">
+            <div id="timePeriods" class="mb-2"></div>
         </div>
     </div>
 
     <!-- NFC 感應 -->
-    <div class="section">
-        <h3 class="section-title">NFC 感應</h3>
-        <div class="section-content">
-            <div id="nfcStatus" class="nfc-status"></div>
-            <div style="margin-bottom: 8px;" class="control-buttons">
-                <button onclick="manualStartNFC()">啟動感應</button>
-                <button onclick="stopNFC()">停止感應</button>
-                @* <button onclick="clearNFCLog()">清除日誌</button> *@
-                如感應不到，請 1. 刷新頁面。 2. 按停止感應後再按啟動感應。
+    <div class="border rounded mb-2 bg-white">
+        <h3 class="bg-light border-bottom p-2 m-0 fw-bold" style="font-size:16px">NFC 感應</h3>
+        <div class="p-2">
+            <div class="mb-2">
+                <button class="btn btn-sm btn-light border me-1 mb-1" onclick="manualStartNFC()">啟動感應</button>
+                <button class="btn btn-sm btn-light border me-1 mb-1" onclick="stopNFC()">停止感應</button>
+                如感應不到,請 1. 刷新頁面。 2. 按停止感應後再按啟動感應。
             </div>
-            @* <div id="nfcLog" class="nfc-log"></div>  *@
         </div>
     </div>
 
-    <!-- 檢驗開始提示 -->
-    <div id="inspectionModal" class="modal" onclick="closeInspectionModal(event)">
-        <div class="modal-content" onclick="event.stopPropagation()">
+    <!-- 檢驗開始提示 Modal -->
+    <div id="inspectionModal" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" 
+         style="background: rgba(0, 0, 0, 0.5); z-index: 9999;" onclick="closeInspectionModal(event)">
+        <div class="bg-white p-4 border rounded text-center" style="max-width: 300px; width: 90%; border: 2px solid #333 !important;" onclick="event.stopPropagation()">
             <h3>檢驗開始</h3>
             <p><strong id="modalDevice">-</strong></p>
             <p id="modalTime">-</p>
             <p>巡檢請在機邊電腦完成資料上傳，其他非使用射出檢驗系統的檢驗，請點選檢驗時間明細送出檢驗數量</p>
-            <button onclick="closeInspectionModal()">確定</button>
+            <button class="btn btn-dark" onclick="closeInspectionModal()">確定</button>
         </div>
     </div>
-    <!--機邊檢驗 檢驗數量輸入Modal -->
-    <div id="quantityInputModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                                         background: rgba(0,0,0,0.5); z-index: 1002; align-items: center; justify-content: center;">
-        <div style="background: white; padding: 30px; border-radius: 8px; max-width: 450px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-            <h3 id="quantityModalTitle" style="margin-bottom: 20px; color: #333; text-align: center;">輸入檢驗數量</h3>
 
-            <div id="quantityModalInfo" style="background: #f8f9fa; padding: 15px; border-radius: 4px; margin-bottom: 20px;
-             border-left: 4px solid #0071b2; font-size: 14px; line-height: 1.5;">
+    <!-- 機邊檢驗 檢驗數量輸入Modal -->
+    <div id="quantityInputModal" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center"
+         style="background: rgba(0,0,0,0.5); z-index: 1002;">
+        <div class="bg-white p-4 rounded shadow" style="max-width: 450px; width: 90%;">
+            <h3 id="quantityModalTitle" class="mb-3 text-center" style="color: #333;">輸入檢驗數量</h3>
+
+            <div id="quantityModalInfo" class="bg-light p-3 rounded mb-3" 
+                 style="border-left: 4px solid #0071b2; font-size: 14px; line-height: 1.5;">
                 <!-- 動態填入檢驗資訊 -->
             </div>
 
             <form onsubmit="event.preventDefault(); submitInspectionQuantity();">
-                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                    <div style="flex: 1;">
-                        <label for="okQuantity" style="display: block; font-weight: 600; color: #333; margin-bottom: 8px;">
-                            OK數量
-                        </label>
-                        <input type="number" id="okQuantity" min="0" max="9999"
-                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;
-                                  font-size: 16px; text-align: center;"
-                               placeholder="">
+                <div class="d-flex flex-column gap-3 mb-3">
+                    <div class="d-flex gap-2">
+                        <div class="flex-fill">
+                            <label for="okQuantity" class="form-label fw-semibold" style="color: #333;">OK數量</label>
+                            <input type="number" id="okQuantity" min="0" max="9999" class="form-control text-center" placeholder="">
+                        </div>
+                        <div class="flex-fill">
+                            <label for="ngQuantity" class="form-label fw-semibold" style="color: #333;">NG數量</label>
+                            <input type="number" id="ngQuantity" min="0" max="9999" class="form-control text-center" placeholder="">
+                        </div>
                     </div>
-                    <div style="flex: 1;">
-                        <label for="ngQuantity" style="display: block; font-weight: 600; color: #333; margin-bottom: 8px;">
-                            NG數量
-                        </label>
-                        <input type="number" id="ngQuantity" min="0" max="9999"
-                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;
-                                  font-size: 16px; text-align: center;"
-                               placeholder="">
+                    <div>
+                        <label for="quantityRemark" class="form-label fw-semibold" style="color: #333;">備註</label>
+                        <textarea rows="1" id="quantityRemark" maxlength="190" class="form-control" placeholder=""></textarea>
                     </div>
                 </div>
 
-                <div style="text-align: right;">
-                    <button type="button" onclick="closeQuantityInputModal()"
-                            style="padding: 10px 20px; background: #6c757d; color: white; border: none;
-                               border-radius: 4px; margin-right: 10px; cursor: pointer;">
-                        取消
-                    </button>
-                    <button type="submit" class="btn-primary"
-                            style="padding: 10px 20px; background: #0071b2; color: white; border: none;
-                               border-radius: 4px; cursor: pointer;">
-                        確定提交
-                    </button>
+                <div class="text-end">
+                    <button type="button" onclick="closeQuantityInputModal()" class="btn btn-secondary me-2">取消</button>
+                    <button type="submit" class="btn btn-primary" style="background: #0071b2;">確定提交</button>
                 </div>
             </form>
 
-            <!-- 隱藏的recordId -->
             <input type="hidden" id="quantityRecordId" value="">
         </div>
     </div>
-</div>
-<div id="nfcTestModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-     background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%; max-height: 80%; overflow-y: auto;">
-        <h3 style="margin-bottom: 20px; color: #333;">選擇測試 NFC 卡片</h3>
 
-        <div style="margin-bottom: 20px;">
-            <input type="text" id="nfcSearchInput" placeholder="搜尋區域或卡片..."
-                   style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
-                   onkeyup="filterNFCCards()">
-        </div>
+    <!-- NFC測試Modal -->
+    <div id="nfcTestModal" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" 
+         style="background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div class="bg-white p-4 rounded" style="max-width: 500px; width: 90%; max-height: 80%; overflow-y: auto;">
+            <h3 class="mb-3" style="color: #333;">選擇測試 NFC 卡片</h3>
 
-        <div id="nfcCardList" style="max-height: 300px; overflow-y: auto; border: 1px solid #eee; border-radius: 4px;">
-            <!-- 動態生成的卡片列表 -->
-        </div>
-
-        <div style="text-align: right; margin-top: 20px;">
-            <button onclick="closeNFCTestModal()"
-                    style="padding: 8px 15px; background: #666; color: white; border: none; border-radius: 4px; margin-right: 10px;">
-                取消
-            </button>
-            <button onclick="testCustomNFC()"
-                    style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px;">
-                自訂卡片ID
-            </button>
-        </div>
-    </div>
-</div>
-<!-- 自訂 NFC ID Modal -->
-<div id="customNFCModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-     background: rgba(0,0,0,0.5); z-index: 1001; align-items: center; justify-content: center;">
-    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 400px; width: 90%;">
-        <h3 style="margin-bottom: 20px; color: #333;">輸入自訂 NFC ID</h3>
-
-        <input type="text" id="customNFCInput" placeholder="輸入 NFC 卡片 ID..."
-               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 20px;">
-
-        <div style="text-align: right;">
-            <button onclick="closeCustomNFCModal()"
-                    style="padding: 8px 15px; background: #666; color: white; border: none; border-radius: 4px; margin-right: 10px;">
-                取消
-            </button>
-            <button onclick="executeCustomNFC()"
-                    style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px;">
-                測試
-            </button>
-        </div>
-    </div>
-</div>
-
-<div id="machineIdInputModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-     background: rgba(0,0,0,0.5); z-index: 1001; align-items: center; justify-content: center;">
-    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 400px; width: 90%;">
-        <h3 style="margin-bottom: 20px; color: #333;"></h3>
-
-        <input type="text" id="machineIdInput" placeholder="請掃描機台ID"
-               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 20px;">
-
-        <div style="text-align: right;">
-            <button onclick="closeMachineIdInputModal()"
-                    style="padding: 8px 15px; background: #666; color: white; border: none; border-radius: 4px; margin-right: 10px;">
-                取消
-            </button>
-            <button onclick="executeMachineId()" id="executeMachineBtn"
-                    style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px;">
-                確認
-            </button>
-        </div>
-    </div>
-</div>
-
-<div id="inspectTypeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-     background: rgba(0,0,0,0.5); z-index: 1001; align-items: center; justify-content: center;">
-    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 400px; width: 90%; display:flex; flex-direction:column; gap:10px">
-        <div style="">
-            <label>請選擇檢驗項目</label>
-        </div>
-        <select id="inspectTypeOptions" onchange="handleInspectTypeChange()"
-                style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-            <option value="">請選擇...</option>
-        </select>
-        <div style="text-align: right;">
-            <button onclick="closeInspectTypeModal()"
-                    style="padding: 8px 15px; background: #666; color: white; border: none; border-radius: 4px; margin-right: 10px;">
-                取消
-            </button>
-            <button onclick="confirmInspectType()" id="executeMachineBtn"
-                    style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px;">
-                確認
-            </button>
-        </div>
-    </div>
-</div>
-
-
-<!-- 入庫多工單輸入Modal -->
-<div id="warehouseOrderModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                                   background: rgba(0,0,0,0.5); z-index: 1003;">
-    <div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 10px; box-sizing: border-box;">
-        <div style="background: white; border-radius: 8px; max-width: 600px; width: 100%; 
-                    max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-            
-            <!-- 固定標題區域 -->
-            <div style="padding: 5px ; border-bottom: 1px solid #eee;">
-                <h3 id="warehouseModalTitle" style="margin: 0 0 15px 0; color: #333; text-align: center;">入庫檢驗</h3>
-                <div id="warehouseModalInfo" style="background: #f8f9fa; padding: 15px; border-radius: 4px; 
-                     border-left: 4px solid #0071b2; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
-                    <!-- 動態填入檢驗資訊 -->
-                </div>
+            <div class="mb-3">
+                <input type="text" id="nfcSearchInput" placeholder="搜尋區域或卡片..." class="form-control" onkeyup="filterNFCCards()">
             </div>
 
-            <!-- 可滾動內容區域 -->
-            <div style="flex: 1; overflow-y: auto; padding: 20px 5px;">
+            <div id="nfcCardList" class="border rounded" style="max-height: 300px; overflow-y: auto;">
+                <!-- 動態生成的卡片列表 -->
+            </div>
+
+            <div class="text-end mt-3">
+                <button onclick="closeNFCTestModal()" class="btn btn-secondary me-2">取消</button>
+                <button onclick="testCustomNFC()" class="btn btn-primary">自訂卡片ID</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自訂 NFC ID Modal -->
+    <div id="customNFCModal" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" 
+         style="background: rgba(0,0,0,0.5); z-index: 1001;">
+        <div class="bg-white p-4 rounded" style="max-width: 400px; width: 90%;">
+            <h3 class="mb-3" style="color: #333;">輸入自訂 NFC ID</h3>
+
+            <input type="text" id="customNFCInput" placeholder="輸入 NFC 卡片 ID..." class="form-control mb-3">
+
+            <div class="text-end">
+                <button onclick="closeCustomNFCModal()" class="btn btn-secondary me-2">取消</button>
+                <button onclick="executeCustomNFC()" class="btn btn-success">測試</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 機台ID輸入Modal -->
+    <div id="machineIdInputModal" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" 
+         style="background: rgba(0,0,0,0.5); z-index: 1001;">
+        <div class="bg-white p-4 rounded" style="max-width: 400px; width: 90%;">
+            <h3 class="mb-3" style="color: #333;"></h3>
+
+            <input type="text" id="machineIdInput" placeholder="請掃描機台ID" class="form-control mb-3">
+
+            <div class="text-end">
+                <button onclick="closeMachineIdInputModal()" class="btn btn-secondary me-2">取消</button>
+                <button onclick="executeMachineId()" id="executeMachineBtn" class="btn btn-success">確認</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 檢驗類型選擇Modal -->
+    <div id="inspectTypeModal" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" 
+         style="background: rgba(0,0,0,0.5); z-index: 1001;">
+        <div class="bg-white p-4 rounded d-flex flex-column gap-2" style="max-width: 400px; width: 90%;">
+            <div>
+                <label class="form-label">請選擇檢驗項目</label>
+            </div>
+            <select id="inspectTypeOptions" onchange="handleInspectTypeChange()" class="form-select">
+                <option value="">請選擇...</option>
+            </select>
+            <div class="text-end">
+                <button onclick="closeInspectTypeModal()" class="btn btn-secondary me-2">取消</button>
+                <button onclick="confirmInspectType()" class="btn btn-success">確認</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 入庫多工單輸入Modal -->
+    <div id="warehouseOrderModal" class="position-fixed top-0 start-0 w-100 h-100 d-none" 
+         style="background: rgba(0,0,0,0.5); z-index: 1003;">
+        <div class="d-flex align-items-center justify-content-center w-100 h-100 p-2">
+            <div class="bg-white rounded shadow d-flex flex-column" 
+                 style="max-width: 600px; width: 100%; max-height: 90vh; padding:10px;">
                 
-                <!-- 新增工單區域 -->
-                <div style="border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin-bottom: 20px; background: #fafafa;">
-                    <h5 style="margin: 0 0 15px 0; color: #333;">新增工單</h5>
+                <!-- 固定標題區域 -->
+                <div class="d-flex flex-column p-1 border-bottom">
+                    <h3 id="warehouseModalTitle" class="p-1 text-center" style="color: #333;">入庫檢驗</h3>
+                    <div id="warehouseModalInfo" class="bg-light p-1 rounded mb-1" 
+                         style="border-left: 4px solid #0071b2; font-size: 14px; line-height: 1.5;">
+                        <!-- 動態填入檢驗資訊 -->
+                    </div>
+                </div>
+
+                <!-- 可滾動內容區域 -->
+                <div class="flex-fill p-2" style="overflow-y: auto;">
                     
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; align-items: end;">
-                        <div>
-                            <label for="newWorkOrder" style="display: block; font-weight: 600; color: #333; margin-bottom: 5px; font-size: 13px;">
-                                工單號碼 *
-                            </label>
-                            <input type="text" id="newWorkOrder" placeholder="請輸入工單號碼"
-                                   style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                    <!-- 新增工單區域 -->
+                    <div class="border rounded p-3 mb-3" style="background: #fafafa;">
+                        <h5 class="mb-3" style="color: #333;">新增工單</h5>
+                        
+                        <div class="d-flex flex-column gap-2">
+                            <div class="d-flex gap-2">
+                                <div>
+                                    <label for="newWorkOrder" class="form-label fw-semibold" style="color: #333; font-size: 13px;">
+                                        工單號碼 *
+                                    </label>
+                                    <input type="text" id="newWorkOrder" placeholder="請輸入工單號碼" class="form-control">
+                                </div>
+                                <div>
+                                    <label for="newOkQuantity" class="form-label fw-semibold" style="color: #333; font-size: 13px;">
+                                        OK數量
+                                    </label>
+                                    <input type="number" id="newOkQuantity" min="0" max="9999" class="form-control text-center">
+                                </div>
+                                <div>
+                                    <label for="newNgQuantity" class="form-label fw-semibold" style="color: #333; font-size: 13px;">
+                                        NG數量
+                                    </label>
+                                    <input type="number" id="newNgQuantity" min="0" max="9999" class="form-control text-center">
+                                </div>
+                            </div>
+                            
+                            <label for="warehouseRemark" class="form-label fw-semibold" style="color: #333; font-size:13px">備註</label>
+                            <div class="d-flex w-100 gap-1">
+                                <textarea rows="1" id="warehouseRemark" maxlength="190" class="form-control" placeholder=""></textarea>
+                                <button type="button" onclick="addWarehouseOrder()" class="btn btn-success" style="white-space: nowrap; font-size: 14px;">
+                                    新增
+                                </button>
+                            </div>
                         </div>
-                        <div>
-                            <label for="newOkQuantity" style="display: block; font-weight: 600; color: #333; margin-bottom: 5px; font-size: 13px;">
-                                OK數量
-                            </label>
-                            <input type="number" id="newOkQuantity" min="0" max="9999" 
-                                   style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; text-align: center; box-sizing: border-box;">
-                        </div>
-                        <div>
-                            <label for="newNgQuantity" style="display: block; font-weight: 600; color: #333; margin-bottom: 5px; font-size: 13px;">
-                                NG數量
-                            </label>
-                            <input type="number" id="newNgQuantity" min="0" max="9999" 
-                                   style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; text-align: center; box-sizing: border-box;">
-                        </div>
-                        <div>
-                            <button type="button" onclick="addWarehouseOrder()"
-                                    style="padding: 8px 12px; background: #28a745; color: white; border: none; 
-                                           border-radius: 4px; cursor: pointer; white-space: nowrap; font-size: 14px;">
-                                新增
-                            </button>
+                    </div>
+
+                    <!-- 工單清單區域 -->
+                    <div class="mb-3">
+                        <h5 class="mb-3" style="color: #333;">已新增的工單</h5>
+                        <div id="warehouseOrderList" class="border rounded bg-white" style="max-height: 250px; overflow-y: auto;">
+                            <div class="text-center text-muted p-4">尚未新增任何工單</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 工單清單區域 -->
-                <div style="margin-bottom: 20px;">
-                    <h5 style="margin: 0 0 15px 0; color: #333;">已新增的工單</h5>
-                    <div id="warehouseOrderList" style="max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 4px; background: white;">
-                        <div style="text-align: center; color: #666; padding: 30px;">尚未新增任何工單</div>
+                <!-- 固定按鈕區域 -->
+                <div class="p-2 border-top" style="background: #fafafa;">
+                    <div class="text-end">
+                        <button type="button" onclick="closeWarehouseOrderModal()" class="btn btn-secondary me-2">取消</button>
+                        <button type="button" onclick="submitWarehouseOrders()" class="btn btn-primary" style="background: #0071b2;">
+                            提交檢驗
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            <!-- 固定按鈕區域 -->
-            <div style="padding: 15px 30px 20px 30px; border-top: 1px solid #eee; background: #fafafa;">
-                <div style="text-align: right;">
-                    <button type="button" onclick="closeWarehouseOrderModal()"
-                            style="padding: 10px 20px; background: #6c757d; color: white; border: none;
-                                   border-radius: 4px; margin-right: 10px; cursor: pointer;">
-                        取消
-                    </button>
-                    <button type="button" onclick="submitWarehouseOrders()" class="btn-primary"
-                            style="padding: 10px 20px; background: #0071b2; color: white; border: none;
-                                   border-radius: 4px; cursor: pointer;">
-                        提交檢驗
-                    </button>
-                </div>
+                <input type="hidden" id="warehouseRecordId" value="">
             </div>
-
-            <!-- 隱藏的recordId -->
-            <input type="hidden" id="warehouseRecordId" value="">
         </div>
     </div>
 </div>
 
 @section scripts {
-    <script>
+    <script type="text/javascript">
         let inspectionData = null;
         let nfcReader = null;
         let isNFCSupported = false;
@@ -734,6 +312,13 @@
         $(document).ready(function() {
             updateCurrentTime();
             setInterval(updateCurrentTime, 1000);
+
+            const toastElement = document.getElementById('nfcToast');
+            nfcToast = new bootstrap.Toast(toastElement, {
+                autohide: true,
+                delay: 3000
+            });
+
             initializeNFC();
             loadInspectTypeList()
             loadTodayInspection();
@@ -745,18 +330,34 @@
             $('#currentTime').text(now.toLocaleString('zh-TW').replace(/\//g, '-'));
         }
 
-        function loadInspectTypeList() {
+        function showNFCStatus(message, type) {
+            const toastElement = document.getElementById('nfcToast');
+            const toastBody = toastElement.querySelector('.toast-body');
+            
+            toastElement.classList.remove('text-bg-success', 'text-bg-danger', 'text-bg-warning', 'text-bg-info');
+            
+            const colorMap = {
+                'success': 'text-bg-success',
+                'error': 'text-bg-danger',
+                'warning': 'text-bg-warning',
+                'info': 'text-bg-info'
+            };
+            
+            toastElement.classList.add(colorMap[type] || 'text-bg-info');
+            toastBody.textContent = message;
+            
+            nfcToast.show();
+        }
 
+        function loadInspectTypeList() {
             $.ajax({
                 url: '@Url.Action("GetInspectTypeList", "Inspection")',
                 type: 'GET',
                 dataType: 'json',
                 success: function (response) {
-                    
                     showLoading(false);
                     if (response.success) {
                         inspectType = response.data
-                    
                     } else {
                         showError(response.message || '載入失敗');
                     }
@@ -784,6 +385,7 @@
                 success: function (response) {
                     showLoading(false);
                     if (response.success) {
+                        console.log("response",response)
                         displayTimePeriodsData(response.data);
                     } else {
                         showError(response.message || '載入失敗');
@@ -800,16 +402,15 @@
                 }
             });
         }
+         
+
 
         function displayTimePeriodsData(data) {
-
-            // 處理時段資料
             if (data.timePeriods && data.timePeriods.length > 0) {
                 renderTimePeriods(data.timePeriods);
-                $('#timePeriodsSection').show();
+                document.getElementById('timePeriodsSection').style.display = 'block';
             } else {
-                $('#timePeriodsSection').hide();
-                // addNFCLog("無時段資料");
+                document.getElementById('timePeriodsSection').style.display = 'none';
             }
         }
 
@@ -824,57 +425,60 @@
         }
 
         function createPeriodElement(period, index) {
-            const periodClass = period.isCurrent ? 'current' : 'inactive';  //curent有藍色邊框
-            const statusClass = period.isCurrent ? 'status-current' : 
-                               (period.isPast ? 'status-completed' : 'status-upcoming');
-            const statusText = period.isCurrent ? '進行中' :
-                              (period.isPast ? '已結束' : '');
+                    const currentClass = period.isCurrent ? 'border-primary' : '';
+                    const currentStyle = period.isCurrent ? 'border-width: 2px; background: #f8fff8;' : '';
+                    const inactiveStyle = !period.isCurrent ? 'background: #f8f8f8; opacity: 0.7;' : '';
+            
+                    const statusBadge = period.isCurrent ? 'bg-success text-white' : 
+                                       (period.isPast ? 'bg-secondary text-white' : '');
+                    const statusText = period.isCurrent ? '進行中' :
+                                      (period.isPast ? '已結束' : '');
 
-            const areasText = period.areas ? period.areas.join(', ') : '未設定區域';
+                    const areasText = period.areas ? period.areas.join(', ') : '未設定區域';
 
-            const periodElement = $(`
-                <div class="time-period ${periodClass}" data-period="${index}">
-                    <div class="period-header" onclick="togglePeriod(${index})">
-                        <div>
-                            <div class="period-time">${period.startTime} - ${period.endTime}</div>
-                            <div class="period-areas">${areasText}</div>
+                    const periodElement = $(`
+                        <div class="border rounded mb-1 bg-white ${currentClass}" style="${currentStyle}${inactiveStyle}" data-period="${index}">
+                            <div class="p-2 border-bottom d-flex justify-content-between align-items-center" 
+                                 style="cursor: pointer;" 
+                                 onclick="togglePeriod(${index})"
+                                 onmouseover="this.style.background='#f0f0f0'" 
+                                 onmouseout="this.style.background=''">
+                                <div>
+                                    <div class="fw-bold">${period.startTime} - ${period.endTime}</div>
+                                    <div style="color: #666;">${areasText}</div>
+                                </div>
+                                <div>
+                                    ${statusText ? `<span class="badge ${statusBadge} px-2 py-1 rounded me-2">${statusText}</span>` : ''}
+                                    <span class="accordion-icon" style="transition: transform 0.3s ease;">▼</span>
+                                </div>
+                            </div>
+                            <div class="period-content p-2 bg-white" id="period-content-${index}" style="display: none;">
+                                ${createPeriodContentHtml(period)}
+                            </div>
                         </div>
-                        <div>
-                            <span class="period-status ${!!statusText && statusClass}">${statusText}</span>
-                            <span class="accordion-icon">▼</span>
-                        </div>
-                    </div>
-                    <div class="period-content" id="period-content-${index}">
-                        ${createPeriodContentHtml(period)}
-                    </div>
-                </div>
-            `);
+                    `);
 
-            // 如果是當前時段，自動展開
-            if (period.isCurrent) {
-                periodElement.find('.period-content').addClass('expanded');
-                periodElement.find('.accordion-icon').addClass('expanded');
-            }
+                    // 如果是當前時段，自動展開
+                    if (period.isCurrent) {
+                        periodElement.find('.period-content').css('display', 'block');
+                        periodElement.find('.accordion-icon').css('transform', 'rotate(180deg)');
+                    }
 
-            return periodElement;
-        }
+                    return periodElement;
+                }
 
         function createPeriodContentHtml(period) {
-
             let contentHtml = `
-                <div class="period-info">
+                <div class="border rounded p-2 mb-2" style="background: #f0f8ff;">
                     <strong>${period.eventType || '排程作業'}</strong>
                     ${period.eventDetail ? `<div>${period.eventDetail}</div>` : ''}
                 </div>
             `;
 
-            // 主要機台
             let devices = [...(period.devicesToInspect || [])];
-            // 額外任務 (不排序，最後顯示)
             let extraTasks = (period.isCurrent && period.extraTask) ? period.extraTask : [];
 
             if (devices.length > 0 || extraTasks.length > 0) {
-                // 狀態優先順序
                 const statusPriority = {
                     'RUN': 1,
                     'IDLE': 2,
@@ -883,7 +487,6 @@
                     'OFF': 5
                 };
            
-                // 排序主要機台
                 const sortedDevices = devices.sort((a, b) => {
                     const statusA = a.deviceStatus?.status || 'PMC資料缺漏';
                     const statusB = b.deviceStatus?.status || 'PMC資料缺漏';
@@ -895,127 +498,112 @@
                     return priorityA - priorityB;
                 });
 
-                // --- 渲染主要機台 ---
                 sortedDevices.forEach(item => {
                     contentHtml += renderDeviceCard(item, period);
                 });
 
-                // --- 渲染額外任務 (放在最後) ---
                 extraTasks.forEach(extra => {
                     contentHtml += renderDeviceCard(
-                        { ...extra, isExtraTask: true }, // 加上標記
+                        { ...extra, isExtraTask: true },
                         period
                     );
                 });
 
             } else {
-                contentHtml += '<div class="no-devices">此時段無機台資料</div>';
+                contentHtml += '<div class="text-center p-4 text-muted">此時段無機台資料</div>';
             }
 
             return contentHtml;
         }
 
-        function renderDeviceCard(item, period) {
-
+function renderDeviceCard(item, period) {
             const device = item.deviceStatus;
             const status = device.status || 'PMC資料缺漏';
             const workOrderNo = device?.wO_ID ? device.wO_ID : "-";
 
-            // 狀態樣式
-            let cardClass = '';
-            if (status === "OFF" || period.isPast) cardClass = 'status-off';
-            if (status === "RUN" || period.isPast) cardClass = 'status-run';
-            if (status === "IDLE" || period.isPast) cardClass = 'status-idle';
-            if (status === "ALARM" || period.isPast) cardClass = 'status-alarm';
+            // 狀態背景色
+            let bgColor = '';
+            if (status === "OFF" || period.isPast) bgColor = '#e4e4e4';
+            if (status === "RUN") bgColor = '#d3ffd3';
+            if (status === "IDLE") bgColor = '#fffbce';
+            if (status === "ALARM") bgColor = '#eedadb';
+
+            let borderLeftColor = '';
+            let cardBg = '#fff';
+
+            // 檢查警告狀態
+            if (status === "RUN" && device.wO_ID) {
+                if (!item.inspectionList || item.inspectionList.length === 0) {
+                    bgColor = '#f7cbac';
+                } else {
+                    const lastRecord = item.inspectionList[0];
+                    if (device.wO_ID.includes(lastRecord.inspectWo)) {
+                        const now = new Date();
+                        let endTimeStr = lastRecord.time.split('-').pop().trim();
+           
+                        if (!endTimeStr.includes('作業中')) {
+                            const dateStr = now.toISOString().split('T')[0];
+                            const fullDateTime = new Date(`${dateStr}T${endTimeStr}:00`);
+                            const diffMs = now - fullDateTime;
+                            const diffHours = diffMs / (1000 * 60 * 60);
+
+                            if (diffHours > 2) {
+                                bgColor = '#f7cbac';
+                            }
+                        }
+                    } else {
+                        bgColor = '#f7cbac';
+                    }
+                }
+            }
 
             // 額外任務標示
             let extraBadge = item.isExtraTask
                 ? `<span class="badge bg-secondary">其他執行項目</span>`
                 : "";
-               
-
-
-
-
-            // === 新增警告檢查邏輯 ===
-            if (status === "RUN" && device.wO_ID) {
-
-                if (!item.inspectionList || item.inspectionList.length === 0) {
-                    // 沒有巡檢資料 → 警告
-                    cardClass = 'status-overtime';
-                
-                } else {
-                    // 檢查最後一筆
-                    const lastRecord = item.inspectionList[0];
-                    if (device.wO_ID.includes(lastRecord.inspectWo)) {
-                        // 檢查時間差
-                        const now = new Date();
-                        let endTimeStr = lastRecord.time.split('-').pop().trim();
-           
-                        if (endTimeStr.includes('作業中')) {
-                            // 還在進行中，不算警告
-                        } else {
-                            const dateStr = now.toISOString().split('T')[0]; // yyyy-mm-dd
-                            const fullDateTime = new Date(`${dateStr}T${endTimeStr}:00`);
-
-                            const diffMs = now - fullDateTime;
-                            const diffHours = diffMs / (1000 * 60 * 60);
-
-                            if (diffHours > 2) {
-                                cardClass = 'status-overtime';
-                            }
-                        }
-                    } else {
-                        cardClass = 'status-overtime';
-                    }
-                }
-            }
 
             // 檢驗時間清單
             let inspectionsHtml = "";
     
             if (item.inspectionList && item.inspectionList.length > 0) {
-       
-                inspectionsHtml += `<ul class="inspection-list">`;
+                inspectionsHtml += `<ul class="list-unstyled mb-0">`;
                 item.inspectionList.forEach(rec => {
-                    const isProgressing = rec.time.includes("作業中")
-                    const progressClass = isProgressing ? "in-progress" : "";
-                    const clickableClass = isProgressing ? "inspection-in-progress" : "inspection-clickable";
+                    const isProgressing = rec.time.includes("作業中");
                     const cursor = isProgressing ? "not-allowed" : "pointer";
 
                     inspectionsHtml += `
-                        <li class="${progressClass} ${clickableClass}" style="display:flex; flex-wrap:wrap; gap:0 5px;"
+                        <li class="d-flex flex-wrap gap-1" style="cursor: ${cursor};"
                             onclick="handleInspectionClick('${rec.recordId}', '${rec.time}', '${rec.inspectWo}', '${rec.inspector}','${rec.inspectorId}','${rec.inspectType}', ${isProgressing}, '${device.deviceID}')">
-                            <span class="inspect-time">${rec.time},</span>
-                            <span class="inspect-inspectWo">${rec.inspectWo}</span>
-                            <span class="inspect-inspector" style="">(${rec.inspector})</span>
+                            <span>${rec.time},</span>
+                            <span>${rec.inspectWo}</span>
+                            <span>(${rec.inspector})</span>
                             ${rec.isInProgress ? `<span class="badge bg-warning ms-1">進行中</span>` : ""}
                         </li>
                     `;
                 });
                 inspectionsHtml += `</ul>`;
             } else {
-                inspectionsHtml = `<div class="no-inspection">無檢驗紀錄</div>`;
+                inspectionsHtml = `<div class="text-muted small">無檢驗紀錄</div>`;
             }
 
             return `
-                <div class="device-card ${cardClass}">
-                    <div class="device-info">${extraBadge}</div>
+                <div class="border rounded mb-2 p-2 bg-white" style="background-color: ${bgColor} !important;">
+                    <div class="text-muted small">${extraBadge}</div>
                     ${!!device.deviceName ? 
-                    `<div class="device-header">
-                        <div class="device-id">${device.deviceName}</div>
-                        <div class="device-status">${status}</div>
+                    `<div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="fw-bold">${device.deviceName}</div>
+                        <div class="badge" style="background: ${bgColor}; color: #333; padding: 2px 6px; font-weight: bold;">${status}</div>
                     </div>
-                    <div class="device-name">
+                    <div class="text-muted mb-1">
                         ${device.deviceID || '-'}
                     </div>` : 
-                    `<div class="device-id">
-                        ${item.inspectionList[0].inspectType}
+                    `<div class="fw-bold">
+                    ${item.inspectionList[0].inspectType}
                     </div>` 
                     }
-                    <div class="device-info">工單: ${workOrderNo}</div>
-                    <div class="inspection-section">
-                        <strong>檢驗紀錄</strong>
+                    <div class="text-muted mb-1">工單: ${workOrderNo}</div>
+                    <div class="mt-2">
+                        <strong class="small">檢驗紀錄</strong>
                         ${inspectionsHtml}
                     </div>
                 </div>
@@ -1030,16 +618,14 @@
             }
         }
 
-        function showQuantityInputModal(recordId, time, inspectWo, inspector, InspectorId, inspectTypeA, deviceId) {
-
-            if (InspectorId !== userNo){
-                return
+      function showQuantityInputModal(recordId, time, inspectWo, inspector, InspectorId, inspectTypeA, deviceId) {
+            if (InspectorId !== userNo) {
+                return;
             }
-            console.log("time",time)
-            console.log("inspectTypeA",inspectTypeA)
-            if (!(time.includes("作業") || time.includes("檢驗"))){
-                alert("如要填寫數量，請選擇作業中項目，提交後會將該筆作業中項目作為紀錄為檢驗結束")
-                return
+
+            if (!(time.includes("作業") || time.includes("檢驗"))) {
+                alert("如要填寫數量，請選擇作業中項目，提交後會將該筆作業中項目作為紀錄為檢驗結束");
+                return;
             }
 
             document.getElementById('quantityRecordId').value = recordId;
@@ -1051,20 +637,19 @@
                 <div><strong>檢驗人員:</strong> ${inspector}</div>
             `;
 
-            // 重置輸入欄位
             document.getElementById('okQuantity').value = '';
             document.getElementById('ngQuantity').value = '';
+            document.getElementById('quantityRemark').value = '';
 
-         
-            // 顯示Modal
-            document.getElementById('quantityInputModal').style.display = 'flex';
+            document.getElementById('quantityInputModal').classList.remove('d-none');
+            document.getElementById('quantityInputModal').classList.add('d-flex');
             document.getElementById('okQuantity').focus();
-
         }
 
         // 4. 關閉數量輸入Modal
         function closeQuantityInputModal() {
-            document.getElementById('quantityInputModal').style.display = 'none';
+            document.getElementById('quantityInputModal').classList.add('d-none');
+            document.getElementById('quantityInputModal').classList.remove('d-flex');
         }
 
         // 5. 提交檢驗數量
@@ -1072,39 +657,33 @@
             const recordId = document.getElementById('quantityRecordId').value;
             const okQuantity = parseInt(document.getElementById('okQuantity').value) || 0;
             const ngQuantity = parseInt(document.getElementById('ngQuantity').value) || 0;
+            const remarkQuantity = document.getElementById('quantityRemark').value;
 
-            // 驗證輸入
             if (okQuantity < 0 || ngQuantity < 0) {
                 alert('數量不能為負數');
                 return;
             }
 
-            // if (okQuantity === 0 && ngQuantity === 0) {
-            //     alert('OK數量和NG數量不能都為0');
-            //     return;
-            // }
-
-            // 顯示載入狀態
             const submitBtn = document.querySelector('#quantityInputModal .btn-primary');
             const originalText = submitBtn.textContent;
             submitBtn.textContent = '提交中...';
             submitBtn.disabled = true;
 
-            // 發送AJAX請求
             $.ajax({
                 url: '@Url.Action("UpdateInspectionQuantity", "Inspection")',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({
-                    recordId: recordId,
-                    okQuantity: okQuantity,
-                    ngQuantity: ngQuantity
+                    RecordId: recordId,
+                    OkQuantity: okQuantity,
+                    NgQuantity: ngQuantity,
+                    RemarkQuantity: remarkQuantity
                 }),
                 success: function(response) {
                     if (response.success) {
                         alert('檢驗數量更新成功');
                         closeQuantityInputModal();
-                        loadTodayInspection(); // 重新載入資料
+                        loadTodayInspection();
                     } else {
                         alert('更新失敗: ' + response.message);
                     }
@@ -1114,7 +693,6 @@
                     console.error('更新檢驗數量失敗:', error);
                 },
                 complete: function() {
-                    // 恢復按鈕狀態
                     submitBtn.textContent = originalText;
                     submitBtn.disabled = false;
                 }
@@ -1135,12 +713,12 @@
             const content = $(`#period-content-${index}`);
             const icon = $(`.time-period[data-period="${index}"] .accordion-icon`);
 
-            if (content.hasClass('expanded')) {
-                content.removeClass('expanded');
-                icon.removeClass('expanded');
+            if (content.css('display') === 'none') {
+                content.css('display', 'block');
+                icon.css('transform', 'rotate(180deg)');
             } else {
-                content.addClass('expanded');
-                icon.addClass('expanded');
+                content.css('display', 'none');
+                icon.css('transform', '');
             }
         }
 
@@ -1157,54 +735,60 @@
         }
 
         function showLoading(show) {
-            $('#loading').toggle(show);
+            const loading = document.getElementById('loading');
+            if (show) {
+                loading.classList.remove('d-none');
+            } else {
+                loading.classList.add('d-none');
+            }
         }
 
         function showError(message) {
-            $('#error').text(message).show();
+            const errorAlert = document.getElementById('errorAlert');
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorAlert.classList.remove('d-none');
         }
 
         function hideError() {
-            $('#error').hide();
+            const errorAlert = document.getElementById('errorAlert');
+            errorAlert.classList.add('d-none');
         }
         
         // ================ 入庫相關 ==================
 
-        function showWarehouseOrderModal(recordId, time, inspectWo, inspector, InspectorId, inspectType, deviceId) {
+                function showWarehouseOrderModal(recordId, time, inspectWo, inspector, InspectorId, inspectType, deviceId) {
             if (InspectorId !== userNo) {
                 return;
             }
 
-            if (!(time.includes("作業") || time.includes("檢驗"))){
+            if (!(time.includes("作業") || time.includes("檢驗"))) {
                 alert("如要填寫數量，請選擇作業中項目，提交後會將該筆作業中項目作為紀錄為檢驗結束");
                 return;
             }
 
-            // 設定Modal資訊
             document.getElementById('warehouseRecordId').value = recordId;
             document.getElementById('warehouseModalTitle').textContent = `入庫檢驗`;
-    
-            // 修正innerHTML語法錯誤
             document.getElementById('warehouseModalInfo').innerHTML = `
                 <div><strong>檢驗類型:</strong> ${inspectType}</div>
                 <div><strong>檢驗時間:</strong> ${time}</div>
                 <div><strong>檢驗人員:</strong> ${inspector}</div>
             `;
 
-            // 載入已儲存的工單資料（如果有的話）
             loadWarehouseOrderData(recordId);
 
-            // 顯示Modal
-            document.getElementById('warehouseOrderModal').style.display = 'block';
+            document.getElementById('warehouseOrderModal').classList.remove('d-none');
+            document.getElementById('warehouseOrderModal').classList.add('d-flex');
     
-            // 聚焦到工單輸入框
             setTimeout(() => {
                 document.getElementById('newWorkOrder').focus();
             }, 100);
         }
 
-        function closeWarehouseOrderModal() {
-            document.getElementById('warehouseOrderModal').style.display = 'none';
+
+       function closeWarehouseOrderModal() {
+            document.getElementById('warehouseOrderModal').classList.add('d-none');
+            document.getElementById('warehouseOrderModal').classList.remove('d-flex');
         }
 
         // 響應式處理（可選）
@@ -1223,160 +807,151 @@
         window.addEventListener('resize', adjustModalForMobile);
 
 
-    function loadWarehouseOrderData(recordId) {
-        // 從localStorage載入該recordId的工單資料
-        const savedData = localStorage.getItem(`warehouse_${recordId}`);
-        if (savedData) {
-            warehouseOrderData = JSON.parse(savedData);
-        } else {
-            warehouseOrderData = [];
+        function loadWarehouseOrderData(recordId) {
+            const savedData = localStorage.getItem(`warehouse_${recordId}`);
+            if (savedData) {
+                warehouseOrderData = JSON.parse(savedData);
+            } else {
+                warehouseOrderData = [];
+            }
+            refreshWarehouseOrderList();
         }
-        refreshWarehouseOrderList();
-    }
 
     function saveWarehouseOrderData(recordId) {
         // 儲存到localStorage
         localStorage.setItem(`warehouse_${recordId}`, JSON.stringify(warehouseOrderData));
     }
 
-    function addWarehouseOrder() {
-        const workOrderInput = document.getElementById('newWorkOrder');
-        const okQuantityInput = document.getElementById('newOkQuantity');
-        const ngQuantityInput = document.getElementById('newNgQuantity');
-    
-        const workOrder = workOrderInput.value.trim();
-        const okQuantity = parseInt(okQuantityInput.value) || 0;
-        const ngQuantity = parseInt(ngQuantityInput.value) || 0;
-    
-        // 驗證輸入
-        if (!workOrder) {
-            alert('請輸入工單號碼');
-            workOrderInput.focus();
-            return;
-        }
-    
-        if (okQuantity < 0 || ngQuantity < 0) {
-            alert('數量不能為負數');
-            return;
-        }
-    
-        if (okQuantity === 0 && ngQuantity === 0) {
-            alert('OK數量和NG數量不能都為0');
-            return;
-        }
-    
-        // 檢查工單是否已存在
-        const existingIndex = warehouseOrderData.findIndex(item => item.workOrder === workOrder);
-        if (existingIndex >= 0) {
-            // 更新現有工單
-            warehouseOrderData[existingIndex] = { workOrder, okQuantity, ngQuantity };
-        } else {
-            // 新增工單
-            warehouseOrderData.push({ workOrder, okQuantity, ngQuantity });
-        }
-    
-        // 清空輸入欄位
-        workOrderInput.value = '';
-        okQuantityInput.value = '';
-        ngQuantityInput.value = '';
-    
-        // 重新顯示清單
-        refreshWarehouseOrderList();
-    
-        // 儲存資料
-        const recordId = document.getElementById('warehouseRecordId').value;
-        saveWarehouseOrderData(recordId);
-    
-        // 聚焦回工單輸入框
-        workOrderInput.focus();
-    }
+        function addWarehouseOrder() {
+            const workOrderInput = document.getElementById('newWorkOrder');
+            const okQuantityInput = document.getElementById('newOkQuantity');
+            const ngQuantityInput = document.getElementById('newNgQuantity');
+            const warehouseRemarkInput = document.getElementById("warehouseRemark");
 
-    function removeWarehouseOrder(index) {
-        if (confirm('確定要刪除這筆工單嗎？')) {
-            warehouseOrderData.splice(index, 1);
+            const workOrder = workOrderInput.value.trim();
+            const okQuantity = parseInt(okQuantityInput.value) || 0;
+            const ngQuantity = parseInt(ngQuantityInput.value) || 0;
+            const warehouseRemark = warehouseRemarkInput.value;
+
+            if (!workOrder) {
+                alert('請輸入工單號碼');
+                workOrderInput.focus();
+                return;
+            }
+    
+            if (okQuantity < 0 || ngQuantity < 0) {
+                alert('數量不能為負數');
+                return;
+            }
+    
+            if (okQuantity === 0 && ngQuantity === 0) {
+                alert('OK數量和NG數量不能都為0');
+                return;
+            }
+    
+            const existingIndex = warehouseOrderData.findIndex(item => item.workOrder === workOrder);
+            if (existingIndex >= 0) {
+                warehouseOrderData[existingIndex] = {WorkOrder: workOrder, OkQuantity: okQuantity, NgQuantity: ngQuantity, Remark: warehouseRemark };
+            } else {
+                warehouseOrderData.push({WorkOrder: workOrder, OkQuantity: okQuantity, NgQuantity: ngQuantity, Remark: warehouseRemark });
+            }
+    
+            workOrderInput.value = '';
+            okQuantityInput.value = '';
+            ngQuantityInput.value = '';
+            warehouseRemarkInput.value = '';
+    
             refreshWarehouseOrderList();
-        
+    
             const recordId = document.getElementById('warehouseRecordId').value;
             saveWarehouseOrderData(recordId);
+    
+            workOrderInput.focus();
         }
-    }
 
-    function refreshWarehouseOrderList() {
-        const container = document.getElementById('warehouseOrderList');
-    
-        if (warehouseOrderData.length === 0) {
-            container.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">尚未新增任何工單</div>';
-            return;
+
+        function removeWarehouseOrder(index) {
+            if (confirm('確定要刪除這筆工單嗎？')) {
+                warehouseOrderData.splice(index, 1);
+                refreshWarehouseOrderList();
+        
+                const recordId = document.getElementById('warehouseRecordId').value;
+                saveWarehouseOrderData(recordId);
+            }
         }
+
+      function refreshWarehouseOrderList() {
+            const container = document.getElementById('warehouseOrderList');
     
-        const html = warehouseOrderData.map((item, index) => `
-            <div style="display: flex; justify-content: space-between; align-items: center; 
-                        padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px;">
-                <div>
-                    <strong>${item.workOrder}</strong>
-                    <span style="margin-left: 15px; color: #666;">
-                        OK: ${item.okQuantity} , NG: ${item.ngQuantity}
-                    </span>
+            if (warehouseOrderData.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted p-3">尚未新增任何工單</div>';
+                return;
+            }
+    
+            const html = warehouseOrderData.map((item, index) => `
+                <div class="d-flex justify-content-between align-items-center p-2 border rounded mb-2">
+                    <div>
+                        <strong>${item.WorkOrder}</strong>
+                        <span class="ms-3 text-muted">
+                            OK: ${item.OkQuantity} , NG: ${item.NgQuantity}
+                        </span>
+                        <span class="ms-3 text-muted">
+                            註記: ${item.Remark}
+                        </span>
+                    </div>
+                    <button type="button" onclick="removeWarehouseOrder(${index})" class="btn btn-danger btn-sm">
+                        刪除
+                    </button>
                 </div>
-                <button type="button" onclick="removeWarehouseOrder(${index})"
-                        style="padding: 4px 8px; background: #dc3545; color: white; border: none; 
-                               border-radius: 4px; cursor: pointer; font-size: 12px;">
-                    刪除
-                </button>
-            </div>
-        `).join('');
+            `).join('');
     
-        container.innerHTML = html;
-    }
+            container.innerHTML = html;
+        }
 
     function submitWarehouseOrders() {
-        if (warehouseOrderData.length === 0) {
-            alert('請至少新增一筆工單資料');
-            return;
-        }
-    
-        const recordId = document.getElementById('warehouseRecordId').value;
-    
-        // 顯示載入狀態
-        const submitBtn = document.querySelector('#warehouseOrderModal .btn-primary');
-        const originalText = submitBtn.textContent;
-        submitBtn.textContent = '提交中...';
-        submitBtn.disabled = true;
-    
-        // 發送AJAX請求
-        $.ajax({
-            url: '@Url.Action("SubmitWarehouseInspection", "Inspection")',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                recordId: parseInt(recordId),
-                orders: warehouseOrderData
-            }),
-            success: function(response) {
-                if (response.success) {
-                    alert('入庫檢驗提交成功');
-                
-                    // 清除儲存的資料
-                    localStorage.removeItem(`warehouse_${recordId}`);
-                    warehouseOrderData = [];
-                
-                    closeWarehouseOrderModal();
-                    loadTodayInspection(); // 重新載入資料
-                } else {
-                    alert('提交失敗: ' + response.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                alert('系統錯誤，請稍後再試');
-                console.error('提交入庫檢驗失敗:', error);
-            },
-            complete: function() {
-                // 恢復按鈕狀態
-                submitBtn.textContent = originalText;
-                submitBtn.disabled = false;
+            if (warehouseOrderData.length === 0) {
+                alert('請至少新增一筆工單資料');
+                return;
             }
-        });
-    }
+    
+            const recordId = document.getElementById('warehouseRecordId').value;
+
+            const submitBtn = document.querySelector('#warehouseOrderModal .btn-primary');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = '提交中...';
+            submitBtn.disabled = true;
+    
+            $.ajax({
+                url: '@Url.Action("SubmitWarehouseInspection", "Inspection")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    RecordId: parseInt(recordId),
+                    Orders: warehouseOrderData,
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        alert('入庫檢驗提交成功');
+                
+                        localStorage.removeItem(`warehouse_${recordId}`);
+                        warehouseOrderData = [];
+                
+                        closeWarehouseOrderModal();
+                        loadTodayInspection();
+                    } else {
+                        alert('提交失敗: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('系統錯誤，請稍後再試');
+                    console.error('提交入庫檢驗失敗:', error);
+                },
+                complete: function() {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+        }
 
     // Enter鍵快速新增
     document.addEventListener('DOMContentLoaded', function() {
@@ -1405,45 +980,42 @@
     });
 
         // =================== 掃描機台ID ========================
-        function showMachineIdInputModal() {
-            document.getElementById('machineIdInputModal').style.display = 'flex';
-            document.getElementById('machineIdInput').focus();
-        }
+    function showMachineIdInputModal() {
+        document.getElementById('machineIdInputModal').classList.remove('d-none');
+        document.getElementById('machineIdInputModal').classList.add('d-flex');
+        document.getElementById('machineIdInput').focus();
+    }
 
-        function closeMachineIdInputModal() {
-            document.getElementById('machineIdInputModal').style.display = 'none';
-            document.getElementById('machineIdInput').value = '';
-        }
+    function closeMachineIdInputModal() {
+        document.getElementById('machineIdInputModal').classList.add('d-none');
+        document.getElementById('machineIdInputModal').classList.remove('d-flex');
+        document.getElementById('machineIdInput').value = '';
+    }
 
-        function executeMachineId(){
-            
-            const machineId = document.getElementById('machineIdInput').value
-                        
-            handleNFCCard(machineId, "")
+        function executeMachineId() {
+            const machineId = document.getElementById('machineIdInput').value;
+            handleNFCCard(machineId, "");
         }
 
         // =================== NFC 相關 ======================
 
-        async function initializeNFC() {
+        // 初始化NFC功能
+          async function initializeNFC() {
             try {
-                // addNFCLog('初始化NFC功能');
-
                 if ('NDEFReader' in window) {
                     nfcReader = new NDEFReader();
                     isNFCSupported = true;
-                    // addNFCLog("NFC支援已啟用");
                     showNFCStatus("NFC功能正常", "success");
                     await startNFCReading();
                 } else {
-                    // addNFCLog("瀏覽器不支援NFC");
                     showNFCStatus("瀏覽器不支援NFC", "warning");
                 }
             } catch (error) {
-                // addNFCLog(`NFC錯誤: ${error.message}`);
                 showNFCStatus("NFC初始化失敗", "error");
             }
         }
 
+        // 賦予頁面監聽器並開始掃描NFC 
         async function startNFCReading() {
             if (!nfcReader) {
                 showNFCStatus("NFC沒有啟動...", "info");
@@ -1451,16 +1023,13 @@
             }
 
             try {
-                // 移除舊的事件監聽器（避免重複綁定）
                 nfcReader.removeEventListener("reading", handleNFCReadingByScan);
                 nfcReader.removeEventListener("readingerror", handleNFCError);
 
-                // 啟動掃描
                 await nfcReader.scan();
                 console.log("NFC掃描已啟動");
                 showNFCStatus("NFC掃描中...", "info");
 
-                // 重新綁定事件監聽器
                 nfcReader.addEventListener("reading", handleNFCReadingByScan);
                 nfcReader.addEventListener("readingerror", handleNFCError);
 
@@ -1468,36 +1037,70 @@
                 console.error('掃描啟動失敗:', error);
                 showNFCStatus(`NFC掃描失敗: ${error.message}`, "error");
 
-                // 如果是權限問題，提示使用者
                 if (error.name === 'NotAllowedError') {
                     alert('請允許網站使用NFC功能');
                 }
             }
         }
 
+        // 這個函數執行的話代表感應到NFC卡片
         function handleNFCReadingByScan(event) {
-            let cardId = event.serialNumber;  // 直接使用
-    
+            let cardId = event.serialNumber;
+            let message = event.message;
             if (cardId) {
                 showNFCStatus(`讀取到卡片: ${cardId}`, "success");
-                handleNFCCard(cardId, event.message);
+                handleNFCCard(cardId, message);
             } else {
                 console.error('無法獲取卡片ID');
                 showNFCStatus("無法讀取卡片ID", "error");
             }
         }
 
-        // === 刷NFC卡 ===
         function handleNFCCard(nfcId, message) {
 
-            pendingNFCId = nfcId
-            showInspectTypeModal()
+            if (nfcId === "") {
+                showNFCStatus("讀取到的NFC卡片ID為空，請重新感應");
+                return;
+            }
+
+            $.ajax({
+                url: '@Url.Action("ProcessNFCInspection", "Inspection")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    nfcId: nfcId
+                }),
+                dataType: 'json',
+                success: function (response) {
+                    if (response.success) {
+                        if (response.needConfirmation) {
+                            showReplaceConfirmationModal(response);
+                        } else {
+                            showInspectionStartModal(response.deviceId, response.arriveTime, response.isExisting);
+                            loadTodayInspection();
+                        }
+                    } else {
+                        showNFCStatus(response.message, "error");
+
+                        if (response.errorCode === 'CARD_NOT_FOUND') {
+                            alert("此感應卡不存在於資料庫");
+                        } else if (response.errorCode === 'NOT_LOGGED_IN') {
+                            alert("請先登入系統");
+                            window.location.href = '@Url.Action("Login", "Account")';
+                        }
+                    }
+                },
+                error: function (xhr, status, error) {
+                    showNFCStatus('系統錯誤', "error");
+                }
+            });
         }
 
         function showInspectTypeModal() {
             const modal = document.getElementById('inspectTypeModal');
             if (modal) {
-                modal.style.display = 'flex';
+                modal.classList.remove('d-none');
+                modal.classList.add('d-flex');
         
                 const container = document.getElementById("inspectTypeOptions");
                 if (container) {
@@ -1521,8 +1124,8 @@
         function closeInspectTypeModal() {
             const modal = document.getElementById('inspectTypeModal');
             if (modal) {
-                modal.style.display = 'none';
-                // 重置表單
+                modal.classList.add('d-none');
+                modal.classList.remove('d-flex');
                 const selectElement = document.getElementById('inspectTypeOptions');
                 if (selectElement) {
                     selectElement.value = '';
@@ -1534,20 +1137,23 @@
             const selectedType = document.getElementById("inspectTypeOptions").value;
         }
 
-        function confirmInspectType (){
+        function confirmInspectType() {
             const selectInspectType = document.getElementById("inspectTypeOptions").value;
             if (!selectInspectType) {
                 alert('請選擇檢驗項目');
-            return;
+                return;
             }
 
-            let shortTerm = ["基恩斯量測","手持式三次元量測","全檢(EUV區)","全檢(CNC區)","全檢(成型區)","全檢(三樓緩衝)",'全檢(二樓倉庫)','限樣(限樣室)','限樣(一樓放置區)','全檢','限樣']
-            if (shortTerm.includes(selectInspectType)){
-                pendingNFCId = selectInspectType
+            let shortTerm = ["文書處裡","基恩斯量測","手持式三次元量測","全檢(EUV區)","全檢(CNC區)","全檢(成型區)","全檢(三樓緩衝)",'全檢(二樓倉庫)','限樣(限樣室)','限樣(一樓放置區)','全檢','限樣'];
+            if (shortTerm.includes(selectInspectType)) {
+                if (pendingNFCId === "") {
+                    pendingNFCId = selectInspectType;
+                }
             }
 
             let workOrderNo = "";
-            closeInspectTypeModal()
+            closeInspectTypeModal();
+            
             $.ajax({
                 url: '@Url.Action("ProcessNFCInspection", "Inspection")',
                 type: 'POST',
@@ -1560,18 +1166,14 @@
                 }),
                 dataType: 'json',
                 success: function (response) {
-                    
                     if (response.success) {
                         if (response.needConfirmation) {
-                            // 需要用戶確認是否替換
-                            showReplaceConfirmationModal(response,selectInspectType, workOrderNo);
+                            showReplaceConfirmationModal(response, pendingNFCId);
                         } else {
-                            // 直接成功
                             showInspectionStartModal(response.deviceId, response.arriveTime, response.isExisting);
                             loadTodayInspection();
                         }
                     } else {
-                        // addNFCLog(`處理失敗: ${response.message}`);
                         showNFCStatus(response.message, "error");
 
                         if (response.errorCode === 'CARD_NOT_FOUND') {
@@ -1588,10 +1190,10 @@
             });
         }
 
-        function showReplaceConfirmationModal(response, selectInspectType, workOrderNo) {
+        function showReplaceConfirmationModal(response) {
             const confirmed = confirm(
                 `${response.message}\n` +
-                `確定要在 ${response.newDeviceId} 開始新的巡檢嗎？`
+                `確定要開始在新地點開始新的檢驗嗎？`
             );
             if (confirmed) {
                 $.ajax({
@@ -1600,9 +1202,6 @@
                     contentType: 'application/json',
                     data: JSON.stringify({
                         nfcId: response.nfcId,
-                        source: 'NFC',
-                        inspectType: selectInspectType,
-                        workOrderNo,
                         confirmReplace: true,
                         oldRecordId: response.pendingRecordId
                     }),
@@ -1613,24 +1212,19 @@
                             showInspectionStartModal(response.deviceId, response.arriveTime, response.isExisting);
                             loadTodayInspection();
                         } else {
-                            // addNFCLog(`替換失敗: ${confirmResponse.message}`);
                             showNFCStatus(`替換失敗: ${response.message}`, "error");
                         }
                     },
                     error: function (xhr, status, error) {
-                        // addNFCLog(`替換錯誤: ${xhr.status} ${error}`);
                         showNFCStatus('替換失敗: 系統錯誤', "error");
                     }
                 });
             } else {
-                // addNFCLog('使用者取消替換巡檢記錄');
                 showNFCStatus('已取消新的巡檢記錄', 'info');
             }
         }
 
-
         function manualStartNFC() {
-            // addNFCLog('手動啟動NFC');
             if (isNFCSupported && nfcReader) {
                 startNFCReading();
             } else {
@@ -1639,219 +1233,25 @@
         }
 
         function stopNFC() {
-            // addNFCLog('NFC掃描停止');
             showNFCStatus("掃描已停止", "info");
         }
-
-        function showNFCStatus(message, type) {
-            const statusDiv = $('#nfcStatus');
-            statusDiv.removeClass('nfc-success nfc-error nfc-warning nfc-info');
-            statusDiv.addClass('nfc-' + type);
-            statusDiv.text(message).show();
-
-            if (type !== 'error') {
-                setTimeout(() => {
-                    statusDiv.hide();
-                }, 3000);
-            }
-        }
-
-    </script>
-    <script>
-        // 只有G02828能用的快速輸入資料
-        const nfcTestCards = [
-            // 射出一區
-            { area: '一樓中央走道', deviceId: 'CLF_2200T-01', nfcCardId: '04:7a:86:12:64:6b:80' },
-            { area: '射出一區', deviceId: 'CLF_2200T-01', nfcCardId: 'CLF_2200T-01' },
-            { area: '射出一區', deviceId: 'FCS_1700T-01', nfcCardId: 'FCS_1700T-01' },
-            { area: '射出一區', deviceId: 'FCS_850T-01', nfcCardId: 'FCS_850T-01' },
-            { area: '射出一區', deviceId: 'OR_180T-01', nfcCardId: 'OR_180T-01' },
-            { area: '射出一區', deviceId: 'OR_180T-02', nfcCardId: 'OR_180T-02' },
-            { area: '射出一區', deviceId: 'OR_550T-01', nfcCardId: 'OR_550T-01' },
-            { area: '射出一區', deviceId: 'SUMITOMO_130T-01', nfcCardId: 'SUMITOMO_130T-01' },
-            { area: '射出一區', deviceId: 'SUMITOMO_280T-01', nfcCardId: 'SUMITOMO_280T-01' },
-
-            // 射出二區
-            { area: '射出二區', deviceId: 'ARBURG_50T-01', nfcCardId: 'ARBURG_50T-01' },
-            { area: '射出二區', deviceId: 'OR_250T-01', nfcCardId: 'OR_250T-01' },
-            { area: '射出二區', deviceId: 'OR_250T-02', nfcCardId: 'OR_250T-02' },
-            { area: '射出二區', deviceId: 'OR_350T-05', nfcCardId: 'OR_350T-05' },
-            { area: '射出二區', deviceId: 'SUMITOMO_180T-04', nfcCardId: 'SUMITOMO_180T-04' },
-            { area: '射出二區', deviceId: 'SUMITOMO_50T-02', nfcCardId: 'SUMITOMO_50T-02' },
-            { area: '射出二區', deviceId: 'TOSHIBA_850T-02', nfcCardId: 'TOSHIBA_850T-02' },
-
-            // 射出三區
-            { area: '射出三區', deviceId: 'OR_100T-02', nfcCardId: 'OR_100T-02' },
-            { area: '射出三區', deviceId: 'OR_350T-01', nfcCardId: 'OR_350T-01' },
-            { area: '射出三區', deviceId: 'OR_350T-02', nfcCardId: 'OR_350T-02' },
-            { area: '射出三區', deviceId: 'OR_350T-04', nfcCardId: 'OR_350T-04' },
-            { area: '射出三區', deviceId: 'TOSHIBA_1000T-01', nfcCardId: 'TOSHIBA_1000T-01' },
-            { area: '射出三區', deviceId: 'TOSHIBA_1050T-01', nfcCardId: 'TOSHIBA_1050T-01' },
-            { area: '射出三區', deviceId: 'TOSHIBA_1050T-02', nfcCardId: 'TOSHIBA_1050T-02' },
-            { area: '射出三區', deviceId: 'TOSHIBA_1050T-03', nfcCardId: 'TOSHIBA_1050T-03' },
-            { area: '射出三區', deviceId: 'TOSHIBA_550T-02', nfcCardId: 'TOSHIBA_550T-02' },
-
-            // 復興廠
-            { area: '復興廠', deviceId: 'FANUC_100T-04', nfcCardId: 'FANUC_100T-04' },
-            { area: '復興廠', deviceId: 'FANUC_300T-01', nfcCardId: 'FANUC_300T-01' },
-            { area: '復興廠', deviceId: 'FANUC_300T-02', nfcCardId: 'FANUC_300T-02' },
-            { area: '復興廠', deviceId: 'FANUC_450T-01', nfcCardId: 'FANUC_450T-01' },
-            { area: '復興廠', deviceId: 'TOSHIBA_1050T-04', nfcCardId: 'TOSHIBA_1050T-04' },
-            { area: '辦公室', deviceId: '', nfcCardId: 'TEST' }
-        ];
-
-        function showNFCTestModal(userNo) {
-            if (userNo !=="G02828") return
-            document.getElementById('nfcTestModal').style.display = 'flex';
-            generateNFCCardList();
-            document.getElementById('nfcSearchInput').focus();
-        }
-
-        function closeNFCTestModal() {
-            document.getElementById('nfcTestModal').style.display = 'none';
-            document.getElementById('nfcSearchInput').value = '';
-        }
-
-        function generateNFCCardList(filteredCards = null) {
-            const cards = filteredCards || nfcTestCards;
-            const listContainer = document.getElementById('nfcCardList');
-
-            if (cards.length === 0) {
-                listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">找不到符合的卡片</div>';
-                return;
-            }
-
-            const html = cards.map(card => `
-                <div class="nfc-card-item" onclick="selectNFCCard('${card.nfcCardId}', '${card.area}', '${card.deviceId}')"
-                     style="padding: 12px 15px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s;"
-                     onmouseover="this.style.background='#f8f9fa'"
-                     onmouseout="this.style.background='white'">
-                    <div style="font-weight: bold; color: #333; margin-bottom: 4px;">
-                        ${card.nfcCardId}
-                    </div>
-                    <div style="font-size: 13px; color: #666;">
-                        ${card.area} - ${card.deviceId}
-                    </div>
-                </div>
-            `).join('');
-
-            listContainer.innerHTML = html;
-        }
-
-        function filterNFCCards() {
-            const searchTerm = document.getElementById('nfcSearchInput').value.toLowerCase();
-            if (!searchTerm) {
-                generateNFCCardList();
-                return;
-            }
-
-            const filteredCards = nfcTestCards.filter(card =>
-                card.area.toLowerCase().includes(searchTerm) ||
-                card.deviceId.toLowerCase().includes(searchTerm) ||
-                card.nfcCardId.toLowerCase().includes(searchTerm)
-            );
-
-            generateNFCCardList(filteredCards);
-        }
-
-        function selectNFCCard(nfcCardId, area, deviceId) {
-            // 確認選擇
-            if (confirm(`確定要測試刷取卡片嗎？\n\n卡片ID: ${nfcCardId}\n區域: ${area}\n設備: ${deviceId}`)) {
-                closeNFCTestModal();
-
-                if (typeof showNFCStatus === 'function') {
-                    showNFCStatus(`測試刷取: ${nfcCardId}`, "info");
-                }
-
-                // 執行 NFC 處理
-                handleNFCCard(nfcCardId, "");
-            }
-        }
-
-        function testCustomNFC() {
-            closeNFCTestModal();
-            document.getElementById('customNFCModal').style.display = 'flex';
-            document.getElementById('customNFCInput').focus();
-        }
-
-        function closeCustomNFCModal() {
-            document.getElementById('customNFCModal').style.display = 'none';
-            document.getElementById('customNFCInput').value = '';
-        }
-        
-
-        function executeCustomNFC() {
-            const customNFCId = document.getElementById('customNFCInput').value.trim();
-
-            if (!customNFCId) {
-                alert('請輸入 NFC 卡片 ID');
-                return;
-            }
-
-            closeCustomNFCModal();
-
-            // 顯示測試提示
-            // if (typeof addNFCLog === 'function') {
-            //     addNFCLog(`測試模式：模擬刷取自訂卡片 ${customNFCId}`);
-            // }
-            if (typeof showNFCStatus === 'function') {
-                showNFCStatus(`測試刷取: ${customNFCId}`, "info");
-            }
-
-            // 執行 NFC 處理
-            handleNFCCard(customNFCId, "");
-        }
-
-        // 鍵盤快捷鍵支援
-        document.addEventListener('keydown', function(e) {
-            // ESC 鍵關閉 Modal
-            if (e.key === 'Escape') {
-                if (document.getElementById('customNFCModal').style.display === 'flex') {
-                    closeCustomNFCModal();
-                } else if (document.getElementById('nfcTestModal').style.display === 'flex') {
-                    closeNFCTestModal();
-                }
-            }
-
-            // Enter 鍵執行自訂 NFC 測試
-            if (e.key === 'Enter' && document.getElementById('customNFCModal').style.display === 'flex') {
-                executeCustomNFC();
-            }
-        });
-
-        // 點擊外部區域關閉 Modal
-        document.getElementById('nfcTestModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeNFCTestModal();
-            }
-        });
-
-        document.getElementById('customNFCModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeCustomNFCModal();
-            }
-        });
-
-        document.getElementById('machineIdInputModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeMachineIdInputModal();
-            }
-        });
 
         function showInspectionStartModal(deviceId, arriveTime, isExisting) {
             $('#modalDevice').text(deviceId);
             $('#modalTime').text(`時間: ${arriveTime}`);
 
-            const modal = $('#inspectionModal');
-            modal.addClass('show'); // 使用 flex 置中
+            const modal = document.getElementById('inspectionModal');
+            modal.classList.remove('d-none');
+            modal.classList.add('d-flex');
         }
 
         function closeInspectionModal(e) {
-            // 如果有 event，確保是點背景才關閉
             if (e && e.target !== e.currentTarget) return;
-            $('#inspectionModal').removeClass('show');
+            const modal = document.getElementById('inspectionModal');
+            modal.classList.add('d-none');
+            modal.classList.remove('d-flex');
         }
+
+
     </script>
-
-
 }
