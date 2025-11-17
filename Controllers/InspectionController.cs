@@ -157,7 +157,7 @@ namespace PatrolInspect.Controllers
                     return Json(new
                     {
                         success = true,
-                        message = $"目前已在 {nfcData.Area} {nfcData.DeviceId ?? ""} 開始檢驗",
+                        message = $"目前已在{nfcData.Area} {nfcData.DeviceId ?? ""}開始檢驗",
                         arriveTime = firstArriveTime,
                         isExisting = false
                     });
@@ -177,7 +177,7 @@ namespace PatrolInspect.Controllers
                         return Json(new
                         {
                             success = true,
-                            message = $"目前已在 {firstPendingRecord.DeviceId} 檢驗",
+                            message = $"目前已在{firstPendingRecord.DeviceId}檢驗",
                             arriveTime = firstPendingRecord.ArriveAt.ToString("HH:mm:ss"),
                             workOrders,
                             isExisting = true
@@ -189,7 +189,7 @@ namespace PatrolInspect.Controllers
                     {
                         success = true,
                         needConfirmation = true,
-                        message = $"您在 {firstPendingRecord.Area}  {firstPendingRecord.DeviceId ?? ""}還有未完成的巡檢記錄",
+                        message = $"您在{firstPendingRecord.Area} {firstPendingRecord.DeviceId ?? ""}還有未完成的巡檢記錄",
                         // pendingRecordId, nfcId前端要用的資訊
                         pendingRecordId = firstPendingRecord.RecordId,
                         nfcId = request.NfcId 
@@ -272,31 +272,31 @@ namespace PatrolInspect.Controllers
         {
             try
             {
-                // 檢查登入狀態
                 var userNo = HttpContext.Session.GetString("UserNo");
                 if (string.IsNullOrEmpty(userNo))
                 {
                     return Json(new { success = false, message = "請重新登入" });
                 }
 
-                // 驗證輸入
                 if (request.RecordId <= 0)
                 {
                     return Json(new { success = false, message = "無效的記錄ID" });
                 }
 
-                if (request.OkQuantity < 0 || request.NgQuantity < 0)
+                // 如果不是只更新備註，需要驗證數量
+                if (!request.OnlyForRemark && (request.OkQuantity < 0 || request.NgQuantity < 0))
                 {
                     return Json(new { success = false, message = "數量不能為負數" });
                 }
 
-
-                // 更新檢驗數量
-                var result = await _inspectionRepository.UpdateInspectionQuantityAsync(
+                // 呼叫統一的更新方法
+                var result = await _inspectionRepository.UpdateInspectionRecordAsync(
                     request.RecordId,
+                    request.QuantityWo,
                     request.OkQuantity,
                     request.NgQuantity,
-                    request.RemarkQuantity,
+                    request.Remark ?? string.Empty,
+                    request.OnlyForRemark,
                     userNo
                 );
 
@@ -307,20 +307,16 @@ namespace PatrolInspect.Controllers
                     return Json(new
                     {
                         success = true,
-                        message = "檢驗數量更新成功",
+                        message = repositoryResult.Message,
                         data = new
                         {
                             recordId = request.RecordId,
-                            okQuantity = request.OkQuantity,
-                            ngQuantity = request.NgQuantity,
                             updateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
                         }
                     });
                 }
-                else
-                {
-                    return Json(new { success = false, message = repositoryResult.Message });
-                }
+
+                return Json(new { success = false, message = repositoryResult.Message });
             }
             catch (Exception ex)
             {

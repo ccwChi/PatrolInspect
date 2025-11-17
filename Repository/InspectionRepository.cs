@@ -129,7 +129,7 @@ namespace PatrolInspect.Repository
                         unprocessedRecords,
                         deviceNameMapping
                     );
-                    timePeriods.Add(otherWorkPeriod);
+                    timePeriods.Insert(0, otherWorkPeriod);
                 }
 
                 return new UserTodayInspection
@@ -173,7 +173,7 @@ namespace PatrolInspect.Repository
                 LEFT JOIN FineReport.dbo.FN_EQPSTATUS fne ON d.DeviceId = fne.DeviceID
                 WHERE d.Area IN @Areas AND d.IsActive = 1";
 
-                    // 2. 抓檢驗記錄
+              // 2. 抓檢驗記錄
               var recordSql = $@"
                 SELECT iqc.*
                 FROM {dbname}.dbo.INSPECTION_QC_RECORD iqc
@@ -256,7 +256,8 @@ namespace PatrolInspect.Repository
                     Inspector = r.UserName,
                     InspectorId = r.UserNo,
                     InspectWo = r.InspectWo ?? "",
-                    InspectType = r.InspectType
+                    InspectType = r.InspectType,
+                    Remark = r.Remark
                 }).ToList();
 
                 devices.Add(new DeviceInspectionInfo
@@ -276,12 +277,12 @@ namespace PatrolInspect.Repository
         {
             var period = new TimePeriod
             {
-                StartTime = DateTime.Today.AddHours(8).ToString(),
-                EndTime = DateTime.Today.AddDays(1).AddHours(8).ToString(),
+                StartTime = "非班表任務",
+                EndTime = "",
                 StartDateTime = DateTime.Today.AddHours(8),
                 EndDateTime = DateTime.Today.AddDays(1).AddHours(8),
                 Areas = new List<string>(),
-                EventType = "今日其他作業",
+                EventType = "",
                 EventDetail = "非排班時段的檢驗記錄",
                 IsCurrent = true,
                 IsPast = false,
@@ -301,7 +302,7 @@ namespace PatrolInspect.Repository
                     DeviceID = deviceId,
                     DeviceName = deviceNameMapping.GetValueOrDefault(deviceId, deviceId),
                     Status = "---",
-                    WO_ID = string.Join(",", deviceRecords.Select(r => r.InspectWo).Where(w => !string.IsNullOrEmpty(w)).Distinct())
+                    WO_ID = string.Join(", ", deviceRecords.Select(r => r.InspectWo).Where(w => !string.IsNullOrEmpty(w)).Distinct())
                 };
 
                 var inspectionRecords = deviceRecords.Select(r => new InspectionRecord
@@ -311,7 +312,8 @@ namespace PatrolInspect.Repository
                     Inspector = r.UserName,
                     InspectorId = r.UserNo,
                     InspectWo = r.InspectWo ?? "",
-                    InspectType = r.InspectType
+                    InspectType = r.InspectType,
+                    Remark = r.Remark
                 }).ToList();
 
                 period.DevicesToInspect.Add(new DeviceInspectionInfo
@@ -457,7 +459,7 @@ namespace PatrolInspect.Repository
             var sql = @"
                 SELECT RecordId, CardId, DeviceId, UserNo, UserName, InspectType, InspectWo,
                        ArriveAt, SubmitDataAt, Source, CreateDate,
-                       InspectItemOkNo, InspectItemNgNo
+                       InspectItemOkNo, InspectItemNgNo, Remark
                 FROM INSPECTION_QC_RECORD 
                 WHERE ArriveAt >= @StartDateTime
                   AND InspectType <> 'CANCEL'
@@ -507,7 +509,7 @@ namespace PatrolInspect.Repository
             var extraTasks = new List<DeviceInspectionInfo>();
 
             // 將原始資料按 DeviceID 分組
-            var deviceGroups = rawData.GroupBy(x => x.DeviceID).ToDictionary(g => g.Key, g => g.ToList());
+            var deviceGroups = rawData.GroupBy(x => x.InspectType).ToDictionary(g => g.Key, g => g.ToList());
 
             // 處理該時段負責區域的機台
             foreach (var deviceGroup in deviceGroups)
@@ -524,7 +526,7 @@ namespace PatrolInspect.Repository
                     Status = firstRecord.Status,
                     StartTime = firstRecord.StartTime,
                     CreateTime = firstRecord.CreateTime,
-                    WO_ID =  string.Join(",", deviceRecords
+                    WO_ID =  string.Join(", ", deviceRecords
                     .Where(r=> !string.IsNullOrEmpty(r.WO_ID))
                     .Select(r=> r.WO_ID!)
                     .Distinct()
@@ -606,71 +608,82 @@ namespace PatrolInspect.Repository
         }
 
 
-        public async Task<object> UpdateInspectionQuantityAsync(int recordId, int okQuantity, int ngQuantity, string remarkQuantity, string updatedBy)
+        public async Task<object> UpdateInspectionRecordAsync(int recordId, string quantityWo, int? okQuantity, int? ngQuantity, string remark, bool onlyRemark, string updatedBy)
         {
             using var connection = CreateMesConnection();
 
             try
             {
-                // 1. 檢查記錄是否存在且可以更新
-                var checkSql = @"
-                    SELECT 1
-                    FROM INSPECTION_QC_RECORD 
-                    WHERE RecordId = @RecordId
-                    AND SubmitDataAt is NULL";
+                // 1. 檢查記錄是否存在
+                var checkSql = "SELECT 1 FROM INSPECTION_QC_RECORD WHERE RecordId = @RecordId";
+                var exists = await connection.QueryFirstOrDefaultAsync<int?>(checkSql, new { RecordId = recordId });
 
-                var existingRecord = await connection.QueryFirstOrDefaultAsync<dynamic>(checkSql, new { RecordId = recordId });
-
-                if (existingRecord == null)
+                if (exists == null)
                 {
-                    return new
-                    {
-                        Success = false,
-                        Message = "找不到指定的檢驗記錄"
-                    };
+                    return new { Success = false, Message = "找不到指定的檢驗記錄" };
                 }
 
-                // 4. 更新檢驗數量
-                var updateSql = @"
+                // 2. 根據 onlyRemark 決定更新內容
+                string updateSql;
+                object parameters;
+
+                if (onlyRemark)
+                {
+                    // 只更新備註
+                    updateSql = @"
+                        UPDATE INSPECTION_QC_RECORD 
+                        SET Remark = @Remark,
+                            SubmitDataAt = CASE 
+                                WHEN SubmitDataAt IS NULL THEN GETDATE()
+                                ELSE SubmitDataAt
+                            END
+                        WHERE RecordId = @RecordId";
+
+                    parameters = new { RecordId = recordId, Remark = remark };
+                }
+                else
+                {
+                    // 更新數量 + 備註 + 結束時間
+                    updateSql = @"
                         UPDATE INSPECTION_QC_RECORD 
                         SET InspectItemOkNo = @OkQuantity,
                             InspectItemNgNo = @NgQuantity,
                             SubmitDataAt = GETDATE(),
-                            Remark = @remarkQuantity
-                        WHERE RecordId = @RecordId
-                        AND SubmitDataAt is null";
+                            Remark = @Remark,
+                            InspectType = CASE 
+                                WHEN InspectType = '製一巡檢' THEN '機邊檢驗'
+                                ELSE InspectType 
+                            END,
+                            InspectWo = CASE
+                                WHEN (InspectWo IS NULL OR InspectWo = '') AND @QuantityWo IS NOT NULL AND @QuantityWo <> ''
+                                THEN @QuantityWo
+                                ELSE InspectWo
+                            END
+                        WHERE RecordId = @RecordId";
 
-                var updateResult = await connection.ExecuteAsync(
-                    updateSql,
-                    new
+                    parameters = new
                     {
                         RecordId = recordId,
-                        OkQuantity = okQuantity.ToString(),
-                        NgQuantity = ngQuantity.ToString(),
-                        remarkQuantity 
-                    }
-                );
-
-                if (updateResult == 0)
-                {
-                    return new
-                    {
-                        Success = false,
-                        Message = "更新失敗，請稍後再試"
+                        OkQuantity = (okQuantity ?? 0).ToString(),
+                        NgQuantity = (ngQuantity ?? 0).ToString(),
+                        Remark = remark,
+                        QuantityWo = quantityWo
                     };
                 }
 
+                var updateResult = await connection.ExecuteAsync(updateSql, parameters);
 
-                return new
+                if (updateResult == 0)
                 {
-                    Success = true,
-                    Message = "檢驗數量更新成功"
-                };
+                    return new { Success = false, Message = "更新失敗，請稍後再試" };
+                }
+
+                return new { Success = true, Message = onlyRemark ? "備註更新成功" : "檢驗數量更新成功" };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "更新檢驗數量時發生錯誤: RecordId={RecordId}", recordId);
-                throw; // 讓Controller處理異常
+                _logger.LogError(ex, "更新檢驗記錄時發生錯誤: RecordId={RecordId}", recordId);
+                throw;
             }
         }
         //==============================讀取NFC並新增===========================================
@@ -685,6 +698,11 @@ namespace PatrolInspect.Repository
                 VALUES 
                 (@CardId, @DeviceId, @UserNo, @UserName,@Area, @InspectType, @InspectWo, @ArriveAt, @SubmitDataAt, @Source, @CreateDate);
                 SELECT CAST(SCOPE_IDENTITY() as int)";
+
+            if (string.IsNullOrEmpty(record.DeviceId))
+            {
+                record.DeviceId = record.InspectType;
+            }
 
             try
             {
@@ -806,6 +824,7 @@ namespace PatrolInspect.Repository
 
                 // 3. 更新原始記錄為第一筆工單
                 var firstOrder = orders.First();
+                await UpdateOriginalRecordAsync(connection, transaction, originalRecordId, firstOrder);
 
                 // 4. 為其餘工單創建新記錄
                 if (orders.Count > 1)
@@ -848,6 +867,17 @@ namespace PatrolInspect.Repository
 
         private async Task UpdateOriginalRecordAsync(IDbConnection connection, IDbTransaction transaction, int recordId, WarehouseOrderInfo orderInfo)
         {
+            string workOrderToUpdate = orderInfo.WorkOrder;
+
+            if (!string.IsNullOrEmpty(workOrderToUpdate) &&
+                workOrderToUpdate.Length == 10 &&
+                (workOrderToUpdate.StartsWith("14") ||
+                 workOrderToUpdate.StartsWith("17") ||
+                 workOrderToUpdate.StartsWith("19")))
+            {
+                workOrderToUpdate = "00" + workOrderToUpdate;
+            }
+
             var updateSql = @"
                 UPDATE INSPECTION_QC_RECORD 
                 SET InspectWo = @WorkOrder,
@@ -860,7 +890,7 @@ namespace PatrolInspect.Repository
             await connection.ExecuteAsync(updateSql, new
             {
                 RecordId = recordId,
-                WorkOrder = orderInfo.WorkOrder,
+                WorkOrder = workOrderToUpdate,
                 OkQuantity = orderInfo.OkQuantity.ToString(),
                 NgQuantity = orderInfo.NgQuantity.ToString(),
                 Remark = orderInfo.Remark
@@ -883,6 +913,17 @@ namespace PatrolInspect.Repository
 
             foreach (var order in orders)
             {
+                string workOrderToUpdate = order.WorkOrder;
+
+                if (!string.IsNullOrEmpty(workOrderToUpdate) &&
+                    workOrderToUpdate.Length == 10 &&
+                    (workOrderToUpdate.StartsWith("14") ||
+                     workOrderToUpdate.StartsWith("17") ||
+                     workOrderToUpdate.StartsWith("19")))
+                {
+                    workOrderToUpdate = "00" + workOrderToUpdate;
+                }
+
                 var newRecord = new
                 {
                     CardId = originalRecord.CardId,
@@ -891,7 +932,7 @@ namespace PatrolInspect.Repository
                     UserName = originalRecord.UserName,
                     Area = originalRecord.Area,
                     InspectType = originalRecord.InspectType,
-                    InspectWo = order.WorkOrder,
+                    InspectWo = workOrderToUpdate,
                     ArriveAt = originalRecord.ArriveAt,
                     SubmitDataAt = DateTime.Now,
                     Source = originalRecord.Source,

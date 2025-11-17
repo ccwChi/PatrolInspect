@@ -26,15 +26,22 @@
             <strong>@ViewBag.UserName (@ViewBag.UserNo)</strong>
             <div style="color: #666;" onclick="showNFCTestModal('@ViewBag.UserNo')">@ViewBag.DepartmentName - @ViewBag.TitleName</div>
             <div class="fw-bold" style="font-size:12px; color: #666;" id="currentTime">@ViewBag.CurrentTime</div>
+            <div class="text-secondary"></div>
         </div>
         <div class="position-absolute" style="top:5px; right:5px">
             <button class="btn btn-sm btn-light border" onclick="loadTodayInspection()">刷新資料</button>
         </div>
-    </div>
 
-    <button class="btn btn-outline-secondary mb-2 w-100" style="padding:2px; color:black;">
-        <div class="p-2" onclick="showMachineIdInputModal()">點選並掃描機台 QRcode 開始檢驗</div>
-    </button>
+    </div>
+    <div class="mb-2 w-100" style="padding:8px; color:black; border:1px solid black" onclick="showMachineIdInputModal()">
+        <p>1. 請直接刷感應卡，如沒反應請下滾到最下面，先按"停止感應"後再選擇"啟動感應"</p>
+        <p>2. 如有遇到問題請洽63030照錡，請紀錄工作跟時間以便於補資料</p>
+    </div>
+    <div class="d-flex gap-2" >
+            <button class="btn btn-outline-secondary mb-2 w-100" style="padding:2px; color:black;" onclick="handleAction('會議')">會議</button >
+            <button class="btn btn-outline-secondary mb-2 w-100" style="padding:2px; color:black;" onclick="handleAction('支援')">支援</button >
+            <button class="btn btn-outline-secondary mb-2 w-100" style="padding:2px; color:black;" onclick="handleAction('文書處理')">文書作業</button >
+    </div>
 
     <!-- 統計資訊 -->
     <div class="border rounded mb-2 bg-white">
@@ -122,6 +129,10 @@
 
             <form onsubmit="event.preventDefault(); submitInspectionQuantity();">
                 <div class="d-flex flex-column gap-3 mb-3">
+                    <div class="flex-fill">
+                        <label for="quantityWoInput" class="form-label fw-semibold" style="color: #333;">如無工單資訊請輸入工單</label>
+                        <input type="text" id="quantityWoInput" class="form-control text-center" placeholder="">
+                    </div>
                     <div class="d-flex gap-2">
                         <div class="flex-fill">
                             <label for="okQuantity" class="form-label fw-semibold" style="color: #333;">OK數量</label>
@@ -148,8 +159,10 @@
         </div>
     </div>
 
+
+
     <!-- NFC測試Modal -->
-    <div id="nfcTestModal" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" 
+    @* <div id="nfcTestModal" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" 
          style="background: rgba(0,0,0,0.5); z-index: 1000;">
         <div class="bg-white p-4 rounded" style="max-width: 500px; width: 90%; max-height: 80%; overflow-y: auto;">
             <h3 class="mb-3" style="color: #333;">選擇測試 NFC 卡片</h3>
@@ -167,10 +180,10 @@
                 <button onclick="testCustomNFC()" class="btn btn-primary">自訂卡片ID</button>
             </div>
         </div>
-    </div>
+    </div> *@
 
     <!-- 自訂 NFC ID Modal -->
-    <div id="customNFCModal" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" 
+    @* <div id="customNFCModal" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" 
          style="background: rgba(0,0,0,0.5); z-index: 1001;">
         <div class="bg-white p-4 rounded" style="max-width: 400px; width: 90%;">
             <h3 class="mb-3" style="color: #333;">輸入自訂 NFC ID</h3>
@@ -182,7 +195,7 @@
                 <button onclick="executeCustomNFC()" class="btn btn-success">測試</button>
             </div>
         </div>
-    </div>
+    </div> *@
 
     <!-- 機台ID輸入Modal -->
     <div id="machineIdInputModal" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center" 
@@ -293,6 +306,32 @@
                 <input type="hidden" id="warehouseRecordId" value="">
             </div>
         </div>
+    </div>
+</div>
+
+<div id="remarkModal" class="position-fixed top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center"
+     style="background: rgba(0,0,0,0.5); z-index: 1002;">
+    <div class="bg-white p-4 rounded shadow" style="max-width: 450px; width: 90%;">
+        <h3 id="remarkModalTitle" class="mb-3 text-center" style="color: #333;">備註</h3>
+
+        <div id="remarkModalInfo" class="bg-light p-3 rounded mb-3"
+             style="border-left: 4px solid #0071b2; font-size: 14px; line-height: 1.5;">
+            <!-- 動態填入檢驗資訊 -->
+        </div>
+
+        <form onsubmit="event.preventDefault(); submitRemark();">
+            <div class="mb-3">
+                <label for="remarkInput" class="form-label fw-semibold" style="color: #333;">備註內容</label>
+                <textarea rows="3" id="remarkInput" maxlength="190" class="form-control" placeholder="請輸入備註..."></textarea>
+            </div>
+
+            <div class="text-end">
+                <button type="button" onclick="closeRemarkModal()" class="btn btn-secondary me-2">取消</button>
+                <button type="submit" class="btn btn-primary" style="background: #0071b2;">確定提交</button>
+            </div>
+        </form>
+
+        <input type="hidden" id="remarkRecordId" value="">
     </div>
 </div>
 
@@ -467,7 +506,7 @@
                     return periodElement;
                 }
 
-        function createPeriodContentHtml(period) {
+                function createPeriodContentHtml(period) {
             let contentHtml = `
                 <div class="border rounded p-2 mb-2" style="background: #f0f8ff;">
                     <strong>${period.eventType || '排程作業'}</strong>
@@ -475,10 +514,10 @@
                 </div>
             `;
 
-            let devices = [...(period.devicesToInspect || [])];
+            let rawDevicesToInspect = [...(period.devicesToInspect || [])];
             let extraTasks = (period.isCurrent && period.extraTask) ? period.extraTask : [];
 
-            if (devices.length > 0 || extraTasks.length > 0) {
+            if (rawDevicesToInspect.length > 0 || extraTasks.length > 0) {
                 const statusPriority = {
                     'RUN': 1,
                     'IDLE': 2,
@@ -486,27 +525,30 @@
                     'PMC資料缺漏': 4,
                     'OFF': 5
                 };
-           
-                const sortedDevices = devices.sort((a, b) => {
+
+                const devicesToInspect = rawDevicesToInspect.sort((a, b) => {
+                    // ⭐ 優先排序：檢查是否有作業中的記錄
+                    const aHasProgressing = a.inspectionList?.some(rec => rec.time.includes("作業中"));
+                    const bHasProgressing = b.inspectionList?.some(rec => rec.time.includes("作業中"));
+
+                    // 有作業中的排在前面
+                    if (aHasProgressing && !bHasProgressing) return -1;
+                    if (!aHasProgressing && bHasProgressing) return 1;
+
+                    // 如果都有或都沒有作業中，則按原本的狀態排序
                     const statusA = a.deviceStatus?.status || 'PMC資料缺漏';
                     const statusB = b.deviceStatus?.status || 'PMC資料缺漏';
                     const priorityA = statusPriority[statusA] || 99;
                     const priorityB = statusPriority[statusB] || 99;
+
                     if (priorityA === priorityB) {
                         return a.deviceStatus.deviceID.localeCompare(b.deviceStatus.deviceID);
                     }
                     return priorityA - priorityB;
                 });
 
-                sortedDevices.forEach(item => {
-                    contentHtml += renderDeviceCard(item, period);
-                });
-
-                extraTasks.forEach(extra => {
-                    contentHtml += renderDeviceCard(
-                        { ...extra, isExtraTask: true },
-                        period
-                    );
+                devicesToInspect.forEach(deviceToInspect => {
+                    contentHtml += renderDeviceCard(deviceToInspect, period);
                 });
 
             } else {
@@ -516,11 +558,11 @@
             return contentHtml;
         }
 
-function renderDeviceCard(item, period) {
-            const device = item.deviceStatus;
+        function renderDeviceCard(deviceToInspect, period) {
+            const device = deviceToInspect.deviceStatus;
             const status = device.status || 'PMC資料缺漏';
             const workOrderNo = device?.wO_ID ? device.wO_ID : "-";
-
+            // console.log("deviceToInspect",deviceToInspect)
             // 狀態背景色
             let bgColor = '';
             if (status === "OFF" || period.isPast) bgColor = '#e4e4e4';
@@ -533,10 +575,10 @@ function renderDeviceCard(item, period) {
 
             // 檢查警告狀態
             if (status === "RUN" && device.wO_ID) {
-                if (!item.inspectionList || item.inspectionList.length === 0) {
+                if (!deviceToInspect.inspectionList || deviceToInspect.inspectionList.length === 0) {
                     bgColor = '#f7cbac';
                 } else {
-                    const lastRecord = item.inspectionList[0];
+                    const lastRecord = deviceToInspect.inspectionList[0];
                     if (device.wO_ID.includes(lastRecord.inspectWo)) {
                         const now = new Date();
                         let endTimeStr = lastRecord.time.split('-').pop().trim();
@@ -558,22 +600,26 @@ function renderDeviceCard(item, period) {
             }
 
             // 額外任務標示
-            let extraBadge = item.isExtraTask
+            let extraBadge = deviceToInspect.isExtraTask
                 ? `<span class="badge bg-secondary">其他執行項目</span>`
                 : "";
 
             // 檢驗時間清單
             let inspectionsHtml = "";
     
-            if (item.inspectionList && item.inspectionList.length > 0) {
+            if (deviceToInspect.inspectionList && deviceToInspect.inspectionList.length > 0) {
                 inspectionsHtml += `<ul class="list-unstyled mb-0">`;
-                item.inspectionList.forEach(rec => {
+                deviceToInspect.inspectionList.forEach(rec => {
                     const isProgressing = rec.time.includes("作業中");
-                    const cursor = isProgressing ? "not-allowed" : "pointer";
+                    if (isProgressing && rec.inspectorId === userNo) {
+                        bgColor = '#cce5ff';
+                    }
+
+                    const safeRemark = (rec.remark || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
                     inspectionsHtml += `
-                        <li class="d-flex flex-wrap gap-1" style="cursor: ${cursor};"
-                            onclick="handleInspectionClick('${rec.recordId}', '${rec.time}', '${rec.inspectWo}', '${rec.inspector}','${rec.inspectorId}','${rec.inspectType}', ${isProgressing}, '${device.deviceID}')">
+                        <li class="d-flex flex-wrap gap-1" style="cursor: pointer;"
+                            onclick="handleInspectionClick('${rec.recordId}', '${rec.time}', '${rec.inspectWo}', '${rec.inspector}','${rec.inspectorId}','${rec.inspectType}', ${isProgressing}, '${device.deviceID}', '${safeRemark}')">
                             <span>${rec.time},</span>
                             <span>${rec.inspectWo}</span>
                             <span>(${rec.inspector})</span>
@@ -594,14 +640,19 @@ function renderDeviceCard(item, period) {
                         <div class="fw-bold">${device.deviceName}</div>
                         <div class="badge" style="background: ${bgColor}; color: #333; padding: 2px 6px; font-weight: bold;">${status}</div>
                     </div>
-                    <div class="text-muted mb-1">
+                    <!--<div class="text-muted mb-1">
                         ${device.deviceID || '-'}
-                    </div>` : 
+                        </div>--!>` :
                     `<div class="fw-bold">
-                    ${item.inspectionList[0].inspectType}
+                    ${deviceToInspect.inspectionList[0].inspectType}
                     </div>` 
                     }
-                    <div class="text-muted mb-1">工單: ${workOrderNo}</div>
+                    ${["機邊檢驗", "製一巡檢"].includes(deviceToInspect?.inspectionList?.[0]?.inspectType) ?
+                        `<div class="mb-1" style="word-break: break-word; white-space: normal; color:black">
+                            工單: ${workOrderNo}
+                        </div>`
+                        : ''
+                    }
                     <div class="mt-2">
                         <strong class="small">檢驗紀錄</strong>
                         ${inspectionsHtml}
@@ -610,10 +661,31 @@ function renderDeviceCard(item, period) {
             `;
         }
 
-        function handleInspectionClick(recordId, time, inspectWo, inspector, InspectorId, inspectType, isInProgress, deviceId) {
-            if (inspectType === '入庫檢驗' || inspectType.includes('入庫') || inspectType.includes('全檢')) {
+        // function handleInspectionClick(recordId, time, inspectWo, inspector, InspectorId, inspectType, isInProgress, deviceId) {
+        //     if (inspectType === '入庫檢驗' || inspectType.includes('入庫') || inspectType.includes('全檢') || inspectType.includes('基恩斯') || inspectType.includes('三次元')) {
+        //         showWarehouseOrderModal(recordId, time, inspectWo, inspector, InspectorId, inspectType, deviceId);
+        //     } else {
+        //         showQuantityInputModal(recordId, time, inspectWo, inspector, InspectorId, inspectType, deviceId);
+        //     }
+        // }
+        function handleInspectionClick(recordId, time, inspectWo, inspector, InspectorId, inspectType, isInProgress, deviceId, remark) {
+
+            if (!(time.includes("作業") || time.includes("檢驗"))) {
+                showRemarkModal(recordId, time, inspectWo, inspector, InspectorId, inspectType, deviceId, remark);
+            return;
+        }
+            // 簡單備註類型
+            const simpleRemarkTypes = ['支援', '會議', '文書處理', '支援其他單位', '主管交派', '限樣'];
+
+            if (simpleRemarkTypes.some(type => inspectType.includes(type))) {
+                showRemarkModal(recordId, time, inspectWo, inspector, InspectorId, inspectType, deviceId);
+            }
+            // 入庫、全檢、基恩斯、三次元
+            else if (inspectType === '入庫檢驗' || inspectType.includes('入庫') || inspectType.includes('全檢') || inspectType.includes('基恩斯') || inspectType.includes('三次元')) {
                 showWarehouseOrderModal(recordId, time, inspectWo, inspector, InspectorId, inspectType, deviceId);
-            } else {
+            }
+            // 一般檢驗
+            else {
                 showQuantityInputModal(recordId, time, inspectWo, inspector, InspectorId, inspectType, deviceId);
             }
         }
@@ -635,8 +707,10 @@ function renderDeviceCard(item, period) {
                 <div><strong>檢驗時間:</strong> ${time}</div>
                 <div><strong>工單號碼:</strong> ${inspectWo}</div>
                 <div><strong>檢驗人員:</strong> ${inspector}</div>
+                ${ inspectTypeA === "製一巡檢" ? "<div>當提交數量後，將會將此筆紀錄改為機邊檢驗</div>" : "" }
             `;
 
+            document.getElementById('quantityWoInput').value = '';
             document.getElementById('okQuantity').value = '';
             document.getElementById('ngQuantity').value = '';
             document.getElementById('quantityRemark').value = '';
@@ -654,10 +728,11 @@ function renderDeviceCard(item, period) {
 
         // 5. 提交檢驗數量
         function submitInspectionQuantity() {
+            const quantityWo = document.getElementById('quantityWoInput').value;
             const recordId = document.getElementById('quantityRecordId').value;
             const okQuantity = parseInt(document.getElementById('okQuantity').value) || 0;
             const ngQuantity = parseInt(document.getElementById('ngQuantity').value) || 0;
-            const remarkQuantity = document.getElementById('quantityRemark').value;
+            const remark = document.getElementById('quantityRemark').value;
 
             if (okQuantity < 0 || ngQuantity < 0) {
                 alert('數量不能為負數');
@@ -674,10 +749,11 @@ function renderDeviceCard(item, period) {
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({
+                    QuantityWo: quantityWo,
                     RecordId: recordId,
                     OkQuantity: okQuantity,
                     NgQuantity: ngQuantity,
-                    RemarkQuantity: remarkQuantity
+                    Remark: remark
                 }),
                 success: function(response) {
                     if (response.success) {
@@ -757,7 +833,7 @@ function renderDeviceCard(item, period) {
         
         // ================ 入庫相關 ==================
 
-                function showWarehouseOrderModal(recordId, time, inspectWo, inspector, InspectorId, inspectType, deviceId) {
+        function showWarehouseOrderModal(recordId, time, inspectWo, inspector, InspectorId, inspectType, deviceId) {
             if (InspectorId !== userNo) {
                 return;
             }
@@ -838,7 +914,12 @@ function renderDeviceCard(item, period) {
                 workOrderInput.focus();
                 return;
             }
-    
+
+            if (workOrder.length !== 10 && workOrder.length !== 12) {
+                alert("工單應為12碼或沒有00開頭的10碼")
+                return;
+            }
+
             if (okQuantity < 0 || ngQuantity < 0) {
                 alert('數量不能為負數');
                 return;
@@ -920,7 +1001,10 @@ function renderDeviceCard(item, period) {
             const originalText = submitBtn.textContent;
             submitBtn.textContent = '提交中...';
             submitBtn.disabled = true;
-    
+            // console.log({
+            //         RecordId: parseInt(recordId),
+            //         Orders: warehouseOrderData,
+            //     })
             $.ajax({
                 url: '@Url.Action("SubmitWarehouseInspection", "Inspection")',
                 type: 'POST',
@@ -931,7 +1015,7 @@ function renderDeviceCard(item, period) {
                 }),
                 success: function(response) {
                     if (response.success) {
-                        alert('入庫檢驗提交成功');
+                        alert('提交成功');
                 
                         localStorage.removeItem(`warehouse_${recordId}`);
                         warehouseOrderData = [];
@@ -1153,7 +1237,7 @@ function renderDeviceCard(item, period) {
 
             let workOrderNo = "";
             closeInspectTypeModal();
-            
+
             $.ajax({
                 url: '@Url.Action("ProcessNFCInspection", "Inspection")',
                 type: 'POST',
@@ -1168,7 +1252,7 @@ function renderDeviceCard(item, period) {
                 success: function (response) {
                     if (response.success) {
                         if (response.needConfirmation) {
-                            showReplaceConfirmationModal(response, pendingNFCId);
+                            showReplaceConfirmationModal(response);
                         } else {
                             showInspectionStartModal(response.deviceId, response.arriveTime, response.isExisting);
                             loadTodayInspection();
@@ -1195,6 +1279,7 @@ function renderDeviceCard(item, period) {
                 `${response.message}\n` +
                 `確定要開始在新地點開始新的檢驗嗎？`
             );
+            console.log("showReplaceConfirmationModal",response)
             if (confirmed) {
                 $.ajax({
                     url: '@Url.Action("ProcessNFCInspection", "Inspection")',
@@ -1203,6 +1288,7 @@ function renderDeviceCard(item, period) {
                     data: JSON.stringify({
                         nfcId: response.nfcId,
                         confirmReplace: true,
+                        source: ["會議", "支援", "文書處理"].includes(response.nfcId) ? "Manual" : "NFC",
                         oldRecordId: response.pendingRecordId
                     }),
                     dataType: 'json',
@@ -1252,6 +1338,140 @@ function renderDeviceCard(item, period) {
             modal.classList.remove('d-flex');
         }
 
+        ///////////////////////////////////////////////// 處理沒有卡片的事項
+        function handleAction(value){
 
+           const confirmed = confirm(`確定開始執行 ${value} 嗎?`)
+           if (confirmed) {
+
+           $.ajax({
+                url: '@Url.Action("ProcessNFCInspection", "Inspection")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    nfcId: value,
+                    source: 'Manual',
+                    inspectType: value,
+                    workOrderNo: ""
+                }),
+                dataType: 'json',
+                success: function (response) {
+                    if (response.success) {
+                        if (response.needConfirmation) {
+                                showReplaceConfirmationModal(response);
+                        } else {
+                            showInspectionStartModal(response.deviceId, response.arriveTime, response.isExisting);
+                            loadTodayInspection();
+                        }
+                    } else {
+                        showNFCStatus(response.message, "error");
+
+                        if (response.errorCode === 'CARD_NOT_FOUND') {
+                            alert("此感應卡不存在於資料庫");
+                        } else if (response.errorCode === 'NOT_LOGGED_IN') {
+                            alert("請先登入系統");
+                            window.location.href = '@Url.Action("Login", "Account")';
+                        }
+                    }
+                },
+                error: function (xhr, status, error) {
+                    showNFCStatus('系統錯誤', "error");
+                }
+            });
+           }
+        }
+
+                // 顯示備註Modal
+        function showRemarkModal(recordId, time, inspectWo, inspector, InspectorId, inspectType, deviceId, existingRemark) {
+            console.log("recordId", recordId, "time", time, "inspector", inspector, "InspectorId", InspectorId, "inspectType", inspectType, "remark", existingRemark);
+
+            if (InspectorId !== userNo) {
+                return;
+            }
+
+            // 移除作業中檢查，允許已完成項目編輯備註
+            // if (!(time.includes("作業") || time.includes("檢驗"))) {
+            //     alert("如要填寫備註，請選擇作業中項目");
+            //     return;
+            // }
+
+            document.getElementById('remarkRecordId').value = recordId;
+            document.getElementById('remarkModalTitle').textContent = `${inspectType} - 備註`;
+            document.getElementById('remarkModalInfo').innerHTML = `
+                <div><strong>檢驗類型:</strong> ${inspectType}</div>
+                <div><strong>檢驗時間:</strong> ${time}</div>
+                <div><strong>檢驗人員:</strong> ${inspector}</div>
+                ${existingRemark ? `<div><strong>目前備註:</strong> ${existingRemark}</div>` : ''}
+            `;
+
+            // 顯示現有備註
+            document.getElementById('remarkInput').value = existingRemark || '';
+
+            document.getElementById('remarkModal').classList.remove('d-none');
+            document.getElementById('remarkModal').classList.add('d-flex');
+            document.getElementById('remarkInput').focus();
+        }
+
+        // 關閉備註Modal
+        function closeRemarkModal() {
+            document.getElementById('remarkModal').classList.add('d-none');
+            document.getElementById('remarkModal').classList.remove('d-flex');
+        }
+
+        // 提交備註
+        function submitRemark() {
+            const recordId = document.getElementById('remarkRecordId').value;
+            const remark = document.getElementById('remarkInput').value.trim();
+
+            if (!remark) {
+                alert('請輸入備註內容');
+                return;
+            }
+
+            const submitBtn = document.querySelector('#remarkModal .btn-primary');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = '提交中...';
+            submitBtn.disabled = true;
+
+            $.ajax({
+                url: '@Url.Action("UpdateInspectionQuantity", "Inspection")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    RecordId: recordId,
+                    Remark: remark,
+                    OnlyForRemark : true
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        alert('備註更新成功');
+                        closeRemarkModal();
+                        loadTodayInspection();
+                    } else {
+                        alert('更新失敗: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('系統錯誤，請稍後再試');
+                    console.error('更新備註失敗:', error);
+                },
+                complete: function() {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+        }
+
+        // 點擊外部區域關閉Modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const remarkModal = document.getElementById('remarkModal');
+            if (remarkModal) {
+                remarkModal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeRemarkModal();
+                    }
+                });
+            }
+        });
     </script>
 }

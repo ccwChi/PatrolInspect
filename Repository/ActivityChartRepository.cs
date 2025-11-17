@@ -56,7 +56,8 @@ namespace PatrolInspect.Repository
                 SubmitDataAt,
                 Source,
                 InspectItemOkNo,
-                InspectItemNgNo
+                InspectItemNgNo,
+                Remark
             FROM INSPECTION_QC_RECORD                
             WHERE ArriveAt >= @StartDateTime 
               AND ArriveAt < @EndDateTime
@@ -77,7 +78,8 @@ namespace PatrolInspect.Repository
                 a.EndTime AS SubmitDataAt,
                 'ABC報工' AS Source,
                 null AS InspectItemOkNo,       
-                null AS InspectItemNgNo
+                null AS InspectItemNgNo,
+                '' AS Remark
             FROM [ABC_USER_WH] a
             LEFT JOIN ABC_BAS_STATUS b ON b.StatusNo = a.StatusNo
             WHERE a.UserNo IN ('G03078', 'G01629', 'G01824', 'G02449', 'G01813')
@@ -117,7 +119,8 @@ namespace PatrolInspect.Repository
                     SubmitDataAt,
                     Source,
                     InspectItemOkNo,
-                    InspectItemNgNo
+                    InspectItemNgNo,
+                    Remark
                 FROM INSPECTION_QC_RECORD
                 WHERE UserNo = @UserNo 
                 AND CAST(ArriveAt AS DATE) = @Date

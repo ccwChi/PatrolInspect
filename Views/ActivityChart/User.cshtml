@@ -227,7 +227,7 @@
                                                 
                                                 var bgColor = colorMap.ContainsKey(activity.InspectType) ? colorMap[activity.InspectType] : "#808080";
                                                 var originalDuration = activity.SubmitDataAt.HasValue ? (activity.SubmitDataAt.Value - activity.ArriveAt).TotalMinutes.ToString("F0") : "-";
-                                                var tooltipText = $"<strong>{activity.InspectType}</strong><br>區域: {activity.Area}<br>設備: {activity.DeviceId}<br>工單: {activity.InspectWo}<br>開始: {activity.ArriveAt:MM/dd HH:mm:ss}<br>結束: {(activity.SubmitDataAt?.ToString("MM/dd HH:mm:ss") ?? "進行中")}<br>時長: {originalDuration} 分";
+                                                var tooltipText = $"<strong>{activity.InspectType}</strong><br>區域: {activity.Area}<br>設備: {activity.DeviceId}<br>工單: {activity.InspectWo}<br>開始: {activity.ArriveAt:MM/dd HH:mm:ss}<br>結束: {(activity.SubmitDataAt?.ToString("MM/dd HH:mm:ss") ?? "進行中")}<br>時長: {originalDuration} 分<br>備註: {activity.Remark}";
 
                                                 <div style="position: absolute;
                                                     left: @leftPosition.ToString("F2")%;
@@ -267,6 +267,7 @@
                                     <th style="border: 1px solid #999; padding: 8px;">時長(分)</th>
                                     <th style="border: 1px solid #999; padding: 8px;">檢驗OK數</th>
                                     <th style="border: 1px solid #999; padding: 8px;">檢驗NG數</th>
+                                    <th style="border: 1px solid #999; padding: 8px;">備註</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -292,6 +293,7 @@
                                             <td style="border: 1px solid #999; padding: 8px;">@(duration > 0 ? duration.ToString("F0") : "-")</td>
                                             <td style="border: 1px solid #999; padding: 8px;">@(activity.InspectItemOkNo)</td>
                                             <td style="border: 1px solid #999; padding: 8px;">@(activity.InspectItemNgNo)</td>
+                                            <td style="border: 1px solid #999; padding: 8px;">@(activity.Remark)</td>
                                         </tr>
                                     }
                                 }

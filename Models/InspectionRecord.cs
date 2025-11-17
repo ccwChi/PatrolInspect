@@ -94,6 +94,7 @@ namespace PatrolInspect.Models
         public string Source { get; set; } = string.Empty;
         public int InspectItemOkNo { get; set; } 
         public int InspectItemNgNo { get; set; } 
+        public string Remark { get; set; } = string.Empty;
 
         // 計算屬性
         public double StartHour => ArriveAt.Hour + ArriveAt.Minute / 60.0;

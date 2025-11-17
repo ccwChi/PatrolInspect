@@ -23,6 +23,7 @@ namespace PatrolInspect.Models.Entities
         public string? InspectItemOkNo { get; set; }
         public string? InspectItemNgNo { get; set; }
         public string UserInputWorkOrderNo { get; set; } = string.Empty;
+        public string Remark { get; set; } = string.Empty;
     }
 
     /// <summary>
@@ -208,6 +209,7 @@ namespace PatrolInspect.Models.Entities
         public string InspectorId { get; set; } = string.Empty;
         public string InspectWo { get; set; } = string.Empty;
         public string? InspectType { get; set; }
+        public string Remark { get; set; } = string.Empty;
 
     }
 
@@ -309,9 +311,11 @@ namespace PatrolInspect.Models.Entities
     public class UpdateQuantityRequest
     {
         public int RecordId { get; set; }
+        public string QuantityWo { get; set; } = string.Empty;
         public int OkQuantity { get; set; }
         public int NgQuantity { get; set; }
-        public string RemarkQuantity { get; set; }
+        public string Remark { get; set; }
+        public bool OnlyForRemark { get; set; } = false;
     }
 
 
