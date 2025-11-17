@@ -65,35 +65,53 @@ namespace PatrolInspect.Controllers
                                 UserNo = g.Key.UserNo,
                                 UserName = g.Key.UserName,
                                 Activities = g.OrderBy(a => a.ArriveAt).ToList(),
-                                TotalWorkingMinutes = 460
+                                StandarWorkingMinutes = 460
                             };
 
-                            // 計算有效工時 - 先按時間段分組，再檢查該時間段是否有有效工時類型
-                            // 在計算有效工時時使用
-                            var validRecords = g.Where(a =>
-                                a.SubmitDataAt.HasValue &&
-                                validWorkingHoursTypes.Contains(a.InspectType)
-                            ).ToList();
+                            var allRecords = g.Where(a => a.SubmitDataAt.HasValue).ToList();
 
-                            // 需要去重的類型（入庫檢驗、全檢）
                             var dedupeTypes = new[] { "入庫檢驗" };
-                            var needDedupeRecords = validRecords
+
+                            // 需要去重的記錄（入庫、全檢）
+                            var allDedupeRecords = allRecords
                                 .Where(a => dedupeTypes.Contains(a.InspectType) || a.InspectType.Contains("全檢"))
                                 .GroupBy(a => new DateTime(a.ArriveAt.Year, a.ArriveAt.Month, a.ArriveAt.Day,
                                                           a.ArriveAt.Hour, a.ArriveAt.Minute, a.ArriveAt.Second))
                                 .Select(group => group.First())
                                 .ToList();
 
-                            // 不需要去重的類型
-                            var normalRecords = validRecords
+                            // 不需要去重的記錄
+                            var allNormalRecords = allRecords
+                                .Where(a => !dedupeTypes.Contains(a.InspectType) && !a.InspectType.Contains("全檢"))
+                                .ToList();
+
+                            // 計算全部工時（扣除休息時間）
+                            userActivity.TotalWorkingMinutes =
+                                allDedupeRecords.Sum(a => CalculateWorkingMinutesExcludingBreaks(a.ArriveAt, a.SubmitDataAt!.Value)) +
+                                allNormalRecords.Sum(a => CalculateWorkingMinutesExcludingBreaks(a.ArriveAt, a.SubmitDataAt!.Value));
+
+                            // ========== 計算有效工時（去重） ==========
+                            var validRecords = allRecords
+                                .Where(a => validWorkingHoursTypes.Contains(a.InspectType))
+                                .ToList();
+
+                            // 需要去重的有效記錄
+                            var validDedupeRecords = validRecords
+                                .Where(a => dedupeTypes.Contains(a.InspectType) || a.InspectType.Contains("全檢"))
+                                .GroupBy(a => new DateTime(a.ArriveAt.Year, a.ArriveAt.Month, a.ArriveAt.Day,
+                                                          a.ArriveAt.Hour, a.ArriveAt.Minute, a.ArriveAt.Second))
+                                .Select(group => group.First())
+                                .ToList();
+
+                            // 不需要去重的有效記錄
+                            var validNormalRecords = validRecords
                                 .Where(a => !dedupeTypes.Contains(a.InspectType) && !a.InspectType.Contains("全檢"))
                                 .ToList();
 
                             // 計算有效工時（扣除休息時間）
                             userActivity.ValidWorkingMinutes =
-                                needDedupeRecords.Sum(a => CalculateWorkingMinutesExcludingBreaks(a.ArriveAt, a.SubmitDataAt!.Value)) +
-                                normalRecords.Sum(a => CalculateWorkingMinutesExcludingBreaks(a.ArriveAt, a.SubmitDataAt!.Value));
-
+                                validDedupeRecords.Sum(a => CalculateWorkingMinutesExcludingBreaks(a.ArriveAt, a.SubmitDataAt!.Value)) +
+                                validNormalRecords.Sum(a => CalculateWorkingMinutesExcludingBreaks(a.ArriveAt, a.SubmitDataAt!.Value));
 
                             return userActivity;
                         })

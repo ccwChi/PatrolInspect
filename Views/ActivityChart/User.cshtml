@@ -8,9 +8,39 @@
         { "入庫檢驗", "#f59e0b" },
         { "會議", "#a855f7" },
         { "支援其他單位", "#ef4444" },
-        { "基恩斯量測", "#6366f1" },
+        { "基恩斯、三次元量測", "#6366f1" },
         { "全檢", "#14b8a6" },
         { "限樣", "#94a3b8" },
+    };
+
+    // 按「越具體越前面」排序，先比對關鍵字（子字串）再 fallback 到精準對應
+    var colorRules = new List<(string key, string color)>
+    {
+        ("支援",       colorMap["支援其他單位"]), // 任何包含「支援」的，都用同色
+        ("基恩斯",     colorMap["基恩斯、三次元量測"]),
+        ("三次元",     colorMap["基恩斯、三次元量測"]),
+        ("製一巡檢",   colorMap["製一巡檢"]),
+        ("機邊檢驗",   colorMap["機邊檢驗"]),
+        ("入庫檢驗",   colorMap["入庫檢驗"]),
+        ("會議",       colorMap["會議"]),
+        ("全檢",       colorMap["全檢"]),
+        ("限樣",       colorMap["限樣"]),
+    };
+
+    Func<string, string> resolveColor = (text) =>
+{
+    if (string.IsNullOrWhiteSpace(text)) return "#808080";
+    var t = text.Trim();
+
+    // 子字串（不分大小寫）匹配
+    foreach (var rule in colorRules)
+    {
+        if (t.IndexOf(rule.key, StringComparison.OrdinalIgnoreCase) >= 0)
+            return rule.color;
+    }
+
+    // 找不到就嘗試精準對應
+    return colorMap.TryGetValue(t, out var exact) ? exact : "#808080";
     };
 
     var validTypes = ViewBag.ValidWorkingHoursTypes as List<string> ?? new List<string>();
@@ -173,10 +203,10 @@
                                         <span style="color: #666; font-size: 12px;"> (@user.UserNo)</span><br />
                                         @*<span style="color: @(user.ValidWorkingMinutes >= 480 ? "#10b981" : user.ValidWorkingMinutes >= 360 ? "#f59e0b" : "#ef4444"); font-size: 13px; font-weight: bold;">*@
                                         <span style="color: black; font-size: 13px; font-weight: bold;">
-                                            有效工時: @user.ValidWorkingMinutes.ToString("F0") / @user.TotalWorkingMinutes 分鐘
-                                        </span>
+                                            人員稼動: @((user.TotalWorkingMinutes == 0 ? 0 : user.TotalWorkingMinutes / user.StandarWorkingMinutes * 100).ToString("F2")) %
+                                        </span><br />
                                         <span style="color: black; font-size: 13px; font-weight: bold;">
-                                            人員效率: @((user.TotalWorkingMinutes == 0 ? 0 : user.ValidWorkingMinutes / user.TotalWorkingMinutes * 100).ToString("F2")) %
+                                            有效稼動: @((user.TotalWorkingMinutes == 0 ? 0 : user.ValidWorkingMinutes / user.StandarWorkingMinutes * 100).ToString("F2")) %
                                         </span>
                                     </td>
                                     <td style="border: 1px solid #999; padding: 0; position: relative;">
@@ -225,7 +255,8 @@
                                                 var durationMinutes = (activityEnd - activityStart).TotalMinutes;
                                                 var width = Math.Max((durationMinutes / totalDisplayMinutes) * 100, 0.5);
                                                 
-                                                var bgColor = colorMap.ContainsKey(activity.InspectType) ? colorMap[activity.InspectType] : "#808080";
+                                                // var bgColor = colorMap.ContainsKey(activity.InspectType) ? colorMap[activity.InspectType] : "#808080";
+                                                var bgColor = resolveColor(activity.InspectType);
                                                 var originalDuration = activity.SubmitDataAt.HasValue ? (activity.SubmitDataAt.Value - activity.ArriveAt).TotalMinutes.ToString("F0") : "-";
                                                 var tooltipText = $"<strong>{activity.InspectType}</strong><br>區域: {activity.Area}<br>設備: {activity.DeviceId}<br>工單: {activity.InspectWo}<br>開始: {activity.ArriveAt:MM/dd HH:mm:ss}<br>結束: {(activity.SubmitDataAt?.ToString("MM/dd HH:mm:ss") ?? "進行中")}<br>時長: {originalDuration} 分<br>備註: {activity.Remark}";
 
@@ -257,8 +288,8 @@
                         <table style="width: 100%; border-collapse: collapse; border: 1px solid #999;">
                             <thead>
                                 <tr style="background-color: #e0e0e0;">
-                                    <th style="border: 1px solid #999; padding: 8px;">人員</th>
-                                    <th style="border: 1px solid #999; padding: 8px;">檢驗類型</th>
+                                    <th style="border: 1px solid #999; padding: 8px; width:clamp(5ch, 12vw, 8ch)">人員</th>
+                                    <th style="border: 1px solid #999; padding: 8px; width:10ch">檢驗類型</th>
                                     <th style="border: 1px solid #999; padding: 8px;">區域</th>
                                     <th style="border: 1px solid #999; padding: 8px;">設備</th>
                                     <th style="border: 1px solid #999; padding: 8px;">工單</th>
@@ -279,13 +310,13 @@
                                         var bgColor = colorMap.ContainsKey(activity.InspectType) ? colorMap[activity.InspectType] : "#808080";
 
                                         <tr>
-                                            <td style="border: 1px solid #999; padding: 8px;">@user.UserName</td>
+                                            <td style="border: 1px solid #999; padding: 8px; width:fit-content">@user.UserName</td>
                                             <td style="border: 1px solid #999; padding: 8px;">
                                                 <span style="background-color: @bgColor; color: #fff; padding: 4px 8px; font-size: 12px; display: inline-block;">
                                                     @activity.InspectType
                                                 </span>
                                             </td>
-                                            <td style="border: 1px solid #999; padding: 8px;">@activity.Area</td>
+                                            <td style="border: 1px solid #999; padding: 8px; white-space: nowrap;">@activity.Area</td>
                                             <td style="border: 1px solid #999; padding: 8px;">@activity.DeviceId</td>
                                             <td style="border: 1px solid #999; padding: 8px;">@activity.InspectWo</td>
                                             <td style="border: 1px solid #999; padding: 8px;">@activity.ArriveAt.ToString("MM/dd HH:mm:ss")</td>
