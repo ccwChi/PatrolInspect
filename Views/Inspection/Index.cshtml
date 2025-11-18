@@ -1421,11 +1421,10 @@
         // 提交備註
         function submitRemark() {
             const recordId = document.getElementById('remarkRecordId').value;
-            const remark = document.getElementById('remarkInput').value.trim();
+            let remark = document.getElementById('remarkInput').value.trim();
 
             if (!remark) {
-                alert('請輸入備註內容');
-                return;
+                remark = ""
             }
 
             const submitBtn = document.querySelector('#remarkModal .btn-primary');

@@ -61,7 +61,8 @@ namespace PatrolInspect.Repository
             FROM INSPECTION_QC_RECORD                
             WHERE ArriveAt >= @StartDateTime 
               AND ArriveAt < @EndDateTime
-            AND InspectType <> 'CANCEL'
+            AND (InspectType <> 'CANCEL' OR InspectType IS NULL)
+            AND (Remark IS NULL OR Remark <> 'CANCEL THIS ACTION')
 
             UNION ALL
 

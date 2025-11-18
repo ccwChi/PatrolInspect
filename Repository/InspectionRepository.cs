@@ -64,7 +64,7 @@ namespace PatrolInspect.Repository
         public async Task<UserTodayInspection> GetTodayInspectionAsync(string userNo, string userName, string department)
         {
             var today = DateTime.Now;
-            var today0800 = today.Date.AddHours(8);
+            var today0800 = today.Date.AddHours(7);
 
             DateTime startDateTime;
             DateTime endDateTime;
@@ -184,6 +184,7 @@ namespace PatrolInspect.Repository
                   AND iqc.ArriveAt >= @StartDateTime
                   AND iqc.ArriveAt < @EndDateTime
                   AND (iqc.InspectType <> 'CANCEL' OR iqc.InspectType IS NULL)
+                  AND (iqc.Remark IS NULL OR iqc.Remark <> 'CANCEL THIS ACTION')
                 ORDER BY iqc.ArriveAt DESC";
 
             try
@@ -439,6 +440,7 @@ namespace PatrolInspect.Repository
                     AND CAST(iqc.ArriveAt AS DATE) = @Date
                     AND ms.WO_ID = iqc.InspectWo
                 WHERE (iqc.InspectType <> 'CANCEL' OR iqc.InspectType IS NULL)
+                AND (iqc.Remark <> 'CANCEL THIS ACTION' OR Remark IS NULL)
                 ORDER BY ms.DeviceID, iqc.ArriveAt DESC";
 
             try
@@ -462,7 +464,8 @@ namespace PatrolInspect.Repository
                        InspectItemOkNo, InspectItemNgNo, Remark
                 FROM INSPECTION_QC_RECORD 
                 WHERE ArriveAt >= @StartDateTime
-                  AND InspectType <> 'CANCEL'
+                  AND InspectType <> 'CANCEL' 
+                  AND (Remark IS NULL OR Remark <> 'CANCEL THIS ACTION')
                 ORDER BY ArriveAt DESC";
 
             try
@@ -722,7 +725,7 @@ namespace PatrolInspect.Repository
             using var connection = CreateMesConnection();
             var sql = @"
                 UPDATE INSPECTION_QC_RECORD 
-                SET InspectType = 'CANCEL', 
+                SET Remark = 'CANCEL THIS ACTION', 
                     SubmitDataAt = GETDATE()
                 WHERE recordId = @RecordId 
                   AND SubmitDataAt IS NULL"; 
