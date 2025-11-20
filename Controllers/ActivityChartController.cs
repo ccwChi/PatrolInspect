@@ -30,10 +30,15 @@ namespace PatrolInspect.Controllers
 
             var selectedDate = date ?? DateTime.Today;
 
+            // 查詢範圍：前一日 07:00 ~ 當日 08:00（顯示用）
             var workdayStart = selectedDate.Date.AddHours(7);
             var workdayEnd = selectedDate.Date.AddDays(1).AddHours(8);
             var displayStart = selectedDate.Date.AddHours(7);
             var displayEnd = workdayEnd;
+
+            // 計算稼動率的有效時段：前一日 08:00 ~ 當日 08:00
+            var validWorkStart = selectedDate.Date.AddHours(8);
+            var validWorkEnd = selectedDate.Date.AddDays(1).AddHours(8);
 
             var viewModel = new ActivityChartViewModel
             {
@@ -47,7 +52,6 @@ namespace PatrolInspect.Controllers
                 ViewBag.ValidWorkingHoursTypes = validWorkingHoursTypes;
 
                 var activities = await _activityChartRepository.GetActivitiesByDateRangeAsync(workdayStart, workdayEnd);
-
 
                 if (activities != null && activities.Any())
                 {
@@ -77,40 +81,72 @@ namespace PatrolInspect.Controllers
                                 .Select(group => group.First())
                                 .ToList();
 
-                            // ========== 計算全部工時明細（扣除休息時間） ==========
+                            // ========== 計算全部工時明細（扣除休息時間，且只計算有效時段內） ==========
                             var totalBreakdown = new Dictionary<string, double>();
                             foreach (var record in deduplicatedRecords)
                             {
-                                var minutes = CalculateWorkingMinutesExcludingBreaks(record.ArriveAt, record.SubmitDataAt!.Value);
+                                // 截取到有效工作時段內
+                                var effectiveStart = record.ArriveAt < validWorkStart ? validWorkStart : record.ArriveAt;
+                                var effectiveEnd = record.SubmitDataAt!.Value > validWorkEnd ? validWorkEnd : record.SubmitDataAt.Value;
+
+                                // 如果活動完全在有效時段外，跳過
+                                if (effectiveStart >= validWorkEnd || effectiveEnd <= validWorkStart)
+                                    continue;
+
+                                var minutes = CalculateWorkingMinutesExcludingBreaks(effectiveStart, effectiveEnd);
                                 if (!totalBreakdown.ContainsKey(record.InspectType))
                                     totalBreakdown[record.InspectType] = 0;
                                 totalBreakdown[record.InspectType] += minutes;
                             }
                             userActivity.TotalWorkingBreakdown = totalBreakdown;
 
-                            // 計算全部工時（扣除休息時間）
-                            userActivity.TotalWorkingMinutes = deduplicatedRecords
-                                .Sum(a => CalculateWorkingMinutesExcludingBreaks(a.ArriveAt, a.SubmitDataAt!.Value));
+                            // 計算全部工時（扣除休息時間，且只計算有效時段內）
+                            userActivity.TotalWorkingMinutes = 0;
+                            foreach (var record in deduplicatedRecords)
+                            {
+                                var effectiveStart = record.ArriveAt < validWorkStart ? validWorkStart : record.ArriveAt;
+                                var effectiveEnd = record.SubmitDataAt!.Value > validWorkEnd ? validWorkEnd : record.SubmitDataAt.Value;
 
-                            // ========== 計算有效工時（去重） ==========
+                                if (effectiveStart >= validWorkEnd || effectiveEnd <= validWorkStart)
+                                    continue;
+
+                                userActivity.TotalWorkingMinutes += CalculateWorkingMinutesExcludingBreaks(effectiveStart, effectiveEnd);
+                            }
+
+                            // ========== 計算有效工時（去重，且只計算有效時段內） ==========
                             var validRecords = deduplicatedRecords
                                 .Where(a => validWorkingHoursTypes.Contains(a.InspectType))
                                 .ToList();
 
-                            // ========== 計算有效工時明細（扣除休息時間） ==========
+                            // ========== 計算有效工時明細（扣除休息時間，且只計算有效時段內） ==========
                             var validBreakdown = new Dictionary<string, double>();
                             foreach (var record in validRecords)
                             {
-                                var minutes = CalculateWorkingMinutesExcludingBreaks(record.ArriveAt, record.SubmitDataAt!.Value);
+                                var effectiveStart = record.ArriveAt < validWorkStart ? validWorkStart : record.ArriveAt;
+                                var effectiveEnd = record.SubmitDataAt!.Value > validWorkEnd ? validWorkEnd : record.SubmitDataAt.Value;
+
+                                if (effectiveStart >= validWorkEnd || effectiveEnd <= validWorkStart)
+                                    continue;
+
+                                var minutes = CalculateWorkingMinutesExcludingBreaks(effectiveStart, effectiveEnd);
                                 if (!validBreakdown.ContainsKey(record.InspectType))
                                     validBreakdown[record.InspectType] = 0;
                                 validBreakdown[record.InspectType] += minutes;
                             }
                             userActivity.ValidWorkingBreakdown = validBreakdown;
 
-                            // 計算有效工時（扣除休息時間）
-                            userActivity.ValidWorkingMinutes = validRecords
-                                .Sum(a => CalculateWorkingMinutesExcludingBreaks(a.ArriveAt, a.SubmitDataAt!.Value));
+                            // 計算有效工時（扣除休息時間，且只計算有效時段內）
+                            userActivity.ValidWorkingMinutes = 0;
+                            foreach (var record in validRecords)
+                            {
+                                var effectiveStart = record.ArriveAt < validWorkStart ? validWorkStart : record.ArriveAt;
+                                var effectiveEnd = record.SubmitDataAt!.Value > validWorkEnd ? validWorkEnd : record.SubmitDataAt.Value;
+
+                                if (effectiveStart >= validWorkEnd || effectiveEnd <= validWorkStart)
+                                    continue;
+
+                                userActivity.ValidWorkingMinutes += CalculateWorkingMinutesExcludingBreaks(effectiveStart, effectiveEnd);
+                            }
 
                             return userActivity;
                         })
@@ -151,7 +187,7 @@ namespace PatrolInspect.Controllers
             new BreakTimeRange { Start = new TimeSpan(12, 0, 0), End = new TimeSpan(13, 0, 0) },
             new BreakTimeRange { Start = new TimeSpan(15, 0, 0), End = new TimeSpan(15, 10, 0) },
             new BreakTimeRange { Start = new TimeSpan(17, 00, 0), End = new TimeSpan(20, 00, 0) },
-            new BreakTimeRange { Start = new TimeSpan(12, 00, 0), End = new TimeSpan(22, 10, 0) },
+            new BreakTimeRange { Start = new TimeSpan(22, 00, 0), End = new TimeSpan(22, 10, 0) },
             new BreakTimeRange { Start = new TimeSpan(00, 00, 0), End = new TimeSpan(01, 00, 0) },
             new BreakTimeRange { Start = new TimeSpan(03, 00, 0), End = new TimeSpan(03, 10, 0) }
         };

@@ -377,48 +377,112 @@
             }
         </div>
         <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="helpModalLabel">說明</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <h6><strong>1. 實際計算時間</strong></h6>
-                <p>早班：選擇日 08:00 ~ 選擇日 17:00</p>
-                <p>晚班：選擇日 20:00 ~ 隔日 05:00</p>
+<div class="modal-dialog modal-lg">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="helpModalLabel">說明</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
 
-                <h6 class="mt-3"><strong>2. 人員稼動計算</strong></h6>
-                <p><strong>人員稼動</strong>：所有已完成的活動時間總和（扣除休息時間）/ 標準工時 (460分鐘)</p>
-                <p><strong>有效稼動</strong>：僅計算有效工時項目的時間總和 / 標準工時 (460分鐘)</p>
-                <p>有效工時項目：@string.Join("、", validTypes)</p>
+        <div class="modal-body">
 
-                <h6 class="mt-3"><strong>3. 休息時間扣除邏輯</strong></h6>
-                <ul>
-                    <li>05:00 - 08:00, 17:00 - 20:00（非排班時間）</li>
-                    <li>03:00 - 03:10, 10:00 - 10:10, 15:00 - 15:10, 20:00 - 20:10（休息）</li>
-                    <li>00:00 - 01:00, 12:00 - 13:00（午休）</li>
-                </ul>
+            <!-- 1. 實際計算時間 -->
+            <h6 class="fw-bold">1. 實際計算時間</h6>
+            <ul>
+                <li>早班：選擇日 08:00 ~ 選擇日 17:00</li>
+                <li>晚班：選擇日 20:00 ~ 隔日 05:00</li>
+            </ul>
 
-                <h6 class="mt-3"><strong>4. 檢驗站點紀錄邏輯</strong></h6>
-                  <p>1.	製一巡檢: 人員於機台邊感應磁卡紀錄開始時間，於機邊電腦送出量測資料作為完成時間。</p>  
-                  <p>2.	機邊巡檢: 人員於機台邊感應磁卡紀錄開始時間，於機邊目視檢查樣品，於系統上輸入檢驗數量作為完成時間。</p>  
-                  <p>3.	機恩斯量測: 在基恩斯量測室刷磁卡紀錄開始時間，再次點選輸入工單及數量作為完成時間。</p> 
-                  <p>4.	三次元量測: 在手持式三次元區刷磁卡紀錄開始時間，再次點選輸入工單及數量作為完成時間。</p> 
-                  <p>5.	入庫檢驗: 在入庫檢驗區(一樓中央走道)刷磁卡紀錄開始時間，再次點選輸入工單及數量作為完成時間。</p> 
-                  <p>6.	全檢: 在全檢成型區(三區基恩斯室對面)刷磁卡紀錄開始時間，再次點選輸入工單及數量作為完成時間。</p> 
-                  <p>7.	限樣: 於四樓限樣室刷卡後，取得樣品放置於一樓限樣區，點選該項目提交完成時間</p> 
-                  <p>8.	會議: 人員於巡檢系統選擇後，紀錄開始時間，再點選即可提交完成時間。</p>  
-                  <p>9.	支援: 人員於巡檢系統選擇後，紀錄開始時間，再點選即可提交完成時間。</p>  
-                  <p>10.文書作業: 人員於巡檢系統選擇後，紀錄開始時間，再點選即可提交完成時間。</p>  
+            <!-- 2. 人員稼動計算 -->
+            <h6 class="fw-bold mt-3">2. 人員稼動計算</h6>
+            <p><strong>人員稼動</strong>：所有已完成活動時間總和（扣除休息時間） / 標準工時（460 分鐘）</p>
+            <p><strong>有效稼動</strong>：僅計算有效工時項目時間總和 / 標準工時（460 分鐘）</p>
+            <p><strong>有效工時項目</strong>：@string.Join("、", validTypes)</p>
 
-                 <h6 class="mt-3"><strong>5. 所有項目皆可輸入備註。</strong></h6>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
-            </div>
+            <!-- 3. 休息時間扣除 -->
+            <h6 class="fw-bold mt-3">3. 休息時間扣除邏輯</h6>
+            <ul>
+                <li>05:00 - 08:00、17:00 - 20:00（非排班時間）</li>
+                <li>03:00 - 03:10、10:00 - 10:10、15:00 - 15:10、20:00 - 20:10（休息）</li>
+                <li>00:00 - 01:00、12:00 - 13:00（午休）</li>
+            </ul>
+
+            <!-- 4. 檢驗站點紀錄邏輯 -->
+            <h6 class="fw-bold mt-3">4. 檢驗站點紀錄邏輯</h6>
+
+            <table class="table table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 120px;">項目</th>
+                        <th>開始時間來源</th>
+                        <th>完成時間來源</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>製一巡檢</td>
+                        <td>機台邊感應磁卡</td>
+                        <td>機邊電腦送出量測資料</td>
+                    </tr>
+                    <tr>
+                        <td>機邊巡檢</td>
+                        <td>機台邊感應磁卡</td>
+                        <td>巡檢系統輸入檢驗數量</td>
+                    </tr>
+                    <tr>
+                        <td>基恩斯量測</td>
+                        <td>量測室刷磁卡</td>
+                        <td>巡檢系統輸入工單及數量</td>
+                    </tr>
+                    <tr>
+                        <td>三次元量測</td>
+                        <td>三次元區刷磁卡</td>
+                        <td>巡檢系統輸入工單及數量</td>
+                    </tr>
+                    <tr>
+                        <td>入庫檢驗</td>
+                        <td>入庫區刷磁卡</td>
+                        <td>巡檢系統輸入工單及數量</td>
+                    </tr>
+                    <tr>
+                        <td>全檢</td>
+                        <td>全檢區刷磁卡</td>
+                        <td>巡檢系統輸入工單及數量</td>
+                    </tr>
+                    <tr>
+                        <td>限樣</td>
+                        <td>四樓限樣室刷磁卡</td>
+                        <td>樣品送至一樓後巡檢系統提交完成時間</td>
+                    </tr>
+                    <tr>
+                        <td>會議</td>
+                        <td>於系統選擇「會議」</td>
+                        <td>巡檢系統再次點選提交</td>
+                    </tr>
+                    <tr>
+                        <td>支援</td>
+                        <td>於系統選擇「支援」</td>
+                        <td>巡檢系統再次點選提交</td>
+                    </tr>
+                    <tr>
+                        <td>文書作業</td>
+                        <td>於系統選擇「文書」</td>
+                        <td>巡檢系統再次點選提交</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h6 class="fw-bold mt-3">5. 備註</h6>
+            <p>所有項目皆可輸入備註。</p>
+
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
         </div>
     </div>
+</div>
+
 </div>
     </main>
 
