@@ -64,30 +64,30 @@ namespace PatrolInspect.Repository
             AND (InspectType <> 'CANCEL' OR InspectType IS NULL)
             AND (Remark IS NULL OR Remark <> 'CANCEL THIS ACTION')
 
-            UNION ALL
+            --UNION ALL
 
-            SELECT 
-                NULL AS RecordId,              
-                ''   AS CardId,
-                ''   AS Area,
-                ''   AS DeviceId,
-                a.UserNo,
-                a.UserName,
-                SUBSTRING(b.StatusName_TW, 4, LEN(b.StatusName_TW)) AS InspectType,
-                '' AS InspectWo,
-                a.StartTime AS ArriveAt,
-                a.EndTime AS SubmitDataAt,
-                'ABC報工' AS Source,
-                null AS InspectItemOkNo,       
-                null AS InspectItemNgNo,
-                '' AS Remark
-            FROM [ABC_USER_WH] a
-            LEFT JOIN ABC_BAS_STATUS b ON b.StatusNo = a.StatusNo
-            WHERE a.UserNo IN ('G03078', 'G01629', 'G01824', 'G02449', 'G01813')
-              AND a.StatusNo IN ('0007','0008','0005')
-            AND a.StartTime >= @StartDateTime 
-            AND a.StartTime < @EndDateTime
-            ORDER BY UserNo, ArriveAt;";
+            --SELECT 
+            --    NULL AS RecordId,              
+            --    ''   AS CardId,
+            --    ''   AS Area,
+            --    ''   AS DeviceId,
+            --    a.UserNo,
+            --    a.UserName,
+            --    SUBSTRING(b.StatusName_TW, 4, LEN(b.StatusName_TW)) AS InspectType,
+            --    '' AS InspectWo,
+            --    a.StartTime AS ArriveAt,
+            --    a.EndTime AS SubmitDataAt,
+            --    'ABC報工' AS Source,
+            --   null AS InspectItemOkNo,       
+            --    null AS InspectItemNgNo,
+            --    '' AS Remark
+            --FROM [ABC_USER_WH] a
+            --LEFT JOIN ABC_BAS_STATUS b ON b.StatusNo = a.StatusNo
+            --WHERE a.UserNo IN ('G03078', 'G01629', 'G01824', 'G02449', 'G01813')
+            --  AND a.StatusNo IN ('0007','0008','0005')
+            --AND a.StartTime >= @StartDateTime 
+            --AND a.StartTime < @EndDateTime
+            --ORDER BY UserNo, ArriveAt;";
             try
             {
                 var activities = await connection.QueryAsync<InspectionActivity>(sql, new

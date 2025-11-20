@@ -55,11 +55,6 @@ namespace PatrolInspect.Controllers
                         .GroupBy(a => new { a.UserNo, a.UserName })
                         .Select(g =>
                         {
-                            var timeGroups = g
-                                .Where(a => a.SubmitDataAt.HasValue)
-                                .GroupBy(a => new { a.ArriveAt, a.SubmitDataAt })
-                                .ToList();
-
                             var userActivity = new UserActivityViewModel
                             {
                                 UserNo = g.Key.UserNo,
@@ -70,48 +65,52 @@ namespace PatrolInspect.Controllers
 
                             var allRecords = g.Where(a => a.SubmitDataAt.HasValue).ToList();
 
-                            var dedupeTypes = new[] { "入庫檢驗" };
-
-                            // 需要去重的記錄（入庫、全檢）
-                            var allDedupeRecords = allRecords
-                                .Where(a => dedupeTypes.Contains(a.InspectType) || a.InspectType.Contains("全檢"))
-                                .GroupBy(a => new DateTime(a.ArriveAt.Year, a.ArriveAt.Month, a.ArriveAt.Day,
-                                                          a.ArriveAt.Hour, a.ArriveAt.Minute, a.ArriveAt.Second))
+                            // 去重：ArriveAt 和 SubmitDataAt 都相同的只取一筆
+                            var deduplicatedRecords = allRecords
+                                .GroupBy(a => new
+                                {
+                                    ArriveAt = new DateTime(a.ArriveAt.Year, a.ArriveAt.Month, a.ArriveAt.Day,
+                                                           a.ArriveAt.Hour, a.ArriveAt.Minute, a.ArriveAt.Second),
+                                    SubmitDataAt = new DateTime(a.SubmitDataAt!.Value.Year, a.SubmitDataAt.Value.Month, a.SubmitDataAt.Value.Day,
+                                                               a.SubmitDataAt.Value.Hour, a.SubmitDataAt.Value.Minute, a.SubmitDataAt.Value.Second)
+                                })
                                 .Select(group => group.First())
                                 .ToList();
 
-                            // 不需要去重的記錄
-                            var allNormalRecords = allRecords
-                                .Where(a => !dedupeTypes.Contains(a.InspectType) && !a.InspectType.Contains("全檢"))
-                                .ToList();
+                            // ========== 計算全部工時明細（扣除休息時間） ==========
+                            var totalBreakdown = new Dictionary<string, double>();
+                            foreach (var record in deduplicatedRecords)
+                            {
+                                var minutes = CalculateWorkingMinutesExcludingBreaks(record.ArriveAt, record.SubmitDataAt!.Value);
+                                if (!totalBreakdown.ContainsKey(record.InspectType))
+                                    totalBreakdown[record.InspectType] = 0;
+                                totalBreakdown[record.InspectType] += minutes;
+                            }
+                            userActivity.TotalWorkingBreakdown = totalBreakdown;
 
                             // 計算全部工時（扣除休息時間）
-                            userActivity.TotalWorkingMinutes =
-                                allDedupeRecords.Sum(a => CalculateWorkingMinutesExcludingBreaks(a.ArriveAt, a.SubmitDataAt!.Value)) +
-                                allNormalRecords.Sum(a => CalculateWorkingMinutesExcludingBreaks(a.ArriveAt, a.SubmitDataAt!.Value));
+                            userActivity.TotalWorkingMinutes = deduplicatedRecords
+                                .Sum(a => CalculateWorkingMinutesExcludingBreaks(a.ArriveAt, a.SubmitDataAt!.Value));
 
                             // ========== 計算有效工時（去重） ==========
-                            var validRecords = allRecords
+                            var validRecords = deduplicatedRecords
                                 .Where(a => validWorkingHoursTypes.Contains(a.InspectType))
                                 .ToList();
 
-                            // 需要去重的有效記錄
-                            var validDedupeRecords = validRecords
-                                .Where(a => dedupeTypes.Contains(a.InspectType) || a.InspectType.Contains("全檢"))
-                                .GroupBy(a => new DateTime(a.ArriveAt.Year, a.ArriveAt.Month, a.ArriveAt.Day,
-                                                          a.ArriveAt.Hour, a.ArriveAt.Minute, a.ArriveAt.Second))
-                                .Select(group => group.First())
-                                .ToList();
-
-                            // 不需要去重的有效記錄
-                            var validNormalRecords = validRecords
-                                .Where(a => !dedupeTypes.Contains(a.InspectType) && !a.InspectType.Contains("全檢"))
-                                .ToList();
+                            // ========== 計算有效工時明細（扣除休息時間） ==========
+                            var validBreakdown = new Dictionary<string, double>();
+                            foreach (var record in validRecords)
+                            {
+                                var minutes = CalculateWorkingMinutesExcludingBreaks(record.ArriveAt, record.SubmitDataAt!.Value);
+                                if (!validBreakdown.ContainsKey(record.InspectType))
+                                    validBreakdown[record.InspectType] = 0;
+                                validBreakdown[record.InspectType] += minutes;
+                            }
+                            userActivity.ValidWorkingBreakdown = validBreakdown;
 
                             // 計算有效工時（扣除休息時間）
-                            userActivity.ValidWorkingMinutes =
-                                validDedupeRecords.Sum(a => CalculateWorkingMinutesExcludingBreaks(a.ArriveAt, a.SubmitDataAt!.Value)) +
-                                validNormalRecords.Sum(a => CalculateWorkingMinutesExcludingBreaks(a.ArriveAt, a.SubmitDataAt!.Value));
+                            userActivity.ValidWorkingMinutes = validRecords
+                                .Sum(a => CalculateWorkingMinutesExcludingBreaks(a.ArriveAt, a.SubmitDataAt!.Value));
 
                             return userActivity;
                         })
@@ -152,7 +151,9 @@ namespace PatrolInspect.Controllers
             new BreakTimeRange { Start = new TimeSpan(12, 0, 0), End = new TimeSpan(13, 0, 0) },
             new BreakTimeRange { Start = new TimeSpan(15, 0, 0), End = new TimeSpan(15, 10, 0) },
             new BreakTimeRange { Start = new TimeSpan(17, 00, 0), End = new TimeSpan(20, 00, 0) },
-            new BreakTimeRange { Start = new TimeSpan(12, 00, 0), End = new TimeSpan(13, 00, 0) }
+            new BreakTimeRange { Start = new TimeSpan(12, 00, 0), End = new TimeSpan(22, 10, 0) },
+            new BreakTimeRange { Start = new TimeSpan(00, 00, 0), End = new TimeSpan(01, 00, 0) },
+            new BreakTimeRange { Start = new TimeSpan(03, 00, 0), End = new TimeSpan(03, 10, 0) }
         };
 
         // 計算扣除休息時間後的實際工時

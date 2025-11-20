@@ -5,26 +5,27 @@
     {
         { "製一巡檢", "#3b82f6" },
         { "機邊檢驗", "#10b981" },
+        { "基恩斯量測", "#6366f1" },
+        { "三次元量測", "#6366f1" },
         { "入庫檢驗", "#f59e0b" },
-        { "會議", "#a855f7" },
-        { "支援其他單位", "#ef4444" },
-        { "基恩斯、三次元量測", "#6366f1" },
         { "全檢", "#14b8a6" },
         { "限樣", "#94a3b8" },
+        { "會議", "#a855f7" },
+        { "支援其他單位", "#ef4444" },
     };
 
     // 按「越具體越前面」排序，先比對關鍵字（子字串）再 fallback 到精準對應
     var colorRules = new List<(string key, string color)>
     {
-        ("支援",       colorMap["支援其他單位"]), // 任何包含「支援」的，都用同色
-        ("基恩斯",     colorMap["基恩斯、三次元量測"]),
-        ("三次元",     colorMap["基恩斯、三次元量測"]),
         ("製一巡檢",   colorMap["製一巡檢"]),
         ("機邊檢驗",   colorMap["機邊檢驗"]),
+        ("基恩斯",     colorMap["基恩斯量測"]),
+        ("三次元",     colorMap["三次元量測"]),
         ("入庫檢驗",   colorMap["入庫檢驗"]),
-        ("會議",       colorMap["會議"]),
         ("全檢",       colorMap["全檢"]),
         ("限樣",       colorMap["限樣"]),
+        ("會議",       colorMap["會議"]),
+        ("支援",       colorMap["支援其他單位"]), // 任何包含「支援」的，都用同色
     };
 
     Func<string, string> resolveColor = (text) =>
@@ -135,15 +136,26 @@
                 </div>
             }
 
-            <div style="margin-bottom: 20px; display:flex; align-items:center; gap:20px">
-                <h3 style="margin:0">人員巡檢稼動表</h3>
-                <form method="get" style="">
-                    <input type="date" name="date"
-                           value="@(Model?.SelectedDate.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd"))"
-                           style="padding: 5px; margin-right: 10px;" />
-                    <button type="submit" style="padding: 5px 15px; background-color: #0071b2; color: white; border: none; cursor: pointer;">查詢</button>
-                </form>
+            <div style="margin-bottom: 20px;display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:20px;">
+                    <h3 style="margin:0">人員巡檢稼動表</h3>
+                    <form method="get" style="display:flex; align-items:center; gap:10px;">
+                        <button type="button" id="btnPrevDay" class="btn">◀</button>
+
+                        <input type="date" name="date" id="dateInput"
+                               value="@(Model?.SelectedDate.ToString("yyyy-MM-dd") 
+                               ?? DateTime.Today.ToString("yyyy-MM-dd"))"
+                               style="padding: 5px;" />
+                        <button type="button" id="btnNextDay" class="btn">▶</button>
+                    </form>
+                </div>
+                <button type="button" class="btn btn-sm"
+                        style="background-color: #6366f1; color: white;"
+                        data-bs-toggle="modal" data-bs-target="#helpModal">
+                    <i class="fa-solid fa-question-circle"></i> 說明
+                </button>
             </div>
+
 
             <div style="padding: 15px; display:flex; align-items:center; justify-content:space-between; width:100%;">
                 <div>
@@ -156,13 +168,9 @@
                 <div>
                     @foreach (var item in colorMap)
                     {
-                        <span style="margin-left: 30px;">
+                        <span class="text-nowrap ms-4">
                             <span style="display: inline-block; width: 20px; height: 20px; background-color: @item.Value; vertical-align: middle; margin-right: 5px;"></span>
                             @(item.Key switch {
-                                "會議" => "會議、主管交派",
-                                "支援其他單位" => "支援其他單位",
-                                "基恩斯量測" => "基恩斯、三次元量測",
-                                "三次元量測" => "基恩斯、三次元量測",
                                 _ => item.Key
                             })
                         </span>
@@ -201,13 +209,47 @@
                                     <td style="border: 1px solid #999; padding: 10px; vertical-align: middle;">
                                         <strong>@user.UserName</strong>
                                         <span style="color: #666; font-size: 12px;"> (@user.UserNo)</span><br />
-                                        @*<span style="color: @(user.ValidWorkingMinutes >= 480 ? "#10b981" : user.ValidWorkingMinutes >= 360 ? "#f59e0b" : "#ef4444"); font-size: 13px; font-weight: bold;">*@
-                                        <span style="color: black; font-size: 13px; font-weight: bold;">
-                                            人員稼動: @((user.TotalWorkingMinutes == 0 ? 0 : user.TotalWorkingMinutes / user.StandarWorkingMinutes * 100).ToString("F2")) %
-                                        </span><br />
-                                        <span style="color: black; font-size: 13px; font-weight: bold;">
-                                            有效稼動: @((user.TotalWorkingMinutes == 0 ? 0 : user.ValidWorkingMinutes / user.StandarWorkingMinutes * 100).ToString("F2")) %
-                                        </span>
+                                            @{
+                                                var utilizationTooltip = $@"
+                                                    <strong>人員稼動明細</strong><br>
+                                                    <strong>總工時: {user.TotalWorkingMinutes:F0} 分鐘 / {user.StandarWorkingMinutes} 分鐘</strong><br>
+                                                    <ul style='margin:5px 0;padding-left:20px;'>";
+    
+                                                foreach (var item in user.TotalWorkingBreakdown.OrderByDescending(x => x.Value))
+                                                {
+                                                    utilizationTooltip += $"<li>{item.Key}: {item.Value:F0} 分</li>";
+                                                }
+                                                utilizationTooltip += "</ul>";
+
+                                                var validTooltip = $@"
+                                                    <strong>有效稼動明細</strong><br>
+                                                    <strong>有效工時: {user.ValidWorkingMinutes:F0} 分鐘 / {user.StandarWorkingMinutes} 分鐘</strong><br>
+                                                    <ul style='margin:5px 0;padding-left:20px;'>";
+    
+                                                foreach (var item in user.ValidWorkingBreakdown.OrderByDescending(x => x.Value))
+                                                {
+                                                    validTooltip += $"<li>{item.Key}: {item.Value:F0} 分</li>";
+                                                }
+                                                validTooltip += "</ul>";
+                                            }
+
+                                            <span style="color: black; font-size: 13px; font-weight: bold; cursor: pointer;"
+                                                  class="utilization-tooltip"
+                                                  data-bs-toggle="tooltip"
+                                                  data-bs-html="true"
+                                                  data-bs-placement="right"
+                                                  data-bs-title="@utilizationTooltip">
+                                                人員稼動: @((user.TotalWorkingMinutes == 0 ? 0 : user.TotalWorkingMinutes / user.StandarWorkingMinutes * 100).ToString("F2")) %
+                                            </span><br />
+
+                                            <span style="color: black; font-size: 13px; font-weight: bold; cursor: pointer;"
+                                                  class="utilization-tooltip"
+                                                  data-bs-toggle="tooltip"
+                                                  data-bs-html="true"
+                                                  data-bs-placement="right"
+                                                  data-bs-title="@validTooltip">
+                                                有效稼動: @((user.TotalWorkingMinutes == 0 ? 0 : user.ValidWorkingMinutes / user.StandarWorkingMinutes * 100).ToString("F2")) %
+                                            </span>
                                     </td>
                                     <td style="border: 1px solid #999; padding: 0; position: relative;">
                                         <div style="position: relative; height: 80px; background-color: #f8f8f8; padding-top: 20px;">
@@ -334,6 +376,50 @@
                 </div>
             }
         </div>
+        <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="helpModalLabel">說明</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h6><strong>1. 實際計算時間</strong></h6>
+                <p>早班：選擇日 08:00 ~ 選擇日 17:00</p>
+                <p>晚班：選擇日 20:00 ~ 隔日 05:00</p>
+
+                <h6 class="mt-3"><strong>2. 人員稼動計算</strong></h6>
+                <p><strong>人員稼動</strong>：所有已完成的活動時間總和（扣除休息時間）/ 標準工時 (460分鐘)</p>
+                <p><strong>有效稼動</strong>：僅計算有效工時項目的時間總和 / 標準工時 (460分鐘)</p>
+                <p>有效工時項目：@string.Join("、", validTypes)</p>
+
+                <h6 class="mt-3"><strong>3. 休息時間扣除邏輯</strong></h6>
+                <ul>
+                    <li>05:00 - 08:00, 17:00 - 20:00（非排班時間）</li>
+                    <li>03:00 - 03:10, 10:00 - 10:10, 15:00 - 15:10, 20:00 - 20:10（休息）</li>
+                    <li>00:00 - 01:00, 12:00 - 13:00（午休）</li>
+                </ul>
+
+                <h6 class="mt-3"><strong>4. 檢驗站點紀錄邏輯</strong></h6>
+                  <p>1.	製一巡檢: 人員於機台邊感應磁卡紀錄開始時間，於機邊電腦送出量測資料作為完成時間。</p>  
+                  <p>2.	機邊巡檢: 人員於機台邊感應磁卡紀錄開始時間，於機邊目視檢查樣品，於系統上輸入檢驗數量作為完成時間。</p>  
+                  <p>3.	機恩斯量測: 在基恩斯量測室刷磁卡紀錄開始時間，再次點選輸入工單及數量作為完成時間。</p> 
+                  <p>4.	三次元量測: 在手持式三次元區刷磁卡紀錄開始時間，再次點選輸入工單及數量作為完成時間。</p> 
+                  <p>5.	入庫檢驗: 在入庫檢驗區(一樓中央走道)刷磁卡紀錄開始時間，再次點選輸入工單及數量作為完成時間。</p> 
+                  <p>6.	全檢: 在全檢成型區(三區基恩斯室對面)刷磁卡紀錄開始時間，再次點選輸入工單及數量作為完成時間。</p> 
+                  <p>7.	限樣: 於四樓限樣室刷卡後，取得樣品放置於一樓限樣區，點選該項目提交完成時間</p> 
+                  <p>8.	會議: 人員於巡檢系統選擇後，紀錄開始時間，再點選即可提交完成時間。</p>  
+                  <p>9.	支援: 人員於巡檢系統選擇後，紀錄開始時間，再點選即可提交完成時間。</p>  
+                  <p>10.文書作業: 人員於巡檢系統選擇後，紀錄開始時間，再點選即可提交完成時間。</p>  
+
+                 <h6 class="mt-3"><strong>5. 所有項目皆可輸入備註。</strong></h6>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+            </div>
+        </div>
+    </div>
+</div>
     </main>
 
     <footer>
@@ -412,6 +498,28 @@ document.addEventListener('DOMContentLoaded', function () {
     setInterval(function() {
         location.reload();
     }, 5 * 60 * 1000);
+});
+
+// 日期改變時自動提交
+$('#dateInput').on('change', function() {
+    const date = $(this).val();
+    window.location.href = `?date=${date}`;
+});
+
+$('#btnPrevDay').on('click', function() {
+    const dateInput = $('#dateInput');
+    const currentDate = new Date(dateInput.val());
+    currentDate.setDate(currentDate.getDate() - 1);
+    const newDate = currentDate.toISOString().split('T')[0];
+    window.location.href = `?date=${newDate}`;
+});
+
+$('#btnNextDay').on('click', function() {
+    const dateInput = $('#dateInput');
+    const currentDate = new Date(dateInput.val());
+    currentDate.setDate(currentDate.getDate() + 1);
+    const newDate = currentDate.toISOString().split('T')[0];
+    window.location.href = `?date=${newDate}`;
 });
 
 

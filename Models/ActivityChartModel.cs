@@ -98,5 +98,8 @@ namespace PatrolInspect.Models
         public double ValidWorkingMinutes { get; set; } // 新增有效工時（分鐘）
         public double TotalWorkingMinutes { get; set; } // 新增總工時
         public double StandarWorkingMinutes { get; set; } = 480; // 新增總工時
+
+        public Dictionary<string, double> TotalWorkingBreakdown { get; set; } = new();
+        public Dictionary<string, double> ValidWorkingBreakdown { get; set; } = new();
     }
 }
